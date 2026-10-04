@@ -32,7 +32,7 @@ struct TUndoEvent {
     int type;       //type of changed data
     int* pos;       //position of changed data
     void* data;     //change data
-    char separator; //= 0 accumulate continuous changes, = 1 completed change, = -1 more events for one step
+    signed char separator; // (signed: char has no sign on ARM, RISC-V and PowerPC) = 0 accumulate continuous changes, = 1 completed change, = -1 more events for one step
 };
 
 
@@ -45,8 +45,8 @@ public:
 
     void Init();
     void Clear();
-    char DeleteEvent(int i);
-    char PerformEvent(int i);
+    signed char DeleteEvent(int i);
+    signed char PerformEvent(int i);
     void DropLast();
 
     BOOL Undo();
@@ -57,10 +57,10 @@ public:
     BOOL PosIsEqual(int* pos1, int* pos2, int type);
 
     void Separator(int sep = 1);
-    void ChangeTrack(int tracknum, int trackline, int type, char separator = 0);
-    void ChangeSong(int songline, int trackcol, int type, char separator = 0);
-    void ChangeInstrument(int instrnum, int paridx, int type, char separator = 0);
-    void ChangeInfo(int paridx, int type, char separator = 0);
+    void ChangeTrack(int tracknum, int trackline, int type, signed char separator = 0);
+    void ChangeSong(int songline, int trackcol, int type, signed char separator = 0);
+    void ChangeInstrument(int instrnum, int paridx, int type, signed char separator = 0);
+    void ChangeInfo(int paridx, int type, signed char separator = 0);
 
 private:
     void InsertEvent(TUndoEvent* ue);

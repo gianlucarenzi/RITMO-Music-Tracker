@@ -91,7 +91,7 @@ const char keynotes[256] = {
 };
 */
 
-const char keynumbs[256] = {
+const signed char keynumbs[256] = { // signed: char has no sign on ARM, RISC-V and PowerPC
     //0
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -114,7 +114,7 @@ const char keynumbs[256] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 };
 
-const char keynumblock09[256] = {
+const signed char keynumblock09[256] = {
     //0
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -161,21 +161,24 @@ const unsigned char* const keynotes_QWERTZ = qwertzTable.keys;
 
 // clang-format on
 
-char NoteKey(int vk)
+// The note of a key, -1 for none (0xFF in the tables)
+int NoteKey(int vk)
 {
+    const unsigned char* keys;
     if (g_keyboard_layout == KeyboardLayout::QWERTY) {
-        return keynotes_QWERTY[vk];
+        keys = keynotes_QWERTY;
     } else if (g_keyboard_layout == KeyboardLayout::AZERTY) {
-        return keynotes_AZERTY[vk];
+        keys = keynotes_AZERTY;
     } else if (g_keyboard_layout == KeyboardLayout::QWERTZ) {
-        return keynotes_QWERTZ[vk];
+        keys = keynotes_QWERTZ;
     } else
         return -1;
+    return keys[vk] == 0xFF ? -1 : keys[vk];
 };
 
-char NumbKey(int vk) { return keynumbs[vk]; };
+int NumbKey(int vk) { return keynumbs[vk]; };
 
-char Numblock09Key(int vk) { return keynumblock09[vk]; };
+int Numblock09Key(int vk) { return keynumblock09[vk]; };
 
 namespace {
 // The four key rows of the layout's keyboard, from the number row to the

@@ -4,9 +4,10 @@
 
 #include <string>
 
-extern char NoteKey(int vk);
-extern char NumbKey(int vk);
-extern char Numblock09Key(int vk);
+// The note, the hex digit and the keypad digit of a key; -1 when it has none
+extern int NoteKey(int vk);
+extern int NumbKey(int vk);
+extern int Numblock09Key(int vk);
 
 // The QWERTY key at the position of vk on the layout's keyboard, for keys that
 // mean a position (the Pokey Explorer's): the three letter rows, the ISO key

@@ -37,11 +37,11 @@ void CUndo::Clear()
     for (int i = 0; i < MAXUNDO; i++) DeleteEvent(i);
 }
 
-char CUndo::DeleteEvent(int i)
+signed char CUndo::DeleteEvent(int i)
 {
     TUndoEvent* ue = m_uar[i];
     if (!ue) return 1;
-    char sep = ue->separator; //storage for return
+    signed char sep = ue->separator; //storage for return
     if (ue->cursor) delete[] ue->cursor;
     if (ue->pos) delete[] ue->pos;
     if (ue->data) {
@@ -68,7 +68,7 @@ BOOL CUndo::Undo()
     g_Song.Stop();
 
     int prev;
-    char sep;
+    signed char sep;
     do {
         m_head = (m_head + MAXUNDO - 1) % MAXUNDO;
         PerformEvent(m_head);
@@ -89,7 +89,7 @@ BOOL CUndo::Redo()
 
     g_Song.Stop();
 
-    char sep;
+    signed char sep;
     do {
         sep = PerformEvent(m_head);
         m_head = (m_head + 1) % MAXUNDO;
@@ -128,7 +128,7 @@ void CUndo::InsertEvent(TUndoEvent* ue)
     if (ue->separator != -1) m_undosteps++; //only complete events are included
     m_head = (m_head + 1) % MAXUNDO;
     if ((m_undosteps > UNDOSTEPS) || ((m_head + 1) % MAXUNDO == m_tail)) {
-        char sep;
+        signed char sep;
         do {
             sep = DeleteEvent(m_tail);
             m_tail = (m_tail + 1) % MAXUNDO;
@@ -156,7 +156,7 @@ void CUndo::Separator(int sep)
     le->separator = sep;
 }
 
-void CUndo::ChangeTrack(int tracknum, int trackline, int type, char separator)
+void CUndo::ChangeTrack(int tracknum, int trackline, int type, signed char separator)
 {
     if (!g_Tracks.IsValidTrack(tracknum) || !g_Tracks.IsValidLine(trackline)) return;
 
@@ -217,7 +217,7 @@ void CUndo::ChangeTrack(int tracknum, int trackline, int type, char separator)
     InsertEvent(ue);
 }
 
-void CUndo::ChangeSong(int songline, int trackcol, int type, char separator)
+void CUndo::ChangeSong(int songline, int trackcol, int type, signed char separator)
 {
     if (songline < 0 || trackcol < 0) return;
 
@@ -259,7 +259,7 @@ void CUndo::ChangeSong(int songline, int trackcol, int type, char separator)
     InsertEvent(ue);
 }
 
-void CUndo::ChangeInstrument(int instrnum, int paridx, int type, char separator)
+void CUndo::ChangeInstrument(int instrnum, int paridx, int type, signed char separator)
 {
     TInstrument* instr = g_Instruments.GetInstrument(instrnum);
     TInstrumentsAll* insall = g_Instruments.GetInstrumentsAll();
@@ -294,7 +294,7 @@ void CUndo::ChangeInstrument(int instrnum, int paridx, int type, char separator)
     InsertEvent(ue);
 }
 
-void CUndo::ChangeInfo(int paridx, int type, char separator)
+void CUndo::ChangeInfo(int paridx, int type, signed char separator)
 {
     // An event with the original status at a different place
     TUndoEvent* ue = new TUndoEvent;
@@ -348,7 +348,7 @@ void ExchangeInt(int& a, int& b)
     b = c;
 }
 
-char CUndo::PerformEvent(int i)
+signed char CUndo::PerformEvent(int i)
 {
     TUndoEvent* ue = m_uar[i];
     if (!ue) return 1;
@@ -362,7 +362,7 @@ char CUndo::PerformEvent(int i)
     int *data, *temp;
 
     // Keeps the separator as a return value
-    char sep = ue->separator;
+    signed char sep = ue->separator;
 
     // Set cursor there (change and g_activepart)
     g_Song.SetUECursor(ue->part, ue->cursor);
