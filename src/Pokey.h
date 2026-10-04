@@ -22,6 +22,7 @@ public:
     bool IsSoundDriverLoaded() const;
 
     void InitPokeys(const bool ntsc, const bool stereo, const DWORD samplesPerSec);
+    void ResetPokeys(); // the emulation as just initialised: counters, polynomials, filters
     void PutByte(const byte address, const byte value);
 
 private:

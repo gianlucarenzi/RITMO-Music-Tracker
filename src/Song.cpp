@@ -118,6 +118,11 @@ void CSong::StopTimer()
     g_SongTimer.StopTimer();
 }
 
+void CSong::RestartTimer(int ms)
+{
+    g_SongTimer.RestartTimer(*this, ms);
+}
+
 void CSong::SetStreamRendering(CPokeyStream* pokeyStream)
 {
     m_pokeyStream = pokeyStream; // TimerRoutine() is bypassed while it is recording or writing

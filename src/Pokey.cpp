@@ -62,6 +62,12 @@ void CPokey::InitPokeys(const bool ntsc, const bool stereo, const DWORD samplesP
     }
 }
 
+void CPokey::ResetPokeys()
+{
+    if (!m_loaded || !m_initialized) return;
+    RmtBuiltin_APokeySound_Initialize(m_stereo);
+}
+
 void CPokey::PutByte(const byte address, const byte value)
 {
     if (!m_loaded) return;

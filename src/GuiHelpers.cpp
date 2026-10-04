@@ -80,7 +80,7 @@ CExportSection::~CExportSection()
     }
     s_depth--;
     if (s_depth == 0) {
-        m_song.ChangeTimer(m_song.IsNTSC() ? 17 : 20);
+        m_song.RestartTimer(m_song.IsNTSC() ? 17 : 20); // ChangeTimer() would do nothing after StopTimer()
         SetStatusBarText("");
         EnableWindow(g_hwnd, TRUE);
         SetCursor(s_oldCursor);

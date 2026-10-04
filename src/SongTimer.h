@@ -25,6 +25,12 @@ public:
     /// <param name="ms">ms between calls (17=NTSC, 20=PAL)</param>
     void SetTimer(CSong& song, int ms);
 
+    /// <summary>
+    /// Start the timer again after StopTimer() (the end of an export): SetTimer()
+    /// does nothing once the timer is stopped
+    /// </summary>
+    void RestartTimer(CSong& song, int ms);
+
 
     void Callback();
 

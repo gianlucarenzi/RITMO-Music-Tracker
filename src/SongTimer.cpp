@@ -40,6 +40,15 @@ void CSongTimer::SetTimer(CSong& song, int ms)
     m_timerRoutine = timeSetEvent(ms, 0, TimerCallback, (DWORD_PTR)(this), TIME_PERIODIC);
 }
 
+void CSongTimer::RestartTimer(CSong& song, int ms)
+{
+    std::lock_guard<std::mutex> lock(m_lock);
+    m_stopped = false;
+    KillTimer(); // none after StopTimer(), unless one was set since
+    this->m_song = &song;
+    m_timerRoutine = timeSetEvent(ms, 0, TimerCallback, (DWORD_PTR)(this), TIME_PERIODIC);
+}
+
 void CSongTimer::Callback()
 {
     busyInCallback = true;

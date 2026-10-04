@@ -48,6 +48,7 @@ bool CWaveFileExporter::ExportWAV(CSongExport& songExport, std::ofstream& ou, CX
     memset(buffer, 0x80, bufferSize);
 
     pokey.ResetRenderCalls();
+    pokey.ResetPokeys(); // the timer may have run the emulation since the last export
     while (frames < pokeyStream.GetFirstCountPoint()) {
         // Copy the SAP-R bytes to memory for this frame
         streambuffer = pokeyStream.GetStreamBuffer() + frames * frameSize;

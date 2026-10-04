@@ -30,6 +30,7 @@ public:
     void RenderSoundV2(int instrspeed, BYTE* buffer, int& length);
     void RenderSoundV2Call(int instrspeed, BYTE* buffer, int& length); // one call of the driver: 1/instrspeed of a chunk
     void ResetRenderCalls() { m_renderCallRest = 0; }                  // before a series of calls
+    void ResetPokeys() { m_pokey.ResetPokeys(); }                      // the same sound whatever played before
 
 
 private:

@@ -35,6 +35,8 @@ public:
     int GetInstrumentSpeed() const;
 
     void StopTimer();
+    // After StopTimer() of an export (CExportSection): the timer runs again
+    void RestartTimer(int ms);
     void ChangeTimer(int ms);
     // While a POKEY stream is rendered outside the timer (WAV export), the
     // timer routine must not play or render: set the stream (it must not be
