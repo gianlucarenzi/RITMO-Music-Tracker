@@ -46,9 +46,7 @@
 #include <QUrl>
 #include <QWheelEvent>
 
-#include <algorithm>
 #include <chrono>
-#include <cstring>
 #include <map>
 #include <set>
 #include <vector>
@@ -267,46 +265,15 @@ public:
         return ChangedRegion();
     }
 
-    // The screen the widget shows (g_width x g_height), to repaint only what a redraw changes: the timer redraws
-    // the whole screen 60 times a second, and sending the whole window to the display each time costs more
-    // than drawing it (most of all in the X server, on a slow machine)
-    std::vector<uint32_t> m_shown;
-    int m_shownWidth = 0, m_shownHeight = 0;
-
-    QRegion ChangedRegion()
+    // The parts of the widget the last DrawAll() changed: the timer redraws the whole screen 60 times a second,
+    // and sending the whole window to the display each time costs more than drawing it (most of all in the X
+    // server, on a slow machine)
+    QRegion ChangedRegion() const
     {
-        const CBitmap& bmp = m_view.m_mem_bitmap;
-        if (!bmp.Bits()) return {};
-        const int w = std::min(g_width, bmp.Width()), h = std::min(g_height, bmp.Height());
-        const int stride = bmp.Width();
-        if (w != m_shownWidth || h != m_shownHeight) {
-            m_shownWidth = w;
-            m_shownHeight = h;
-            m_shown.resize((size_t)w * h);
-            for (int y = 0; y < h; y++)
-                std::memcpy(m_shown.data() + (size_t)y * w, bmp.Bits() + (size_t)y * stride, (size_t)w * 4);
-            return QRegion(m_widget->rect());
-        }
-        // the rows that changed one after another make one rectangle, from the leftmost to the rightmost change
         QRegion region;
-        int top = -1, left = w, right = 0;
-        for (int y = 0; y <= h; y++) {
-            const uint32_t* row = y < h ? bmp.Bits() + (size_t)y * stride : nullptr;
-            uint32_t* shown = y < h ? m_shown.data() + (size_t)y * w : nullptr;
-            if (row && std::memcmp(row, shown, (size_t)w * 4)) {
-                int l = (int)(std::mismatch(row, row + w, shown).first - row);
-                int r = w;
-                while (row[r - 1] == shown[r - 1]) r--;
-                std::memcpy(shown + l, row + l, (size_t)(r - l) * 4);
-                if (top < 0) top = y;
-                left = std::min(left, l);
-                right = std::max(right, r);
-            } else if (top >= 0) {
-                region += ToWidget(QRect(left, top, right - left, y - top));
-                top = -1;
-                left = w;
-                right = 0;
-            }
+        for (const CRect& r : m_view.m_mem_dc.ChangedRects()) {
+            const QRect part = QRect(r.left, r.top, r.Width(), r.Height()) & QRect(0, 0, g_width, g_height);
+            if (!part.isEmpty()) region += ToWidget(part);
         }
         return region;
     }

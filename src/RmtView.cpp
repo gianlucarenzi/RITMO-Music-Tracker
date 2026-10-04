@@ -383,6 +383,8 @@ void CRmtView::DrawAll()
         return;
     }
 
+    // The calls are recorded, and only the parts of the screen where they differ from the last frame are drawn
+    m_mem_dc.BeginFrame();
     m_mem_dc.FillSolidRect(0, 0, m_width, m_height, CRGBColor::BACKGROUND);
     // Draw the secondary screen elements
     g_Song.DrawInfo();
@@ -396,6 +398,7 @@ void CRmtView::DrawAll()
     } else {
         g_Song.DrawInstrument();
     }
+    m_mem_dc.EndFrame();
 }
 
 BOOL CRmtView::OnEraseBkgnd(CDC* pDC)

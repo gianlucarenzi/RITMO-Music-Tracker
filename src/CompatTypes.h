@@ -621,6 +621,7 @@ public:
         m_w = w;
         m_h = h;
         m_px.assign((size_t)w * h, 0xFF000000u);
+        m_version++;
         return TRUE;
     }
     // Bitmap resource: MAKEINTRESOURCE(IDB_...)
@@ -636,6 +637,7 @@ public:
     {
         m_px.clear();
         m_w = m_h = 0;
+        m_version++;
         return TRUE;
     }
 
@@ -643,10 +645,13 @@ public:
     int Height() const { return m_h; }
     uint32_t* Bits() { return m_px.empty() ? nullptr : m_px.data(); }
     const uint32_t* Bits() const { return m_px.empty() ? nullptr : m_px.data(); }
+    // Changes when the bitmap is created or loaded again (not when it is drawn into)
+    unsigned Version() const { return m_version; }
 
 private:
     int m_w = 0, m_h = 0;
     std::vector<uint32_t> m_px;
+    unsigned m_version = 0;
 };
 
 class CBrush {
@@ -671,6 +676,11 @@ private:
 // GDI semantics: FillSolidRect/FrameRect exclude right/bottom, LineTo excludes
 // the end point, BitBlt/StretchBlt only SRCCOPY (the only mode used).
 // A window host (Qt) shows the bitmap of its DC.
+//
+// Between BeginFrame() and EndFrame() the drawing calls are only recorded: the
+// tracker draws its whole screen every frame (CRmtView::DrawAll), and
+// EndFrame() draws only the tiles of the bitmap whose calls are not the same
+// as in the previous frame. ChangedRects() is then what changed.
 // ---------------------------------------------------------------------------
 
 class CDC {
@@ -735,18 +745,50 @@ public:
         return prev;
     }
 
+    void BeginFrame();
+    void EndFrame();
+    // The parts of the bitmap the last EndFrame() changed
+    const std::vector<CRect>& ChangedRects() const { return m_changed; }
+
 private:
+    struct DrawOp {
+        enum Kind : uint8_t { FILL, BLIT, LINE } kind;
+        int l, t, r, b;           // FILL: the rectangle; BLIT: the destination; LINE: from (l,t) to (r,b), without the end point
+        uint32_t color;           // FILL, LINE
+        const CBitmap* src;       // BLIT
+        unsigned srcVersion;      // BLIT
+        int xs, ys, ws, hs;       // BLIT: the source rectangle
+        CRect Bounds() const;
+        uint64_t Hash() const;
+    };
+    static constexpr int TILE_W = 32, TILE_H = 16;
+
+    // the drawing calls: recorded in a frame, else drawn at once
     void Fill(int l, int t, int r, int b, uint32_t c);
-    void Plot(int x, int y, uint32_t c)
-    {
-        if (m_bitmap && x >= 0 && y >= 0 && x < m_bitmap->Width() && y < m_bitmap->Height())
-            m_bitmap->Bits()[(size_t)y * m_bitmap->Width() + x] = c;
-    }
+    BOOL Blit(int x, int y, int w, int h, CDC* src, int xs, int ys, int ws, int hs);
+    // the pixels, within clip (in the bitmap); a line only in the tiles of dirtyTiles (nullptr: everywhere)
+    void FillPixels(int l, int t, int r, int b, uint32_t c, const CRect& clip);
+    void BlitPixels(int x, int y, int w, int h, const CBitmap* sb, int xs, int ys, int ws, int hs, const CRect& clip);
+    void LinePixels(int x0, int y0, int x1, int y1, uint32_t c, const std::vector<char>* dirtyTiles);
+    void DrawRecorded(const DrawOp& op, const CRect& clip);
+    CRect BitmapRect() const { return CRect(0, 0, m_bitmap->Width(), m_bitmap->Height()); }
 
     CBitmap* m_bitmap = nullptr;
     CPen* m_pen = nullptr;
     int m_curX = 0, m_curY = 0;
     int m_stretchMode = COLORONCOLOR;
+
+    bool m_recording = false;
+    bool m_frameFull = false;  // this frame is drawn whole (a blit from its own bitmap)
+    bool m_drawnOutside = true; // drawn into outside a frame (or never drawn): the next frame is drawn whole
+    std::vector<DrawOp> m_ops;
+    std::vector<uint64_t> m_tileHash; // of the calls that drew each tile in the previous frame
+    std::vector<uint64_t> m_newTileHash;
+    std::vector<char> m_dirty;
+    int m_tilesX = 0, m_tilesY = 0;
+    const CBitmap* m_frameBitmap = nullptr;
+    unsigned m_frameBitmapVersion = 0;
+    std::vector<CRect> m_changed;
 };
 
 // ---------------------------------------------------------------------------
