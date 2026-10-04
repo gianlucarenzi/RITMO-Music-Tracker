@@ -423,7 +423,7 @@ strings in C++ source files.
 | Situation | Version shown |
 |-----------|--------------|
 | On an exact tag `v2.3-rc1` | `2.3-rc1` |
-| Any other commit | `RMT_BASE_VERSION`, e.g. `2.4` |
+| Any other commit | `RMT_BASE_VERSION`, e.g. `2.5` |
 
 `RMT_BASE_VERSION` in `CMakeLists.txt` is the numeric `MAJOR.MINOR` used by
 the release scripts. The generated header `RmtVersion.h` (build directory)
@@ -458,8 +458,8 @@ The script refuses to run when the notes file is missing or not committed.
 
 After a release, update `RMT_BASE_VERSION` in `CMakeLists.txt` to the next
 development target (e.g. `"2.2"`) so subsequent RC tags follow the new series.
-The last release is `v2.3`; `RMT_BASE_VERSION` is `"2.4"`, the version in development.
-A commit without a tag reports exactly that, `2.4`; a tagged one reports its tag.
+The last release is `v2.4`; `RMT_BASE_VERSION` is `"2.5"`, the version in development.
+A commit without a tag reports exactly that, `2.5`; a tagged one reports its tag.
 
 ---
 

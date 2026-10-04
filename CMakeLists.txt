@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.25)
 # Project definition
 project(
     Rmt
-    VERSION 2.4.0
+    VERSION 2.5.0
     DESCRIPTION "RITMO - Atari XL/XE music tracker, based on RASTER Music Tracker"
     LANGUAGES CXX C
 )
@@ -13,7 +13,7 @@ project(
 # RMT_BASE_VERSION, the numeric major.minor of the version in development (also used by
 # scripts/push.sh). RMT_VERSION_FULL is the human-readable string baked into the binary.
 # ---------------------------------------------------------------------------
-set(RMT_BASE_VERSION "2.4")
+set(RMT_BASE_VERSION "2.5")
 
 find_package(Git QUIET)
 if(Git_FOUND)
