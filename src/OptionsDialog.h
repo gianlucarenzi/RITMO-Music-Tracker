@@ -44,6 +44,7 @@ public:
     BOOL m_midi_NoteOff;
     BOOL m_keyboard_updowncontinue;
     BOOL m_nohwsoundbuffer;
+    int m_audioBufferMs;
     BOOL m_tracklinealtnumbering;
     BOOL m_keyboard_rememberoctavesandvolumes;
     BOOL m_keyboard_escresetatarisound;

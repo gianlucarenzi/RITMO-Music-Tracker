@@ -9,7 +9,9 @@
 //   played by PortAudio (RMT_HAVE_PORTAUDIO) with real cursors.
 
 #include "PlatformTypes.h"
+#include "Global.h" // g_audioBufferMs
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdio>
@@ -267,12 +269,15 @@ HRESULT IDirectSoundBuffer::Play(DWORD, DWORD, DWORD)
         return DS_OK;
     PaSampleFormat format = f.wBitsPerSample == 8 ? paUInt8 : paInt16;
     auto* s = new RmtAudioStream;
-    unsigned long framesPerBuffer = f.nSamplesPerSec / 200; // 5 ms
-    // RMT_AUDIO_BUFFER_MS=<ms>: a larger callback buffer for slow machines (fewer wake-ups of the audio server)
+    // the callback size of the Options dialog (20 ms on Linux, 5 ms elsewhere)
+    int bufferMs = g_audioBufferMs;
+    // RMT_AUDIO_BUFFER_MS=<ms>: another size for this session only, without changing the settings
     if (const char* ms = std::getenv("RMT_AUDIO_BUFFER_MS")) {
         int value = std::atoi(ms);
-        if (value >= 1 && value <= 100) framesPerBuffer = f.nSamplesPerSec / 1000 * value;
+        if (value >= 1) bufferMs = value;
     }
+    bufferMs = std::max(1, std::min(bufferMs, RMT_MAX_AUDIO_BUFFER_MS));
+    unsigned long framesPerBuffer = f.nSamplesPerSec / 1000 * bufferMs;
     if (Pa_OpenDefaultStream(&s->stream, 0, f.nChannels, format, f.nSamplesPerSec, framesPerBuffer,
                              PlayCallback, this) != paNoError) {
         std::fprintf(stderr, "RMT: cannot open the audio output (PortAudio)\n");

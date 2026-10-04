@@ -24,6 +24,7 @@
 #include "exportdlgs.h"
 #include "SAPFileExportDialog.h"
 #include "OptionsDialog.h"
+#include "Global.h" // RMT_DEFAULT_AUDIO_BUFFER_MS
 #include "TuningDialog.h"
 
 // ---------------------------------------------------------------------------
@@ -242,6 +243,7 @@ COptionsDialog::COptionsDialog(CWnd* pParent) : CDialog(COptionsDialog::IDD, pPa
     m_midi_NoteOff = FALSE;
     m_keyboard_updowncontinue = FALSE;
     m_nohwsoundbuffer = FALSE;
+    m_audioBufferMs = RMT_DEFAULT_AUDIO_BUFFER_MS;
     m_tracklinealtnumbering = FALSE;
     m_keyboard_rememberoctavesandvolumes = FALSE;
     m_keyboard_escresetatarisound = FALSE;

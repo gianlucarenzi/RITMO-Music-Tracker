@@ -487,6 +487,11 @@ void CRmtView::ReadRMTConfig()
             g_nohwsoundbuffer = atoi(value);
             continue;
         }
+        if (NAME("AUDIO_BUFFER_MS")) {
+            int ms = atoi(value);
+            if (ms >= 1 && ms <= RMT_MAX_AUDIO_BUFFER_MS) g_audioBufferMs = ms;
+            continue;
+        }
 
         // TODO: Tracker must be in the module instead
         if (NAME("NTSC_SYSTEM")) {
@@ -624,6 +629,7 @@ void CRmtView::WriteRMTConfig()
     ou << "USEGERMANNOTATION = " << g_usegermannotation << std::endl;
     ou << "NTSC_SYSTEM = " << g_Song.IsNTSC() << std::endl;
     ou << "NOHWSOUNDBUFFER = " << g_nohwsoundbuffer << std::endl;
+    ou << "AUDIO_BUFFER_MS = " << g_audioBufferMs << std::endl;
     ou << "TRACKERDRIVERVERSION = " << g_trackerDriverVersion << std::endl;
 
     ou << "\n# KEYBOARD\n"
@@ -685,6 +691,7 @@ void CRmtView::ResetRMTConfig()
     g_linesafter = 1;                  // Number of lines to scroll after inserting a note
     SetNTSC(false);                    // NTSC (60Hz)
     g_nohwsoundbuffer = 0;             // Don't use hardware soundbuffer
+    g_audioBufferMs = RMT_DEFAULT_AUDIO_BUFFER_MS; // Audio callback size: 20 ms on Linux, 5 ms elsewhere
     g_trackerDriverVersion = PATCH16;  // Tracker driver version
     g_displayflatnotes = 0;            // Display accidentals as Flats instead of Sharps
     g_usegermannotation = 0;           // Display H notes instead of B
@@ -850,6 +857,7 @@ void CRmtView::OnViewConfiguration()
     dlg.m_usegermannotation = g_usegermannotation;
     dlg.m_ntsc = g_Song.IsNTSC();
     dlg.m_nohwsoundbuffer = g_nohwsoundbuffer;
+    dlg.m_audioBufferMs = g_audioBufferMs;
     dlg.m_doSmoothScrolling = g_view.smoothScrolling;
     dlg.m_viewDebugDisplay = g_view.debugDisplay;
 
@@ -878,10 +886,13 @@ void CRmtView::OnViewConfiguration()
             Resize(); // Necessary to scale everything without manually resizing the window first
         }
 
-        if (g_nohwsoundbuffer != dlg.m_nohwsoundbuffer) {
-            g_Song.ReInitSound(); // Justified for testing, but this might be a little redundant
-        }
+        // the new values first: ReInitSound() opens the sound output with them
+        bool soundChanged = g_nohwsoundbuffer != dlg.m_nohwsoundbuffer || g_audioBufferMs != dlg.m_audioBufferMs;
         g_nohwsoundbuffer = dlg.m_nohwsoundbuffer;
+        g_audioBufferMs = dlg.m_audioBufferMs;
+        if (soundChanged) {
+            g_Song.ReInitSound();
+        }
 
         if (g_Song.IsNTSC() != dlg.m_ntsc) {
             SetNTSC(dlg.m_ntsc);

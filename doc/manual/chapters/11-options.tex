@@ -19,7 +19,10 @@ program closes, in the settings of the system (chapter~\ref{ch:install}).
   \item[Display accidentals as flats instead of sharps] \texttt{D\#} is written as \texttt{Eb}.
   \item[NTSC system speed (60 Hz)] The video system of the song: 60 frames a second instead of the 50 of PAL. The same switch is
         \key{CONTROL+F12}.
-  \item[Don't use hardware soundbuffer] A different way of playing the sound buffer, for the audio systems that need it.
+  \item[Audio buffer] How much sound the output of the system takes at a time, from 5 to 40 milliseconds. A small buffer
+        makes the sound follow the keys and the MIDI keyboard sooner; a larger one keeps the sound clean when the computer or
+        the sound server is busy. The default is 20\,ms on Linux, where the sound servers (PipeWire, PulseAudio) work in
+        pieces of about that size, and 5\,ms on Windows and macOS. If the sound crackles or is distorted, choose 30 or 40\,ms.
   \item[Smooth scroll during playback] The lines of the tracks scroll one pixel at a time while a song plays.
   \item[Debug display] A line of internal values in the status bar. Enable it only if you know what it shows.
   \item[RMT Driver Version] The tracker driver, the player routine that makes the sound while you work (chapter~\ref{ch:drivers}). The

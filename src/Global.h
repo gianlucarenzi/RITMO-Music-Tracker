@@ -84,6 +84,15 @@ extern BOOL g_tracklinealtnumbering;      //alternative way of line numbering in
 extern int g_linesafter;                  //number of lines to scroll after inserting a note (initializes in CSong :: Clear)
 
 extern BOOL g_nohwsoundbuffer; //Don't use hardware soundbuffer
+// Size of the buffer that the audio output takes at each callback (CompatAudio.cpp), in milliseconds.
+// On Linux the sound servers (PipeWire, PulseAudio) work in pieces of about 20 ms and crackle with smaller callbacks.
+#ifdef __linux__
+constexpr int RMT_DEFAULT_AUDIO_BUFFER_MS = 20;
+#else
+constexpr int RMT_DEFAULT_AUDIO_BUFFER_MS = 5;
+#endif
+constexpr int RMT_MAX_AUDIO_BUFFER_MS = 50; // more than the 60 ms of latency of PokeyRenderer.cpp less a margin: the ring would run dry
+extern int g_audioBufferMs;
 extern int g_cursoractview;    //default position, line 0
 
 

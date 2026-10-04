@@ -18,6 +18,11 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.5: the size of the audio buffer (the pieces PortAudio takes at each callback) is an option of the configuration,
+  `AUDIO_BUFFER_MS` in ritmo.ini: 5 to 40 ms in the dialog, 20 ms by default on Linux (PipeWire and PulseAudio work in
+  quanta of about 21 ms and crackled with the 5 ms callbacks through ALSA), 5 ms on Windows and macOS. `RMT_AUDIO_BUFFER_MS`
+  overrides it for one session, up to 50 ms (beyond the 60 ms of latency of PokeyRenderer.cpp the ring would run dry). The
+  "Don't use hardware soundbuffer" checkbox is gone from the dialog: it only changed a flag of DirectSound.
 - 2.4: only what changes on the screen is drawn. `CRmtView::DrawAll()` still describes the whole screen every frame, but
   `CDC::BeginFrame()`/`EndFrame()` record the drawing calls and keep a hash per 32x16 tile of the calls that draw into it: a
   tile with the hash of the previous frame is left as it is, and the Qt frontend repaints (and sends to the display) only the

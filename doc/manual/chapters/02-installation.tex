@@ -64,10 +64,10 @@ tracker stay square. The choice can be changed in the \menu{Options} dialog, and
 \section{Sound}
 
 The sound goes out through PortAudio, to the default output device of the system. If the output cannot be opened
-the program prints a message and goes on without sound, so that songs can still be edited. The
-\emph{hardware soundbuffer} option of the configuration (section~\ref{sec:options}) and the
-\texttt{RMT\_AUDIO\_BUFFER\_MS} environment variable (the size of the buffer in milliseconds) are for the sound
-output of the system that needs a different buffer.
+the program prints a message and goes on without sound, so that songs can still be edited. If the sound
+crackles or is distorted, choose a larger \emph{audio buffer} in the configuration (section~\ref{sec:options}).
+The \texttt{RMT\_AUDIO\_BUFFER\_MS} environment variable (the size of the buffer in milliseconds, up to 50) sets
+another size for one session without changing the settings.
 
 \section{Where the settings are kept}
 

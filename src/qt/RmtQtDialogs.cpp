@@ -21,6 +21,8 @@
 #include "IOHelpers.h"
 #include "GuiHelpers.h"
 
+#include <utility>
+
 #include <QButtonGroup>
 #include <QCheckBox>
 #include <QClipboard>
@@ -837,7 +839,29 @@ static INT_PTR RunConfig(QWidget* parent, COptionsDialog* dlg)
     flats->setChecked(dlg->m_displayflatnotes);
     grid->addWidget(flats, 1, 0, 1, 2);
     auto* ntsc = gridCheck(2, 0, "NTSC system speed (60Hz)", dlg->m_ntsc);
-    auto* noHwBuffer = gridCheck(2, 1, "Don't use hardware soundbuffer", dlg->m_nohwsoundbuffer);
+    // The size of the pieces the sound output takes (CompatAudio.cpp); "Don't use hardware soundbuffer"
+    // of RMT is not shown, it only meant something to DirectSound
+    auto* audioBuffer = new QComboBox;
+    const std::pair<int, const char*> bufferSizes[] = {
+        { 5, "5 ms - lowest latency (live playing)" },
+        { 10, "10 ms" },
+        { 20, "20 ms" },
+        { 30, "30 ms" },
+        { 40, "40 ms - slow computers, crackling sound" },
+    };
+    for (const auto& size : bufferSizes) {
+        QString text = size.second;
+        if (size.first == RMT_DEFAULT_AUDIO_BUFFER_MS) text += " (default)";
+        audioBuffer->addItem(text, size.first);
+    }
+    if (audioBuffer->findData(dlg->m_audioBufferMs) < 0) // another size written in ritmo.ini
+        audioBuffer->addItem(QString("%1 ms").arg(dlg->m_audioBufferMs), dlg->m_audioBufferMs);
+    audioBuffer->setCurrentIndex(audioBuffer->findData(dlg->m_audioBufferMs));
+    audioBuffer->setToolTip("Larger: the sound does not crackle when the computer is busy, but it comes later after a key");
+    auto* audioBufferRow = new QHBoxLayout;
+    audioBufferRow->addWidget(new QLabel("Audio buffer:"));
+    audioBufferRow->addWidget(audioBuffer, 1);
+    grid->addLayout(audioBufferRow, 2, 1);
     auto* smooth = gridCheck(3, 0, "Smooth scroll during playback", dlg->m_doSmoothScrolling);
     generalLayout->addLayout(grid);
     auto* debug = addCheck(generalLayout, "Debug display (enable only if you know what you are doing)", dlg->m_viewDebugDisplay);
@@ -916,7 +940,7 @@ static INT_PTR RunConfig(QWidget* parent, COptionsDialog* dlg)
     dlg->m_tracklinealtnumbering = altNumbering->isChecked();
     dlg->m_displayflatnotes = flats->isChecked();
     dlg->m_ntsc = ntsc->isChecked();
-    dlg->m_nohwsoundbuffer = noHwBuffer->isChecked();
+    dlg->m_audioBufferMs = audioBuffer->currentData().toInt();
     dlg->m_doSmoothScrolling = smooth->isChecked();
     dlg->m_viewDebugDisplay = debug->isChecked();
     dlg->m_trackerDriverVersion = (TrackerDriverVersion)driver->currentIndex();

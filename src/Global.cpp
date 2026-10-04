@@ -79,6 +79,7 @@ BOOL g_tracklinealtnumbering = 0;      // Alternative way of line numbering in t
 int g_linesafter;                      // Number of lines to scroll after inserting a note (initializes in CSong :: Clear)
 
 BOOL g_nohwsoundbuffer = 0; //Don't use hardware soundbuffer
+int g_audioBufferMs = RMT_DEFAULT_AUDIO_BUFFER_MS; // audio callback size in ms (Options dialog, AUDIO_BUFFER_MS of ritmo.ini)
 int g_cursoractview = 0;    //default position, line 0
 
 BOOL g_displayflatnotes = 0;  //flats instead of sharps

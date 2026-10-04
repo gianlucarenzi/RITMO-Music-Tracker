@@ -209,8 +209,9 @@ synthesizer that some distributions start at every login. RITMO does not need
 it (it only receives MIDI, and a MIDI keyboard works without it); stop it while
 you make music with `systemctl --user stop fluidsynth`, or for good with
 `systemctl --user mask fluidsynth` (undo: `systemctl --user unmask fluidsynth`).
-`RMT_AUDIO_DEBUG=1` shows the late audio ticks and the underruns,
-`RMT_AUDIO_BUFFER_MS=20` makes the audio buffer larger.
+If the sound still crackles or is distorted, choose a larger **Audio buffer**
+(30 or 40 ms) in the configuration; `RMT_AUDIO_DEBUG=1` shows the late audio
+ticks and the underruns.
 
 Issues of the Qt port are tracked on the [GitHub issue tracker of the port](https://github.com/gianlucarenzi/RITMO-Music-Tracker/issues).
 Issues of the original RMT are tracked on the [upstream issue tracker](https://github.com/raster-atari-org/RASTER-Music-Tracker/issues).
