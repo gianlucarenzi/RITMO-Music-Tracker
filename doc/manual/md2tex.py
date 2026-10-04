@@ -101,7 +101,7 @@ text = "\n".join(out)
 
 cmd = [
     "pandoc",
-    "-f", "markdown-smart-auto_identifiers+pipe_tables-raw_html",
+    "-f", "markdown-smart+gfm_auto_identifiers+pipe_tables-raw_html",
     "-t", "latex",
     "--columns=60",
     f"--shift-heading-level-by={args.shift - 1}",
@@ -139,6 +139,16 @@ def small(m):
         return "{\\footnotesize\\setlength{\\tabcolsep}{3pt}\n" + body + "\n}"
     return body
 tex = re.sub(r"\\begin\{longtable\}.*?\\end\{longtable\}", small, tex, flags=re.S)
+# the headings get the identifiers of GitHub (the anchors the links of the Markdown file use), with the
+# name of the output file in front, as two documents may have a heading with the same name; a link to a
+# heading left out of the book (--from-heading, --to-heading) keeps the text only
+prefix = os.path.splitext(os.path.basename(args.out))[0] + ":"
+tex = re.sub(r"\\(hypertarget|label)\{([^}]*)\}", lambda m: "\\" + m.group(1) + "{" + prefix + m.group(2) + "}", tex)
+labels = set(re.findall(r"\\label\{([^}]*)\}", tex))
+def internal_link(m):
+    target = prefix + m.group(1)
+    return "\\hyperref[" + target + "]{" + m.group(2) + "}" if target in labels else m.group(2)
+tex = re.sub(r"\\hyperref\[([^\]]*)\]\{((?:[^{}]|\{[^{}]*\})*)\}", internal_link, tex)
 # the links to the other Markdown files of doc/ have no target in the book: the text only
 tex = re.sub(r"\\href\{[^}]*\.md[^}]*\}\{((?:[^{}]|\{[^{}]*\})*)\}", r"\1", tex)
 open(args.out, "w", encoding="utf-8").write(tex)
