@@ -59,7 +59,8 @@ if [ "${RMT_APPIMAGE_DEPS:-1}" = 1 ]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
     # the libraries of the Qt xcb plugin, which linuxdeploy puts in the AppImage
-    # (libxcb-cursor0: Qt 6.5+), and those the CMake files of Qt6Gui look for
+    # (libxcb-cursor0: Qt 6.5+; libsm6 and the last ones come by themselves on
+    # Ubuntu 20.04, not on 24.04), and those the CMake files of Qt6Gui look for
     apt-get install -y --no-install-recommends \
         $COMPILER_PACKAGES $CMAKE_PACKAGES ninja-build pkg-config git ca-certificates wget file \
         python3-pip python3-dev $PYTHON_PACKAGES imagemagick \
@@ -67,7 +68,8 @@ if [ "${RMT_APPIMAGE_DEPS:-1}" = 1 ]; then
         libgl1-mesa-dev libegl1 libfontconfig1 libfreetype6 libdbus-1-3 \
         libxkbcommon-dev libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
         libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0 \
-        libxcb-shape0 libxcb-xkb1 libxcb-util1 libxcb-cursor0
+        libxcb-shape0 libxcb-xkb1 libxcb-util1 libxcb-cursor0 \
+        libsm6 libice6 libx11-xcb1 libxcb-glx0 libxcb-shm0 libxcb-sync1 libxcb-render0
     if [ -z "$CMAKE_PACKAGES" ]; then
         python3 -m pip install --upgrade pip
         python3 -m pip install cmake
