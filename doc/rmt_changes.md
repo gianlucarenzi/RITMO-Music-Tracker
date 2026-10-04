@@ -18,6 +18,13 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.5: after an export (SAP, XEX, WAV... from the menu or a script) the song timer started again: since 2.0 it stayed
+  stopped, so RITMO played nothing until it was restarted (`CSongTimer::RestartTimer()` at the end of `CExportSection`). The
+  WAV export starts from a reset POKEY emulation, so its sound does not depend on what played before.
+- 2.5: correct where `char` has no sign (ARM, RISC-V, PowerPC): the note keys (0xFF, no note, was read as 255, so every
+  key was a note) and the steps of undo made of several events (`separator` -1). `scripts/test-endian.sh` compares the
+  engine of two builds song by song (POKEY registers, sound, screen): a build with `-funsigned-char` gives the same results
+  on all the songs of rmt/songs.
 - 2.5: the size of the audio buffer (the pieces PortAudio takes at each callback) is an option of the configuration,
   `AUDIO_BUFFER_MS` in ritmo.ini: 5 to 40 ms in the dialog, 20 ms by default on Linux (PipeWire and PulseAudio work in
   quanta of about 21 ms and crackled with the 5 ms callbacks through ALSA), 5 ms on Windows and macOS. `RMT_AUDIO_BUFFER_MS`

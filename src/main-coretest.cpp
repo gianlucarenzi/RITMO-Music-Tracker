@@ -119,6 +119,10 @@ static int PlaySong(const char* song, int frames, const char* regsOut, const cha
     }
     g_Pokey.InitSound(g_Song.IsNTSC(), g_Song.IsStereo());
     g_Song.Play(PLAY_SONG, FALSE, 0);
+    // the frames are played by the loop below, one TimerRoutine() each: the
+    // timer of the song must not run it too (two threads in the engine, and a
+    // deadlock when both change the timer)
+    g_Song.StopTimer();
 
     FILE* regs = std::fopen(regsOut, "w");
     if (!regs) {
