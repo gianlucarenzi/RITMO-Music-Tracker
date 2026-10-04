@@ -18,6 +18,12 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.4: only what changes on the screen is drawn. `CRmtView::DrawAll()` still describes the whole screen every frame, but
+  `CDC::BeginFrame()`/`EndFrame()` record the drawing calls and keep a hash per 32x16 tile of the calls that draw into it: a
+  tile with the hash of the previous frame is left as it is, and the Qt frontend repaints (and sends to the display) only the
+  changed tiles. When the song is stopped, silent and without input for a second, the screen is drawn 10 times a second
+  instead of 60. On a Celeron N3060 the program takes 32 % of a core instead of 45 % while playing (plus much less work for
+  the X server), 14 % instead of 45 % when stopped.
 - The window adapts to the screen: it opens at 1366x768 (the screen of a small laptop, where the whole stereo song screen fits), reduced to
   the screen when that is smaller (a mono song is shown whole with the POKEY registers; a stereo one needs a window of about 1720 pixels
   for the registers); the first start chooses the interface size (100, 200 or 300 %) from the size of the screen; the size and the

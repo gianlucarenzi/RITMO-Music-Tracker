@@ -2,15 +2,15 @@
 
 # Downloads the AppImage of a release of RITMO
 # Usage: ./download-appimage.sh <version> [directory]
-# E.g.:  ./download-appimage.sh 2.3
-# E.g.:  ./download-appimage.sh 2.3 ~/Downloads
+# E.g.:  ./download-appimage.sh 2.4
+# E.g.:  ./download-appimage.sh 2.4 ~/Downloads
 #
 # Needs the GitHub CLI (gh). The file is saved as Ritmo-Linux-x86_64-<version>.AppImage
 # (RMT-Linux-x86_64-<version>.AppImage for the releases up to 2.2.1, which were called RMT).
 
 set -e
 
-VERSION="${1:?Error: give the version (e.g. 2.3)}"
+VERSION="${1:?Error: give the version (e.g. 2.4)}"
 OUTPUT_DIR="${2:-.}"
 REPO="gianlucarenzi/RITMO-Music-Tracker"
 
