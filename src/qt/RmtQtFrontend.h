@@ -21,6 +21,7 @@ public:
     RmtViewWidget(RmtQtBridge* bridge, QWidget* parent);
 
 protected:
+    bool event(QEvent* e) override;
     void paintEvent(QPaintEvent* e) override;
     void keyPressEvent(QKeyEvent* e) override;
     void keyReleaseEvent(QKeyEvent* e) override;

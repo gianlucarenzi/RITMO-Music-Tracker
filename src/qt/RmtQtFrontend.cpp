@@ -34,6 +34,7 @@
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPaintEvent>
 #include <QPixmap>
 #include <QStatusBar>
 #include <QToolBar>
@@ -45,6 +46,9 @@
 #include <QUrl>
 #include <QWheelEvent>
 
+#include <algorithm>
+#include <chrono>
+#include <cstring>
 #include <map>
 #include <set>
 #include <vector>
@@ -244,30 +248,138 @@ public:
         }
     }
 
-    void Paint(QPainter& painter)
+    // CRmtView::OnDraw() without its final StretchBlt: the screen into the
+    // view's own bitmap (m_mem_dc), which holds the g_width x g_height screen,
+    // when the tracker has flagged it. Returns the part of the widget that
+    // changed since the last screen it shows.
+    QRegion Draw()
     {
         EnsureWindowDC();
-        // CRmtView::OnDraw() without its final StretchBlt: the widget shows the
-        // view's own bitmap (m_mem_dc), which holds the g_width x g_height
-        // screen, and QPainter scales it (nearest neighbour, no smoothing).
-        // Only redraw when the tracker has flagged it; expose events re-show
-        // the last frame.
-        if (m_started && g_screenupdate) {
-            if (g_view.debugDisplay) m_view.GetFPS();
-            m_view.Resize();
-            g_Song.RespectBoundaries();
-            m_view.DrawAll();
+        if (!m_started || !g_screenupdate) {
+            NO_SCREENUPDATE;
+            return {};
         }
+        if (g_view.debugDisplay) m_view.GetFPS();
+        m_view.Resize();
+        g_Song.RespectBoundaries();
+        m_view.DrawAll();
         NO_SCREENUPDATE;
+        return ChangedRegion();
+    }
+
+    // The screen the widget shows (g_width x g_height), to repaint only what a redraw changes: the timer redraws
+    // the whole screen 60 times a second, and sending the whole window to the display each time costs more
+    // than drawing it (most of all in the X server, on a slow machine)
+    std::vector<uint32_t> m_shown;
+    int m_shownWidth = 0, m_shownHeight = 0;
+
+    QRegion ChangedRegion()
+    {
+        const CBitmap& bmp = m_view.m_mem_bitmap;
+        if (!bmp.Bits()) return {};
+        const int w = std::min(g_width, bmp.Width()), h = std::min(g_height, bmp.Height());
+        const int stride = bmp.Width();
+        if (w != m_shownWidth || h != m_shownHeight) {
+            m_shownWidth = w;
+            m_shownHeight = h;
+            m_shown.resize((size_t)w * h);
+            for (int y = 0; y < h; y++)
+                std::memcpy(m_shown.data() + (size_t)y * w, bmp.Bits() + (size_t)y * stride, (size_t)w * 4);
+            return QRegion(m_widget->rect());
+        }
+        // the rows that changed one after another make one rectangle, from the leftmost to the rightmost change
+        QRegion region;
+        int top = -1, left = w, right = 0;
+        for (int y = 0; y <= h; y++) {
+            const uint32_t* row = y < h ? bmp.Bits() + (size_t)y * stride : nullptr;
+            uint32_t* shown = y < h ? m_shown.data() + (size_t)y * w : nullptr;
+            if (row && std::memcmp(row, shown, (size_t)w * 4)) {
+                int l = (int)(std::mismatch(row, row + w, shown).first - row);
+                int r = w;
+                while (row[r - 1] == shown[r - 1]) r--;
+                std::memcpy(shown + l, row + l, (size_t)(r - l) * 4);
+                if (top < 0) top = y;
+                left = std::min(left, l);
+                right = std::max(right, r);
+            } else if (top >= 0) {
+                region += ToWidget(QRect(left, top, right - left, y - top));
+                top = -1;
+                left = w;
+                right = 0;
+            }
+        }
+        return region;
+    }
+
+    // A rectangle of the screen in the widget, which shows it scaled (g_scaling_percentage)
+    QRect ToWidget(const QRect& r) const
+    {
+        if (g_width == m_view.m_width && g_height == m_view.m_height) return r;
+        const int x0 = r.left() * m_view.m_width / g_width, y0 = r.top() * m_view.m_height / g_height;
+        const int x1 = ((r.right() + 1) * m_view.m_width + g_width - 1) / g_width;
+        const int y1 = ((r.bottom() + 1) * m_view.m_height + g_height - 1) / g_height;
+        return QRect(x0, y0, x1 - x0, y1 - y0).adjusted(-1, -1, 1, 1); // the rounding of the nearest neighbour
+    }
+
+    // Stopped, silent and with no input for a second: the screen is drawn 10 times a second instead of 60 (a
+    // slow machine spends most of a core on the redraws, which change nothing then)
+    std::chrono::steady_clock::time_point m_lastInput;
+    unsigned m_idleTicks = 0;
+
+    void NoteInput() { m_lastInput = std::chrono::steady_clock::now(); }
+
+    bool Idle() const
+    {
+        if (!m_started || g_Song.GetPlayMode() != PLAY_STOP) return false;
+        if (std::chrono::steady_clock::now() - m_lastInput < std::chrono::seconds(1)) return false;
+        // a note still sounding (a key, MIDI): the volume of AUDC1-4 of both POKEYs, as the analyzer shows them
+        const byte* memory = g_AtariTrackerDriver->GetAtari()->GetConstMemoryAt(0);
+        for (int reg : { 0xd201, 0xd203, 0xd205, 0xd207, 0xd211, 0xd213, 0xd215, 0xd217 })
+            if (memory[reg] & 0x0f) return false;
+        return true;
+    }
+
+    // Invalidate() of the view: RefreshScreen() flags the redraw (SCREENUPDATE) after calling it, so the screen
+    // is drawn when the events are processed, and only the parts that changed are repainted
+    bool m_drawPending = false;
+
+    void ScheduleDraw()
+    {
+        if (Idle()) {
+            if (m_idleTicks++ % 6) return; // g_screenupdate stays set: the next draw shows it all
+        } else
+            m_idleTicks = 0;
+        if (m_drawPending) return;
+        m_drawPending = true;
+        QTimer::singleShot(0, m_widget, [this] {
+            m_drawPending = false;
+            EnsureWindowDC();
+            if (!m_started || !g_screenupdate) {
+                m_widget->update(); // nothing new to draw: show the last screen again
+                return;
+            }
+            const QRegion changed = Draw();
+            if (!changed.isEmpty()) m_widget->update(changed);
+        });
+    }
+
+    void Paint(QPainter& painter, const QRect& rect)
+    {
+        // a redraw still flagged (a resize, the first screen) is done now; what it changes outside this paint
+        // event is repainted by another one
+        const QRegion changed = Draw() - rect;
+        if (!changed.isEmpty()) m_widget->update(changed);
+        // the widget shows the view's bitmap, scaled by QPainter (nearest neighbour, no smoothing)
         const CBitmap& bmp = m_view.m_mem_bitmap;
         if (!bmp.Bits()) {
-            painter.fillRect(m_widget->rect(), Qt::black);
+            painter.fillRect(rect, Qt::black);
             return;
         }
         QImage image((const uchar*)bmp.Bits(), bmp.Width(), bmp.Height(), bmp.Width() * 4, QImage::Format_RGB32);
-        if (g_width == m_view.m_width && g_height == m_view.m_height)
-            painter.drawImage(0, 0, image);
-        else
+        if (g_width == m_view.m_width && g_height == m_view.m_height) {
+            const QRect part = rect & image.rect();
+            painter.drawImage(part.topLeft(), image, part);
+        } else
             painter.drawImage(QRect(0, 0, m_view.m_width, m_view.m_height), image, QRect(0, 0, g_width, g_height));
     }
 
@@ -328,6 +440,7 @@ public:
     // WM_COMMAND: the view, then the frame (the command routing of the Windows-style classes)
     void Dispatch(UINT id)
     {
+        NoteInput();
         if (id == ID_FILE_PRINT || id == ID_FILE_PRINT_PREVIEW || id == ID_FILE_PRINT_SETUP) { // (the view maps them to MFC's printing)
             FilePrint(id);
             return;
@@ -692,7 +805,7 @@ public:
         *r = RECT{ 0, 0, w->width(), w->height() };
     }
 
-    void Invalidate(CWnd*) override { m_widget->update(); }
+    void Invalidate(CWnd*) override { ScheduleDraw(); }
 
     CDC* GetDC(CWnd*) override
     {
@@ -932,10 +1045,28 @@ RmtViewWidget::RmtViewWidget(RmtQtBridge* bridge, QWidget* parent) : QWidget(par
     setMinimumSize(640, 400);
 }
 
-void RmtViewWidget::paintEvent(QPaintEvent*)
+bool RmtViewWidget::event(QEvent* e)
+{
+    switch (e->type()) {
+    case QEvent::KeyPress:
+    case QEvent::KeyRelease:
+    case QEvent::MouseButtonPress:
+    case QEvent::MouseButtonRelease:
+    case QEvent::MouseButtonDblClick:
+    case QEvent::MouseMove:
+    case QEvent::Wheel:
+        m_bridge->NoteInput(); // the screen at full rate (RmtQtBridge::Idle)
+        break;
+    default:
+        break;
+    }
+    return QWidget::event(e);
+}
+
+void RmtViewWidget::paintEvent(QPaintEvent* e)
 {
     QPainter painter(this);
-    m_bridge->Paint(painter);
+    m_bridge->Paint(painter, e->rect());
 }
 
 // nFlags of WM_KEYDOWN / WM_KEYUP: scan code, bit 14 = key was already down
