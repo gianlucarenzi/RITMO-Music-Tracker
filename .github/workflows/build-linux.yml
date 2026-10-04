@@ -6,8 +6,8 @@ name: Build RITMO on Linux
 #   (scripts/build-appimage.sh checks it). The runner ubuntu-20.04 is gone,
 #   the container gives the same system.
 # - aarch64 (Raspberry Pi 3/4/5 with a 64 bit system), on the ARM64 runner of
-#   GitHub in an Ubuntu 22.04 container: the official Qt 6 for ARM64 needs
-#   glibc 2.35, so it runs on Raspberry Pi OS 12 (bookworm) and newer.
+#   GitHub in an Ubuntu 24.04 container: the official Qt 6 for ARM64 needs
+#   glibc 2.38, so it runs on Raspberry Pi OS 13 (trixie) and newer.
 # The official Qt 6, PortAudio and RtMidi go into the AppImage with
 # linuxdeploy. A tag v* builds them and publishes them as release assets;
 # started by hand it only keeps them as artifacts.
@@ -32,7 +32,7 @@ jobs:
             container: ubuntu:20.04
           - arch: aarch64
             runner: ubuntu-24.04-arm
-            container: ubuntu:22.04
+            container: ubuntu:24.04
     runs-on: ${{ matrix.runner }}
     container: ${{ matrix.container }}
 
