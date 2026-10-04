@@ -110,9 +110,17 @@ different from the Windows version you know?
 | macOS 12 or later, Intel | [`Ritmo-macOS-x86_64.dmg`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.4/Ritmo-macOS-x86_64.dmg) | as above (also runs on Apple Silicon through Rosetta 2) |
 | Manual | [`Ritmo-User-Manual.pdf`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.4/Ritmo-User-Manual.pdf) | the user manual (it is also [in the repository](doc/manual/ritmo-manual.pdf)) |
 
+From 2.5 the [releases](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases) also have two more Linux packages:
+
+| System | Package | How to start it |
+|--------|---------|-----------------|
+| Linux aarch64: Raspberry Pi 3/4/5 with a 64 bit system (Raspberry Pi OS 13 trixie, Debian 13, Ubuntu 24.04 and newer) | `Ritmo-Linux-aarch64.AppImage` | as the x86_64 AppImage |
+| Linux riscv64 (Debian 13 and newer) | `Ritmo-Linux-riscv64.tar.gz` | unpack it, install the packages its `README.txt` lists (`sudo apt install ...`), run `./ritmo` |
+
 The packages up to 2.2.1 were called `RMT-*` (the program `Rmt.exe`, `rmt`); from 2.3 they are `Ritmo-*` with the program `ritmo` / `Ritmo.exe`.
 
-Everything the program needs is inside each package. The configuration is
+Everything the program needs is inside each package (the riscv64 archive
+uses the Qt, PortAudio and RtMidi of the system). The configuration is
 kept in `~/.config/ritmo-atari.org/ritmo.conf` on Linux, in the registry
 (`HKEY_CURRENT_USER\Software\ritmo-atari.org\ritmo`) on Windows and in
 `~/Library/Preferences/org.ritmo-atari.ritmo.plist` on macOS.
@@ -151,7 +159,8 @@ cmake --build build-qt -j
 ```
 
 [BUILD.md](BUILD.md) has all the details: the other platforms, the
-AppImage (`scripts/build-appimage.sh`), the GitHub workflows that build the
+AppImage (`scripts/build-appimage.sh`, x86_64 and aarch64), the archive of the
+other Linux architectures (`scripts/build-tarball.sh`), the GitHub workflows that build the
 packages, the test hooks, and the state of every part of the Qt frontend.
 RITMO builds with Qt only: the MFC (Windows-only) code of RMT was removed.
 
