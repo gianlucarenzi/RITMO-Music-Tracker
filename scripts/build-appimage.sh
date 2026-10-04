@@ -1,28 +1,47 @@
 #!/usr/bin/env bash
 # scripts/build-appimage.sh - build RITMO (Qt6 frontend) as an AppImage
 #
-# Meant for Ubuntu 20.04 (glibc 2.31, the one of Debian 11), so that the
-# AppImage also runs on those systems and on every newer one. Used by
-# .github/workflows/build-linux.yml in an ubuntu:20.04 container; locally:
+# For the architecture of the machine it runs on (uname -m):
+# - x86_64: meant for Ubuntu 20.04 (glibc 2.31, the one of Debian 11), so that
+#   the AppImage also runs on those systems and on every newer one;
+# - aarch64 (Raspberry Pi 3/4/5 with a 64 bit system, ARM computers): meant
+#   for Ubuntu 22.04, as the official Qt 6 for ARM64 needs glibc 2.35; the
+#   AppImage runs on Raspberry Pi OS 12 (bookworm), Debian 12, Ubuntu 22.04
+#   and newer.
+# Used by .github/workflows/build-linux.yml in those containers; locally:
 #
 #   docker run --rm -v "$PWD":/src -w /src ubuntu:20.04 scripts/build-appimage.sh
 #
-# Ubuntu 20.04 has no Qt6: the official Qt 6 (built on RHEL 8, glibc 2.28) is
-# installed with aqtinstall and goes into the AppImage.
+# Those Ubuntu versions have no Qt 6.8: the official Qt 6 is installed with
+# aqtinstall and goes into the AppImage.
 # GCC 10, PortAudio and RtMidi come from Ubuntu. linuxdeploy with its Qt
 # plugin makes the AppImage; the ELF files in it may need no glibc newer
 # than MAX_GLIBC.
 #
 # Environment: RMT_APPIMAGE_DEPS=0 skips installing the dependencies (they
 # are there already), WORK is the build folder (default build-appimage/).
-# Output: $WORK/Ritmo-Linux-x86_64.AppImage and $WORK/ritmo-linux.png, the
+# Output: $WORK/Ritmo-Linux-<arch>.AppImage and $WORK/ritmo-linux.png, the
 # offscreen screenshot of the smoke test run of the AppImage itself.
 
 set -euo pipefail
 
 QT_VERSION=6.8.3
-QT_DIR=/opt/qt/$QT_VERSION/gcc_64          # (aqt names the arch linux_gcc_64)
-MAX_GLIBC=2.31
+ARCH=$(uname -m)
+case $ARCH in
+    x86_64)
+        QT_HOST=linux QT_ARCH=linux_gcc_64 QT_SUBDIR=gcc_64
+        MAX_GLIBC=2.31
+        # the Python of aqtinstall: the 3.8 of Ubuntu 20.04 is too old (see below)
+        PYTHON=python3.9 PYTHON_PACKAGES="python3.9 python3.9-venv python3.9-dev" ;;
+    aarch64)
+        QT_HOST=linux_arm64 QT_ARCH=linux_gcc_arm64 QT_SUBDIR=gcc_arm64
+        MAX_GLIBC=2.35                     # the official Qt 6.8 for ARM64 is built on Ubuntu 22.04
+        PYTHON=python3 PYTHON_PACKAGES="python3-venv" ;;
+    *)
+        echo "No AppImage for $ARCH (x86_64 and aarch64 only)" >&2
+        exit 2 ;;
+esac
+QT_DIR=/opt/qt/$QT_VERSION/$QT_SUBDIR
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 WORK=${WORK:-$ROOT/build-appimage}
@@ -37,23 +56,24 @@ if [ "${RMT_APPIMAGE_DEPS:-1}" = 1 ]; then
     # (libxcb-cursor0: Qt 6.5+), and those the CMake files of Qt6Gui look for
     apt-get install -y --no-install-recommends \
         gcc-10 g++-10 ninja-build pkg-config git ca-certificates wget file \
-        python3-pip python3-dev python3.9 python3.9-venv python3.9-dev imagemagick \
+        python3-pip python3-dev $PYTHON_PACKAGES imagemagick \
         portaudio19-dev librtmidi-dev libcups2 \
         libgl1-mesa-dev libegl1 libfontconfig1 libfreetype6 libdbus-1-3 \
         libxkbcommon-dev libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
         libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0 \
         libxcb-shape0 libxcb-xkb1 libxcb-util1 libxcb-cursor0
-    # CMake of Ubuntu 20.04 is 3.16, RMT needs 3.25
+    # CMake of Ubuntu 20.04 is 3.16 (22.04: 3.22), RMT needs 3.25
     python3 -m pip install --upgrade pip
     python3 -m pip install cmake
-    # aqtinstall in a Python 3.9 venv: the last one for the Python 3.8 of
-    # Ubuntu 20.04 (3.1.18) does not know the layout of the Qt 6.8 archives
-    # (some of its modules are compiled: with gcc-10, the only compiler)
-    python3.9 -m venv /opt/aqt-venv
+    # aqtinstall in a venv: the last one for the Python 3.8 of Ubuntu 20.04
+    # (3.1.18) does not know the layout of the Qt 6.8 archives, so there it
+    # is Python 3.9 (some of its modules are compiled: with gcc-10, the only
+    # compiler)
+    $PYTHON -m venv /opt/aqt-venv
     /opt/aqt-venv/bin/python -m pip install --upgrade pip
     CC=gcc-10 /opt/aqt-venv/bin/python -m pip install aqtinstall
     # (from /tmp: aqt writes aqtinstall.log in the current folder)
-    [ -d "$QT_DIR" ] || (cd /tmp && /opt/aqt-venv/bin/python -m aqt install-qt linux desktop $QT_VERSION linux_gcc_64 -O /opt/qt)
+    [ -d "$QT_DIR" ] || (cd /tmp && /opt/aqt-venv/bin/python -m aqt install-qt $QT_HOST desktop $QT_VERSION $QT_ARCH -O /opt/qt)
 fi
 
 # --- build -------------------------------------------------------------------
@@ -88,17 +108,17 @@ cp src/res/ritmo-icon.png "$WORK/ritmo.png"
 # --- AppImage ----------------------------------------------------------------
 
 cd "$WORK"
-for tool in linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage; do
-    [ -f $tool ] || wget -q https://github.com/linuxdeploy/${tool%%-x86_64.AppImage}/releases/download/continuous/$tool
+for tool in linuxdeploy-$ARCH.AppImage linuxdeploy-plugin-qt-$ARCH.AppImage; do
+    [ -f $tool ] || wget -q https://github.com/linuxdeploy/${tool%-$ARCH.AppImage}/releases/download/continuous/$tool
     chmod +x $tool
 done
 export APPIMAGE_EXTRACT_AND_RUN=1           # no FUSE in containers
 export QMAKE=$QT_DIR/bin/qmake
 export LD_LIBRARY_PATH=$QT_DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 export EXTRA_PLATFORM_PLUGINS=libqoffscreen.so  # for the smoke test below
-export OUTPUT=Ritmo-Linux-x86_64.AppImage
+export OUTPUT=Ritmo-Linux-$ARCH.AppImage
 rm -f $OUTPUT
-./linuxdeploy-x86_64.AppImage --appdir "$APPDIR" \
+./linuxdeploy-$ARCH.AppImage --appdir "$APPDIR" \
     --executable "$APPDIR/usr/bin/ritmo" --desktop-file ritmo.desktop --icon-file ritmo.png \
     --plugin qt --output appimage
 
