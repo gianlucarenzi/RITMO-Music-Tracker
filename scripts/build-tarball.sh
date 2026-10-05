@@ -35,7 +35,7 @@ if [ "${RMT_TARBALL_DEPS:-1}" = 1 ]; then
     # qt6-qpa-plugins: the offscreen platform of the smoke test; qt6-wayland: the
     # Wayland platform plugin, carried in the archive
     apt-get install -y --no-install-recommends \
-        g++ cmake ninja-build pkg-config git ca-certificates file \
+        g++ cmake ninja-build pkg-config git ca-certificates file dpkg-dev \
         qt6-base-dev qt6-qpa-plugins qt6-wayland portaudio19-dev librtmidi-dev
 fi
 

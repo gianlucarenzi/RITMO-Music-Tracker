@@ -117,6 +117,7 @@ From 2.5 the [releases](https://github.com/gianlucarenzi/RITMO-Music-Tracker/rel
 | Linux aarch64: Raspberry Pi 3/4/5 with a 64 bit system (Raspberry Pi OS 13 trixie, Debian 13, Ubuntu 24.04 and newer) | `Ritmo-Linux-aarch64.AppImage` | as the x86_64 AppImage |
 | Linux riscv64 (Debian 13 and newer) | `Ritmo-Linux-riscv64.tar.gz` | unpack it, install the packages its `README.txt` lists (`sudo apt install ...`: only the graphics and sound libraries), run `./ritmo` |
 | Linux ppc64, PowerPC 64 bit big endian (Debian ports, sid) | `Ritmo-Linux-ppc64.tar.gz` | as the riscv64 one |
+| Linux riscv64 and ppc64, Debian | `ritmo_<version>_riscv64.deb`, `ritmo_<version>_ppc64.deb` | `sudo apt install ./ritmo_<version>_<arch>.deb` (apt installs Qt 6, PortAudio and RtMidi too), then `ritmo` |
 
 The packages up to 2.2.1 were called `RMT-*` (the program `Rmt.exe`, `rmt`); from 2.3 they are `Ritmo-*` with the program `ritmo` / `Ritmo.exe`.
 

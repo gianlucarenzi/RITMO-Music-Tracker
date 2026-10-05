@@ -5,7 +5,8 @@ name: Build RITMO on Linux (other architectures)
 # emulated by QEMU (much slower than a real machine: the timeout is long),
 # with the Qt 6, PortAudio and RtMidi of Debian (scripts/build-tarball.sh);
 # ppc64 (big endian) is on debian-ports, which has only the unstable release (sid).
-# The result is a .tar.gz with a README listing the packages to install.
+# The result is a .tar.gz with the libraries it needs and a .deb that depends on
+# those of Debian (scripts/build-deb.sh).
 # A tag v* builds them and publishes them as release assets; started by hand
 # it only keeps them as artifacts.
 
@@ -73,7 +74,7 @@ jobs:
       - name: Build the archive
         run: |
           docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/src -w /src ${{ matrix.image }} \
-            scripts/build-tarball.sh
+            sh -c 'scripts/build-tarball.sh && scripts/build-deb.sh'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -81,11 +82,14 @@ jobs:
           name: Ritmo-Linux-${{ matrix.arch }}
           path: |
             build-tarball/Ritmo-Linux-${{ matrix.arch }}.tar.gz
+            build-tarball/ritmo_*.deb
             build-tarball/ritmo-linux.png
 
       - name: Create release and upload asset
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
-          files: build-tarball/Ritmo-Linux-${{ matrix.arch }}.tar.gz
+          files: |
+            build-tarball/Ritmo-Linux-${{ matrix.arch }}.tar.gz
+            build-tarball/ritmo_*.deb
           prerelease: ${{ contains(github.ref_name, '-rc') }}   # v2.0-rcN of scripts/push.sh
