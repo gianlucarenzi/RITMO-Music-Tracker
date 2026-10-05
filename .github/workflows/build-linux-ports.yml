@@ -41,6 +41,7 @@ jobs:
           fetch-depth: 0       # the version comes from the nearest git tag
 
       - name: Set up QEMU
+        if: ${{ !matrix.ports }}
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.platform }}
@@ -51,7 +52,9 @@ jobs:
         if: matrix.ports
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends debootstrap
+          # qemu-user-static of Ubuntu, not setup-qemu-action: the binfmt image of
+          # that one has no big endian ppc64
+          sudo apt-get install -y --no-install-recommends debootstrap qemu-user-static
           # the keyring of Ubuntu is older than the key that signs sid today
           KEYRING=debian-ports-archive-keyring_2026.02.04_all.deb
           curl -fsSLO https://deb.debian.org/debian/pool/main/d/debian-ports-archive-keyring/$KEYRING
