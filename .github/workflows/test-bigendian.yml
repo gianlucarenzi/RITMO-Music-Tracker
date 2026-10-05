@@ -1,0 +1,50 @@
+name: Test RITMO on PowerPC (big endian)
+
+# The engine (RmtCoreTest, no Qt) cross-compiled for ppc64 big endian and run by
+# QEMU user mode, then compared with the same engine built natively
+# (scripts/test-endian.sh): every song must give the same POKEY registers, the
+# same sound and the same screen. Debian has no big endian ppc64 Qt 6, so the
+# frontend is not built here. PowerPC 32 bit is not tested.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0              # the version comes from the nearest git tag
+
+      - name: Install the dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake ninja-build g++ \
+            g++-powerpc64-linux-gnu qemu-user
+
+      - name: Build the engine (native, x86_64)
+        run: |
+          cmake -S . -B build-core-native -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DRMT_BUILD_CORE_ONLY=ON -DRMT_CORE_TEST=ON
+          cmake --build build-core-native
+
+      - name: Build the engine (ppc64 big endian)
+        run: |
+          cmake -S . -B build-ppc64 -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DRMT_BUILD_CORE_ONLY=ON -DRMT_CORE_TEST=ON \
+            -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=ppc64 \
+            -DCMAKE_C_COMPILER=powerpc64-linux-gnu-gcc \
+            -DCMAKE_CXX_COMPILER=powerpc64-linux-gnu-g++
+          cmake --build build-ppc64
+          file build-ppc64/out/RmtCoreTest
+
+      - name: Same results as on x86_64
+        run: |
+          scripts/test-endian.sh build-core-native/out/RmtCoreTest \
+            "qemu-ppc64 -L /usr/powerpc64-linux-gnu build-ppc64/out/RmtCoreTest"

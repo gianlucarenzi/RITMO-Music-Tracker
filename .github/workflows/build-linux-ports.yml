@@ -3,7 +3,8 @@ name: Build RITMO on Linux (other architectures)
 # The Qt6 frontend for the Linux architectures that GitHub has no runner for
 # and that have no AppImage: built in a Debian container of the architecture,
 # emulated by QEMU (much slower than a real machine: the timeout is long),
-# with the Qt 6, PortAudio and RtMidi of Debian (scripts/build-tarball.sh).
+# with the Qt 6, PortAudio and RtMidi of Debian (scripts/build-tarball.sh);
+# ppc64 (big endian) is on debian-ports, which has only the unstable release (sid).
 # The result is a .tar.gz with a README listing the packages to install.
 # A tag v* builds them and publishes them as release assets; started by hand
 # it only keeps them as artifacts.
@@ -26,6 +27,10 @@ jobs:
           - arch: riscv64
             platform: linux/riscv64
             image: debian:trixie
+          - arch: ppc64               # PowerPC big endian: only in debian-ports (sid)
+            platform: linux/ppc64
+            image: ritmo-debian-ports-ppc64
+            ports: true
     runs-on: ubuntu-latest
     timeout-minutes: 300
 
@@ -39,6 +44,19 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           platforms: ${{ matrix.platform }}
+
+      # debian-ports has no Docker image of ppc64: the root file system is made
+      # with debootstrap (the second stage runs emulated) and imported
+      - name: Make the Debian ports image
+        if: matrix.ports
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends debootstrap debian-ports-archive-keyring
+          sudo debootstrap --arch=${{ matrix.arch }} --variant=minbase \
+            --keyring=/usr/share/keyrings/debian-ports-archive-keyring.gpg \
+            sid rootfs http://ftp.ports.debian.org/debian-ports
+          sudo tar -C rootfs -c . | docker import --platform ${{ matrix.platform }} - ${{ matrix.image }}
+          sudo rm -rf rootfs
 
       - name: Build the archive
         run: |
