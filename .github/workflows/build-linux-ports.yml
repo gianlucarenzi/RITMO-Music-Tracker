@@ -58,7 +58,12 @@ jobs:
           dpkg-deb -x $KEYRING keyring
           sudo debootstrap --arch=${{ matrix.arch }} --variant=minbase \
             --keyring=$PWD/keyring/usr/share/keyrings/debian-ports-archive-keyring.gpg \
-            sid rootfs http://ftp.ports.debian.org/debian-ports
+            sid rootfs http://ftp.ports.debian.org/debian-ports || {
+              sudo tail -n 30 rootfs/debootstrap/debootstrap.log
+              sudo chroot rootfs /bin/true || true
+              file rootfs/bin/true; cat /proc/sys/fs/binfmt_misc/qemu-ppc64 || true
+              exit 1
+            }
           sudo tar -C rootfs -c . | docker import --platform ${{ matrix.platform }} - ${{ matrix.image }}
           sudo rm -rf rootfs keyring
 
