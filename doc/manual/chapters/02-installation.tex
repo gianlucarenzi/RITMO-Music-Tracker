@@ -3,7 +3,9 @@
 \section{The packages}
 
 Everything the program needs is inside each package: the tracker drivers and the other files it
-loads at run time are in the \texttt{resources} folder next to the program.
+loads at run time are in the \texttt{resources} folder next to the program. (The \texttt{.deb} of
+the Linux architectures without an AppImage asks the package manager for the libraries instead of
+carrying them, section~\ref{sec:linux-arch}.)
 
 \begin{center}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{6.2cm}@{}}
@@ -17,6 +19,12 @@ Windows 64 bit & \texttt{Ritmo-Windows-x64-Setup.exe}, \texttt{Ritmo-Windows-x64
 macOS 12 or later, Apple Silicon or Intel & \texttt{Ritmo-macOS-arm64.dmg}, \texttt{Ritmo-macOS-x86\_64.dmg} &
   drag \texttt{Ritmo.app} to Applications; the first time open it with the right button and
   \menu{Open} (the program is not signed) \\
+Linux aarch64: Raspberry Pi 3/4/5 with a 64 bit system (Raspberry Pi OS 13, Debian 13, Ubuntu 24.04 and newer) &
+  \texttt{Ritmo-Linux-\allowbreak aarch64.AppImage} & as the x86\_64 one \\
+Linux riscv64 (Debian 13 and newer) & \texttt{ritmo\_}\emph{version}\texttt{\_riscv64.deb}, \texttt{Ritmo-Linux-\allowbreak riscv64.tar.gz} &
+  install the \texttt{.deb} with \texttt{apt}, or unpack the archive (section~\ref{sec:linux-arch}) \\
+Linux ppc64: PowerPC 64 bit big endian (Debian ports, \emph{sid}) & \texttt{ritmo\_}\emph{version}\texttt{\_ppc64.deb}, \texttt{Ritmo-Linux-\allowbreak ppc64.tar.gz} &
+  as riscv64 \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -28,6 +36,88 @@ The packages of the versions up to 2.2.1 were called \texttt{RMT-*} and the prog
 (\texttt{Rmt.exe}). From the next releases the packages are \texttt{Ritmo-*} and the program
 \texttt{ritmo} (\texttt{Ritmo.exe}).
 \end{note}
+
+\section{Linux, architecture by architecture}\label{sec:linux-arch}
+
+\texttt{uname -m} tells the architecture of the machine: \texttt{x86\_64}, \texttt{aarch64}, \texttt{riscv64} or \texttt{ppc64}.
+
+\subsection{x86\_64 and aarch64 (Raspberry Pi): the AppImage}
+
+An AppImage is one file with the program and everything it needs (Qt, PortAudio, RtMidi). It only needs the
+\texttt{libfuse2} library to start (on Debian 13 and Ubuntu 24.04 the package is called \texttt{libfuse2t64}):
+\begin{lstlisting}
+sudo apt install libfuse2                  # libfuse2t64 on Debian 13 and Ubuntu 24.04
+chmod +x Ritmo-Linux-x86_64.AppImage       # Raspberry Pi: Ritmo-Linux-aarch64.AppImage
+./Ritmo-Linux-x86_64.AppImage mysong.rmt
+\end{lstlisting}
+Without FUSE the file can still run, unpacking itself in a temporary folder:
+\begin{lstlisting}
+./Ritmo-Linux-x86_64.AppImage --appimage-extract-and-run mysong.rmt
+\end{lstlisting}
+The x86\_64 AppImage runs on Debian 11, Ubuntu 20.04 and newer. The aarch64 one needs glibc 2.38 or newer: Raspberry Pi OS 13
+(\emph{trixie}), Debian 13, Ubuntu 24.04 and newer, on a Raspberry Pi 3, 4 or 5 with a 64 bit system (\texttt{uname -m} must say
+\texttt{aarch64}: on a 32 bit system it says \texttt{armv7l} and there is no package).
+
+\subsection{riscv64 and ppc64: the .deb}
+
+For Debian and the systems derived from it, riscv64 needs Debian 13 or newer, and ppc64 (PowerPC 64 bit \emph{big endian}) the
+\emph{sid} release of Debian ports, the only one that has this architecture. The \texttt{.deb} contains the program and
+\texttt{apt} installs the libraries it needs (Qt~6, PortAudio, RtMidi...) by itself:
+\begin{lstlisting}
+sudo apt install ./ritmo_2.5_riscv64.deb   # ppc64: ./ritmo_2.5_ppc64.deb
+ritmo mysong.rmt                           # also in the menu of the desktop
+\end{lstlisting}
+The \texttt{./} before the name is needed: without it \texttt{apt} looks for a package of that name in the repositories.
+The program goes in \texttt{/usr/lib/ritmo}, with the link \texttt{/usr/bin/ritmo}. To remove it:
+\begin{lstlisting}
+sudo apt remove ritmo
+\end{lstlisting}
+
+\subsection{riscv64 and ppc64: the archive}
+
+For the other distributions, or where \texttt{apt} is not used, the \texttt{.tar.gz} carries Qt~6, PortAudio and RtMidi (folders
+\texttt{lib} and \texttt{plugins}); of the machine it only uses glibc and the graphics (OpenGL) and sound (ALSA) libraries of its
+drivers. The \texttt{README.txt} inside lists the Debian packages for these:
+\begin{lstlisting}
+tar xzf Ritmo-Linux-riscv64.tar.gz         # ppc64: Ritmo-Linux-ppc64.tar.gz
+cd Ritmo-Linux-riscv64
+cat README.txt                             # the packages the machine needs
+sudo apt install <the packages of README.txt>
+./ritmo mysong.rmt
+\end{lstlisting}
+\texttt{ritmo} is a script that sets where the libraries and the plug-ins are: it can be started from any folder, and the
+\texttt{resources} folder must stay next to it. Nothing is installed: to remove it, delete the folder. The glibc of the machine
+cannot be older than the one the archive was built with (Debian 13 for riscv64, \emph{sid} for ppc64).
+
+\begin{note}
+There are no packages for PowerPC 32 bit and for ppc64le (little endian PowerPC). The packages of riscv64 and ppc64 have been built
+and started (without a display) in an emulator, not on real machines; the engine of the ppc64 build gives the same results as the
+x86\_64 one on all the songs of the distribution. If you try them, please tell the result in the issues of the project.
+\end{note}
+
+\section{Windows and macOS in detail}\label{sec:win-mac}
+
+\subsection{Windows 64 bit: the installer}
+
+Run \texttt{Ritmo-Windows-x64-Setup.exe}. The program is not signed, so Windows (SmartScreen) may ask to confirm: choose
+\menu{More info} and then \menu{Run anyway}. The installer asks whether to install for all the users (it needs the
+administrator) or only for the current one, and offers a desktop icon and the association of the \texttt{.rmt} files with
+\RITMO{}, so that a double click on a song opens it. It adds an entry to the Start menu and to the list of the programs of Windows,
+from which it is removed. The settings are kept in the registry of the user, so a new installation does not lose them.
+
+\subsection{Windows 64 bit: the .zip}
+
+\texttt{Ritmo-Windows-x64.zip} has the same files without the installer: unzip it in any folder (also on a USB stick) and run
+\texttt{Ritmo.exe}; the \texttt{resources} folder and the DLLs of Qt must stay next to it. Nothing is installed and no file type is
+associated: to remove it, delete the folder (the settings stay in the registry, \texttt{HKEY\_CURRENT\_USER\textbackslash Software\textbackslash ritmo-atari.org}).
+
+\subsection{macOS 12 or later: the disk image}
+
+Open \texttt{Ritmo-macOS-arm64.dmg} (Apple Silicon) or \texttt{Ritmo-macOS-x86\_64.dmg} (Intel; it also runs on Apple Silicon
+through Rosetta~2) and drag \texttt{Ritmo.app} to the \texttt{Applications} folder shown in the window. The application is signed
+only ad hoc, not notarized: the first time, open it with the right button (or Control and click) and \menu{Open}, then confirm.
+After that it starts normally. It carries Qt and the libraries, nothing else needs to be installed. To remove it, move
+\texttt{Ritmo.app} to the bin; the settings are in \texttt{\textasciitilde/Library/Preferences/org.ritmo-atari.ritmo.plist}.
 
 \section{Starting the program}
 

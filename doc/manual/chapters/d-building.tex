@@ -20,6 +20,24 @@ Windows is built with MSYS2 (MinGW64: GCC, Qt~6, PortAudio, RtMidi) and macOS wi
 GitHub workflows of the repository (\texttt{.github/workflows}) build the packages of both, and the AppImage for Linux
 (\texttt{scripts/build-appimage.sh}), and are the best description of the steps.
 
+\section{Linux riscv64 and ppc64}
+
+There is no AppImage for these architectures (no official Qt~6, no \texttt{linuxdeploy}). The workflow
+\texttt{.github/workflows/build-linux-ports.yml} builds the program in a Debian container of the architecture emulated by QEMU:
+\texttt{debian:trixie} for riscv64, a \texttt{debootstrap} of Debian ports \emph{sid} for ppc64. Two scripts do the work, and can be
+started by hand in any Debian of the architecture:
+\begin{lstlisting}
+docker run --rm --platform linux/riscv64 -v "$PWD":/src -w /src debian:trixie \
+    sh -c 'scripts/build-tarball.sh && scripts/build-deb.sh'
+\end{lstlisting}
+\texttt{scripts/build-tarball.sh} makes the \texttt{.tar.gz} with the libraries (\texttt{lib}, \texttt{plugins}) and the launcher;
+\texttt{scripts/build-deb.sh} makes the \texttt{.deb}, whose dependencies come from \texttt{dpkg-shlibdeps}. Both run the program
+without a display as a test.
+
+The engine on PowerPC 64 big endian is tested on every push (\texttt{.github/workflows/test-bigendian.yml}):
+\texttt{RmtCoreTest} is built for x86\_64 and cross-compiled for ppc64, run by \texttt{qemu-ppc64}, and
+\texttt{scripts/test-endian.sh} compares the POKEY registers, the sound and the screen of every song of \texttt{rmt/songs}.
+
 \section{Core only and tests}
 
 \texttt{-DRMT\_BUILD\_CORE\_ONLY=ON} builds the engine and the audio and MIDI backends without Qt, and with \texttt{-DRMT\_CORE\_TEST=ON}
