@@ -149,8 +149,15 @@ static int PlaySong(const char* song, int frames, const char* regsOut, const cha
     }
     std::fclose(regs);
     if (wav) {
-        auto put32 = [&](uint32_t v) { std::fwrite(&v, 4, 1, wav); };
-        auto put16 = [&](uint16_t v) { std::fwrite(&v, 2, 1, wav); };
+        // a WAV file is little endian, whatever the byte order of the machine
+        auto put32 = [&](uint32_t v) {
+            uint8_t b[4] = { uint8_t(v), uint8_t(v >> 8), uint8_t(v >> 16), uint8_t(v >> 24) };
+            std::fwrite(b, 1, 4, wav);
+        };
+        auto put16 = [&](uint16_t v) {
+            uint8_t b[2] = { uint8_t(v), uint8_t(v >> 8) };
+            std::fwrite(b, 1, 2, wav);
+        };
         std::fwrite("RIFF", 1, 4, wav);
         put32(36 + (uint32_t)pcm.size());
         std::fwrite("WAVEfmt ", 1, 8, wav);
