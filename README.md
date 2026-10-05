@@ -110,20 +110,75 @@ different from the Windows version you know?
 | macOS 12 or later, Intel | [`Ritmo-macOS-x86_64.dmg`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.4/Ritmo-macOS-x86_64.dmg) | as above (also runs on Apple Silicon through Rosetta 2) |
 | Manual | [`Ritmo-User-Manual.pdf`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.4/Ritmo-User-Manual.pdf) | the user manual (it is also [in the repository](doc/manual/ritmo-manual.pdf)) |
 
-From 2.5 the [releases](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases) also have two more Linux packages:
+From 2.5 the [releases](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases) also have the packages for more Linux architectures:
 
 | System | Package | How to start it |
 |--------|---------|-----------------|
 | Linux aarch64: Raspberry Pi 3/4/5 with a 64 bit system (Raspberry Pi OS 13 trixie, Debian 13, Ubuntu 24.04 and newer) | `Ritmo-Linux-aarch64.AppImage` | as the x86_64 AppImage |
-| Linux riscv64 (Debian 13 and newer) | `Ritmo-Linux-riscv64.tar.gz` | unpack it, install the packages its `README.txt` lists (`sudo apt install ...`: only the graphics and sound libraries), run `./ritmo` |
-| Linux ppc64, PowerPC 64 bit big endian (Debian ports, sid) | `Ritmo-Linux-ppc64.tar.gz` | as the riscv64 one |
-| Linux riscv64 and ppc64, Debian | `ritmo_<version>_riscv64.deb`, `ritmo_<version>_ppc64.deb` | `sudo apt install ./ritmo_<version>_<arch>.deb` (apt installs Qt 6, PortAudio and RtMidi too), then `ritmo` |
+| Linux riscv64 (Debian 13 and newer) | `ritmo_<version>_riscv64.deb` or `Ritmo-Linux-riscv64.tar.gz` | see [below](#linux-riscv64-and-ppc64-powerpc-64-bit-big-endian) |
+| Linux ppc64: PowerPC 64 bit big endian (Debian ports, sid) | `ritmo_<version>_ppc64.deb` or `Ritmo-Linux-ppc64.tar.gz` | see [below](#linux-riscv64-and-ppc64-powerpc-64-bit-big-endian) |
+
+#### Starting RITMO on Linux, architecture by architecture
+
+**x86_64 and aarch64 (Raspberry Pi with a 64 bit system)**: an AppImage, with
+everything inside; it only needs `libfuse2` (`sudo apt install libfuse2`; on
+Debian 13 and Ubuntu 24.04 the package is `libfuse2t64`):
+
+```bash
+chmod +x Ritmo-Linux-x86_64.AppImage      # on a Raspberry Pi: Ritmo-Linux-aarch64.AppImage
+./Ritmo-Linux-x86_64.AppImage
+# without libfuse2:
+./Ritmo-Linux-x86_64.AppImage --appimage-extract-and-run
+```
+
+(`uname -m` tells the architecture: `x86_64`, `aarch64`, `riscv64`, `ppc64`.)
+
+#### Linux riscv64 and ppc64 (PowerPC 64 bit big endian)
+
+Two packages for each, to choose from. Both need Debian 13 or newer (riscv64)
+or Debian ports "sid" (ppc64): they are built with the glibc and the Qt 6 of
+those releases.
+
+1. **The `.deb`** (the simplest on Debian and its derivatives): `apt` installs
+   Qt 6, PortAudio, RtMidi and the other libraries it needs by itself.
+
+   ```bash
+   sudo apt install ./ritmo_<version>_riscv64.deb     # ppc64: ./ritmo_<version>_ppc64.deb
+   ritmo                                              # or ritmo song.rmt; also in the menu of the desktop
+   sudo apt remove ritmo                              # to remove it
+   ```
+
+   The `./` in front of the name is needed: without it `apt` looks for the
+   package in the repositories.
+
+2. **The `.tar.gz`**, for the other distributions and where `apt` is not
+   used: Qt 6, PortAudio and RtMidi are inside it (`lib/`, `plugins/`), the
+   machine only needs glibc and the graphics (OpenGL) and sound (ALSA)
+   libraries of its drivers. The `README.txt` in the archive lists the Debian
+   packages for these.
+
+   ```bash
+   tar xzf Ritmo-Linux-riscv64.tar.gz                 # ppc64: Ritmo-Linux-ppc64.tar.gz
+   cd Ritmo-Linux-riscv64
+   cat README.txt                                     # the packages the machine needs
+   sudo apt install <the packages of README.txt>
+   ./ritmo                                            # or ./ritmo song.rmt
+   ```
+
+   The `resources` folder must stay next to `ritmo`. Nothing is installed:
+   to remove it, delete the folder.
+
+There are no packages for PowerPC 32 bit and for ppc64le (little endian
+PowerPC). The packages for riscv64 and ppc64 have been built and started
+(offscreen) in an emulator, not on real machines: if you try them, please
+[tell how it went](https://github.com/gianlucarenzi/RITMO-Music-Tracker/issues).
 
 The packages up to 2.2.1 were called `RMT-*` (the program `Rmt.exe`, `rmt`); from 2.3 they are `Ritmo-*` with the program `ritmo` / `Ritmo.exe`.
 
-Everything the program needs is inside each package (the riscv64 and ppc64
-archives carry Qt, PortAudio and RtMidi, and use of the system only glibc and
-the graphics and sound libraries of the machine). The configuration is
+Everything the program needs is inside each package (the `.deb` of riscv64
+and ppc64 instead asks `apt` for the libraries; the `.tar.gz` of the same
+architectures carries Qt, PortAudio and RtMidi and uses of the system only
+glibc and the graphics and sound libraries of the machine). The configuration is
 kept in `~/.config/ritmo-atari.org/ritmo.conf` on Linux, in the registry
 (`HKEY_CURRENT_USER\Software\ritmo-atari.org\ritmo`) on Windows and in
 `~/Library/Preferences/org.ritmo-atari.ritmo.plist` on macOS.
@@ -163,7 +218,7 @@ cmake --build build-qt -j
 
 [BUILD.md](BUILD.md) has all the details: the other platforms, the
 AppImage (`scripts/build-appimage.sh`, x86_64 and aarch64), the archive of the
-other Linux architectures (`scripts/build-tarball.sh`), the GitHub workflows that build the
+other Linux architectures (`scripts/build-tarball.sh`, `scripts/build-deb.sh`), the GitHub workflows that build the
 packages, the test hooks, and the state of every part of the Qt frontend.
 RITMO builds with Qt only: the MFC (Windows-only) code of RMT was removed.
 

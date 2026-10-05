@@ -25,6 +25,11 @@ Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
   key was a note) and the steps of undo made of several events (`separator` -1). `scripts/test-endian.sh` compares the
   engine of two builds song by song (POKEY registers, sound, screen): a build with `-funsigned-char` gives the same results
   on all the songs of rmt/songs.
+- 2.5: packages for Linux riscv64 and ppc64 (PowerPC 64 bit big endian, Debian ports): a `.deb` (`scripts/build-deb.sh`, the
+  libraries as `Depends`) and a `.tar.gz` that carries Qt 6, PortAudio, RtMidi and the Qt plugins (`scripts/build-tarball.sh`),
+  built on GitHub in a Debian container emulated by QEMU (`.github/workflows/build-linux-ports.yml`). The ppc64 engine gives
+  the same results as the x86_64 one on all the songs (`.github/workflows/test-bigendian.yml`, `scripts/test-endian.sh`).
+  `RmtCoreTest --play` wrote the header of the WAV in the byte order of the machine: it is little endian now.
 - 2.5: the size of the audio buffer (the pieces PortAudio takes at each callback) is an option of the configuration,
   `AUDIO_BUFFER_MS` in ritmo.ini: 5 to 40 ms in the dialog, 20 ms by default on Linux (PipeWire and PulseAudio work in
   quanta of about 21 ms and crackled with the 5 ms callbacks through ALSA), 5 ms on Windows and macOS. `RMT_AUDIO_BUFFER_MS`

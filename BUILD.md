@@ -538,6 +538,70 @@ docker run --rm -v "$PWD":/src -w /src ubuntu:20.04 scripts/build-appimage.sh
 # build-appimage/Ritmo-Linux-x86_64.AppImage
 ```
 
+### Linux riscv64 and ppc64 (PowerPC 64 bit big endian)
+
+No AppImage here (there is no official Qt 6 and no linuxdeploy for these
+architectures): `.github/workflows/build-linux-ports.yml` builds the Qt6
+frontend in a Debian container of the architecture, emulated by QEMU (13 to 20
+minutes), with the Qt 6, PortAudio and RtMidi of Debian:
+
+| Architecture | Container | Emulation |
+|--------------|-----------|-----------|
+| riscv64 | `debian:trixie` | `docker/setup-qemu-action` |
+| ppc64 (big endian) | a root file system of **debian-ports** `sid` (the only release with ppc64), made by `debootstrap` with the keyring `debian-ports-archive-keyring` of the current Debian (the one of Ubuntu is too old for the key that signs sid) and imported with `docker import --platform linux/ppc64` | `qemu-user-static` of Ubuntu: the binfmt image of `setup-qemu-action` has no big endian ppc64 |
+
+In the container two scripts run, one after the other (they can be started by
+hand in any Debian of the architecture):
+
+```bash
+docker run --rm --platform linux/riscv64 -v "$PWD":/src -w /src debian:trixie \
+    sh -c 'scripts/build-tarball.sh && scripts/build-deb.sh'
+# build-tarball/Ritmo-Linux-riscv64.tar.gz  build-tarball/ritmo_<version>_riscv64.deb
+```
+
+- `scripts/build-tarball.sh` installs the dependencies, builds, and makes the
+  `.tar.gz`: the program `ritmo.bin`, the launcher `ritmo` (sets
+  `LD_LIBRARY_PATH` and `QT_PLUGIN_PATH`), `lib/` (every library found by
+  `ldd` on the program and on the Qt plugins, except glibc and the graphics
+  and sound libraries of the machine: `libGL*`, `libEGL*`, `libdrm*`,
+  `libasound*`...), `plugins/` (platforms X11, Wayland and offscreen, image
+  formats...), `resources/`. It fails if a library that is not of the system
+  stays outside. The `README.txt` lists the Debian packages left to the system.
+  Smoke test: the program of the archive draws `gemx.rmt` offscreen.
+- `scripts/build-deb.sh` makes the `.deb` with the same program: in
+  `/usr/lib/ritmo` (with `resources/`, found next to the executable), the link
+  `/usr/bin/ritmo`, the `.desktop` file and the icon. `Depends` come from
+  `dpkg-shlibdeps` (so they are those of the release of the build: it installs
+  there and on the newer ones) plus `qt6-qpa-plugins` (the platform plugin is
+  loaded at run time, not linked). The test installs the `.deb` with `apt` and
+  starts the installed `ritmo` offscreen.
+
+A tag `v*` publishes the `.tar.gz` and the `.deb` as assets of the release,
+as for the other packages; started by hand, only as artifacts. The version of
+the `.deb` comes from `git describe`: `v2.5-rc2` is `2.5~rc2` (older than
+`2.5`), a commit after the tag is `2.5~rc2.5.g43f47b8`.
+
+PowerPC 64 big endian also has a test of the engine, on every push
+(`.github/workflows/test-bigendian.yml`): `RmtCoreTest` (no Qt) is built for
+x86_64 and cross-compiled for ppc64 (`g++-powerpc64-linux-gnu`), run by
+`qemu-ppc64`, and `scripts/test-endian.sh` compares what the two give for every
+song of `rmt/songs` (POKEY registers frame by frame, the sound, the screen of a
+mono and of a stereo song). The same on a PowerPC machine or in an emulator:
+
+```bash
+cmake -S . -B build-core-native -G Ninja -DCMAKE_BUILD_TYPE=Release -DRMT_BUILD_CORE_ONLY=ON -DRMT_CORE_TEST=ON
+cmake --build build-core-native --target RmtCoreTest
+cmake -S . -B build-ppc64 -G Ninja -DCMAKE_BUILD_TYPE=Release -DRMT_BUILD_CORE_ONLY=ON -DRMT_CORE_TEST=ON \
+    -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=ppc64 \
+    -DCMAKE_C_COMPILER=powerpc64-linux-gnu-gcc -DCMAKE_CXX_COMPILER=powerpc64-linux-gnu-g++
+cmake --build build-ppc64 --target RmtCoreTest
+scripts/test-endian.sh build-core-native/out/RmtCoreTest \
+    "qemu-ppc64 -L /usr/powerpc64-linux-gnu build-ppc64/out/RmtCoreTest"
+```
+
+(only the `RmtCoreTest` target: the rest of the build needs PortAudio and
+RtMidi for ppc64). PowerPC 32 bit has neither packages nor test.
+
 On the runners there is no sound card: the smoke tests print "cannot open the
 audio output (PortAudio)" and go on silent, as RMT does anywhere without one.
 The Windows screenshot has no menu texts: the `offscreen` platform finds no
