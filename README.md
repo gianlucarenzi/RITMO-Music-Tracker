@@ -115,12 +115,14 @@ From 2.5 the [releases](https://github.com/gianlucarenzi/RITMO-Music-Tracker/rel
 | System | Package | How to start it |
 |--------|---------|-----------------|
 | Linux aarch64: Raspberry Pi 3/4/5 with a 64 bit system (Raspberry Pi OS 13 trixie, Debian 13, Ubuntu 24.04 and newer) | `Ritmo-Linux-aarch64.AppImage` | as the x86_64 AppImage |
-| Linux riscv64 (Debian 13 and newer) | `Ritmo-Linux-riscv64.tar.gz` | unpack it, install the packages its `README.txt` lists (`sudo apt install ...`), run `./ritmo` |
+| Linux riscv64 (Debian 13 and newer) | `Ritmo-Linux-riscv64.tar.gz` | unpack it, install the packages its `README.txt` lists (`sudo apt install ...`: only the graphics and sound libraries), run `./ritmo` |
+| Linux ppc64, PowerPC 64 bit big endian (Debian ports, sid) | `Ritmo-Linux-ppc64.tar.gz` | as the riscv64 one |
 
 The packages up to 2.2.1 were called `RMT-*` (the program `Rmt.exe`, `rmt`); from 2.3 they are `Ritmo-*` with the program `ritmo` / `Ritmo.exe`.
 
-Everything the program needs is inside each package (the riscv64 archive
-uses the Qt, PortAudio and RtMidi of the system). The configuration is
+Everything the program needs is inside each package (the riscv64 and ppc64
+archives carry Qt, PortAudio and RtMidi, and use of the system only glibc and
+the graphics and sound libraries of the machine). The configuration is
 kept in `~/.config/ritmo-atari.org/ritmo.conf` on Linux, in the registry
 (`HKEY_CURRENT_USER\Software\ritmo-atari.org\ritmo`) on Windows and in
 `~/Library/Preferences/org.ritmo-atari.ritmo.plist` on macOS.
