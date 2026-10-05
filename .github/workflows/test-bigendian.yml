@@ -32,7 +32,7 @@ jobs:
         run: |
           cmake -S . -B build-core-native -G Ninja -DCMAKE_BUILD_TYPE=Release \
             -DRMT_BUILD_CORE_ONLY=ON -DRMT_CORE_TEST=ON
-          cmake --build build-core-native
+          cmake --build build-core-native --target RmtCoreTest
 
       - name: Build the engine (ppc64 big endian)
         run: |
@@ -41,7 +41,7 @@ jobs:
             -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=ppc64 \
             -DCMAKE_C_COMPILER=powerpc64-linux-gnu-gcc \
             -DCMAKE_CXX_COMPILER=powerpc64-linux-gnu-g++
-          cmake --build build-ppc64
+          cmake --build build-ppc64 --target RmtCoreTest
           file build-ppc64/out/RmtCoreTest
 
       - name: Same results as on x86_64
