@@ -92,6 +92,8 @@ constexpr int RMT_DEFAULT_AUDIO_BUFFER_MS = 20;
 constexpr int RMT_DEFAULT_AUDIO_BUFFER_MS = 5;
 #endif
 constexpr int RMT_MAX_AUDIO_BUFFER_MS = 50; // more than the 60 ms of latency of PokeyRenderer.cpp less a margin: the ring would run dry
+// latency asked to the audio device; the ring of PokeyRenderer.cpp (371 ms) holds it, a callback and its 60 ms of latency
+constexpr int RMT_MAX_AUDIO_LATENCY_MS = 200;
 extern int g_audioBufferMs;
 extern int g_cursoractview;    //default position, line 0
 

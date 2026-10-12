@@ -278,8 +278,26 @@ HRESULT IDirectSoundBuffer::Play(DWORD, DWORD, DWORD)
     }
     bufferMs = std::max(1, std::min(bufferMs, RMT_MAX_AUDIO_BUFFER_MS));
     unsigned long framesPerBuffer = f.nSamplesPerSec / 1000 * bufferMs;
-    if (Pa_OpenDefaultStream(&s->stream, 0, f.nChannels, format, f.nSamplesPerSec, framesPerBuffer,
-                             PlayCallback, this) != paNoError) {
+    PaStreamParameters out = {};
+    out.device = Pa_GetDefaultOutputDevice();
+    const PaDeviceInfo* outInfo = out.device != paNoDevice ? Pa_GetDeviceInfo(out.device) : nullptr;
+    out.channelCount = f.nChannels;
+    out.sampleFormat = format;
+    // the latency of the device: at least 3 callbacks. The low latency of the
+    // device (what Pa_OpenDefaultStream asks) is a single PipeWire quantum
+    // (21 ms) through ALSA, and the output underflows at the least delay of
+    // the sound server, whatever the callback size
+    int latencyMs = 3 * bufferMs;
+    // RMT_AUDIO_LATENCY_MS=<ms>: another latency for this session only
+    if (const char* ms = std::getenv("RMT_AUDIO_LATENCY_MS")) {
+        int value = std::atoi(ms);
+        if (value >= 1) latencyMs = value;
+    }
+    latencyMs = std::min(latencyMs, RMT_MAX_AUDIO_LATENCY_MS);
+    out.suggestedLatency = std::max(outInfo ? outInfo->defaultLowOutputLatency : 0.0, latencyMs / 1000.0);
+    if (out.device == paNoDevice
+        || Pa_OpenStream(&s->stream, nullptr, &out, f.nSamplesPerSec, framesPerBuffer, paNoFlag,
+                         PlayCallback, this) != paNoError) {
         std::fprintf(stderr, "RMT: cannot open the audio output (PortAudio)\n");
         delete s;
         return DS_OK; // go on silent

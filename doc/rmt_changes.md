@@ -18,6 +18,11 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.6: the audio output asks the device for a latency of at least 3 callbacks (60 ms with the 20 ms buffer of Linux), never
+  less than the low latency of the device that `Pa_OpenDefaultStream` asked before. Through ALSA on PipeWire that low
+  latency was a single quantum (21.3 ms): the output underflowed at the least delay of the sound server, with any size of
+  the callbacks, while the ring of PokeyRenderer.cpp was still full. `RMT_AUDIO_LATENCY_MS` sets another latency for one
+  session, up to 200 ms. The latency adds to the delay between a key and its sound.
 - 2.5: after an export (SAP, XEX, WAV... from the menu or a script) the song timer started again: since 2.0 it stayed
   stopped, so RITMO played nothing until it was restarted (`CSongTimer::RestartTimer()` at the end of `CExportSection`). The
   WAV export starts from a reset POKEY emulation, so its sound does not depend on what played before.
