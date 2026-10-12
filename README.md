@@ -277,8 +277,10 @@ it (it only receives MIDI, and a MIDI keyboard works without it); stop it while
 you make music with `systemctl --user stop fluidsynth`, or for good with
 `systemctl --user mask fluidsynth` (undo: `systemctl --user unmask fluidsynth`).
 If the sound still crackles or is distorted, choose a larger **Audio buffer**
-(30 or 40 ms) in the configuration; `RMT_AUDIO_DEBUG=1` shows the late audio
-ticks and the underruns.
+(30 or 40 ms) in the configuration, or start RITMO with a larger latency of the
+output for one session, e.g. `RMT_AUDIO_LATENCY_MS=100` (the default is three
+buffers, 60 ms on Linux); `RMT_AUDIO_DEBUG=1` shows the late audio ticks, the
+latency of the output and the underruns.
 
 Issues of the Qt port are tracked on the [GitHub issue tracker of the port](https://github.com/gianlucarenzi/RITMO-Music-Tracker/issues).
 Issues of the original RMT are tracked on the [upstream issue tracker](https://github.com/raster-atari-org/RASTER-Music-Tracker/issues).

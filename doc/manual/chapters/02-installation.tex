@@ -157,7 +157,9 @@ The sound goes out through PortAudio, to the default output device of the system
 the program prints a message and goes on without sound, so that songs can still be edited. If the sound
 crackles or is distorted, choose a larger \emph{audio buffer} in the configuration (section~\ref{sec:options}).
 The \texttt{RMT\_AUDIO\_BUFFER\_MS} environment variable (the size of the buffer in milliseconds, up to 50) sets
-another size for one session without changing the settings.
+another size for one session without changing the settings. The output keeps about three buffers of sound ready;
+\texttt{RMT\_AUDIO\_LATENCY\_MS} (in milliseconds, up to 200) sets another amount for one session, at the cost of a later
+sound after a key. \texttt{RMT\_AUDIO\_DEBUG=1} prints the latency opened by the output and counts its underruns.
 
 \section{Where the settings are kept}
 
