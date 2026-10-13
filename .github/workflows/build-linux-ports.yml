@@ -6,9 +6,9 @@ name: Build RITMO on Linux (other architectures)
 # with the Qt 6, PortAudio and RtMidi of Debian (scripts/build-tarball.sh);
 # ppc64 (big endian) is on debian-ports, which has only the unstable release (sid).
 # The result is a .tar.gz with the libraries it needs and a .deb that depends on
-# those of Debian (scripts/build-deb.sh); for riscv64 also an AppImage, made
-# from the folder of the .tar.gz with the riscv64 port of appimagetool
-# (scripts/build-appimage-ports.sh; for now only kept as an artifact).
+# those of Debian (scripts/build-deb.sh), and an AppImage made from the folder
+# of the .tar.gz with the ports of appimagetool and of its runtime to these
+# architectures (scripts/build-appimage-ports.sh).
 # A tag v* builds them and publishes them as release assets; started by hand
 # it only keeps them as artifacts.
 
@@ -30,11 +30,14 @@ jobs:
           - arch: riscv64
             platform: linux/riscv64
             image: debian:trixie
-            appimage: true
           - arch: ppc64               # PowerPC big endian: only in debian-ports (sid)
             platform: linux/ppc64
             image: ritmo-debian-ports-ppc64
             ports: true
+          - arch: ppc64le             # PowerPC little endian (POWER8 and newer)
+            debian_arch: ppc64el      # the name of Debian, in the .tar.gz and the .deb
+            platform: linux/ppc64le
+            image: debian:trixie
     runs-on: ubuntu-latest
     timeout-minutes: 300
 
@@ -76,20 +79,29 @@ jobs:
 
       - name: Build the archive
         run: |
-          docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/src -w /src \
-            -e APPIMAGE=${{ matrix.appimage && '1' || '0' }} ${{ matrix.image }} \
-            sh -c 'scripts/build-tarball.sh && scripts/build-deb.sh && { [ "$APPIMAGE" != 1 ] || scripts/build-appimage-ports.sh; }'
+          docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/src -w /src ${{ matrix.image }} \
+            sh -c 'scripts/build-tarball.sh && scripts/build-deb.sh && scripts/build-appimage-ports.sh appdir'
+          sudo chown -R "$(id -u):$(id -g)" build-tarball
+
+      # appimagetool for x86_64 packs the AppDir of the architecture: no emulation
+      - name: Pack the AppImage
+        run: scripts/build-appimage-ports.sh pack ${{ matrix.arch }}
+
+      - name: Test the AppImage
+        run: |
+          docker run --rm --platform ${{ matrix.platform }} -v "$PWD":/src -w /src ${{ matrix.image }} \
+            scripts/build-appimage-ports.sh test
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: Ritmo-Linux-${{ matrix.arch }}
           path: |
-            build-tarball/Ritmo-Linux-${{ matrix.arch }}-*.tar.gz
+            build-tarball/Ritmo-Linux-${{ matrix.debian_arch || matrix.arch }}-*.tar.gz
             build-tarball/ritmo_*.deb
             build-tarball/ritmo-linux.png
-            build-tarball/Ritmo-*-*.AppImage
-            build-tarball/Ritmo-*-*.AppImage.zsync
+            build-tarball/Ritmo-*-${{ matrix.arch }}.AppImage
+            build-tarball/Ritmo-*-${{ matrix.arch }}.AppImage.zsync
             build-tarball/ritmo-appimage.png
 
       - name: Create release and upload asset
@@ -97,6 +109,8 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            build-tarball/Ritmo-Linux-${{ matrix.arch }}-*.tar.gz
+            build-tarball/Ritmo-Linux-${{ matrix.debian_arch || matrix.arch }}-*.tar.gz
             build-tarball/ritmo_*.deb
+            build-tarball/Ritmo-*-${{ matrix.arch }}.AppImage
+            build-tarball/Ritmo-*-${{ matrix.arch }}.AppImage.zsync
           prerelease: ${{ contains(github.ref_name, '-rc') }}   # v2.0-rcN of scripts/push.sh

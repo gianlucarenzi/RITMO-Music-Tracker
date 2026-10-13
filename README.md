@@ -124,6 +124,22 @@ can be kept side by side: `Ritmo-2.6-x86_64.AppImage` (the AppImage has no
 `Ritmo-Windows-x64-Setup-2.6.exe`, `Ritmo-macOS-arm64-2.6.dmg`... (`2.6-rc3` and
 so on for the test builds).
 
+From 2.6 the [releases](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases)
+also have AppImages for these architectures, and PowerPC little endian joins them:
+
+| System | AppImage | Also as |
+|--------|----------|---------|
+| Linux riscv64 (Debian 13 and newer) | `Ritmo-2.6-riscv64.AppImage` | `.deb`, `.tar.gz` |
+| Linux ppc64: PowerPC 64 bit big endian (Debian ports, sid) | `Ritmo-2.6-ppc64.AppImage` | `.deb`, `.tar.gz` |
+| Linux ppc64le: PowerPC 64 bit little endian, POWER8 and newer (Debian 13 and newer) | `Ritmo-2.6-ppc64le.AppImage` | `ritmo_2.6_ppc64el.deb`, `Ritmo-Linux-ppc64el-2.6.tar.gz` |
+
+There is no official appimagetool for these architectures yet: they are made
+with its ports to riscv64, ppc64 and ppc64le
+([appimagetool](https://github.com/gianlucarenzi/appimagetool),
+[runtime](https://github.com/gianlucarenzi/type2-runtime)), proposed to the
+AppImage project. They carry the same libraries as the `.tar.gz`, so they need
+the same Debian releases (see [below](#linux-riscv64-and-ppc64-powerpc-64-bit-big-endian)).
+
 RITMO has been proposed for [AppImageHub](https://appimage.github.io), the
 catalog of AppImages: the request is
 [under review](https://github.com/AppImage/appimage.github.io/pull/10143).
@@ -141,13 +157,23 @@ chmod +x Ritmo-Linux-x86_64.AppImage      # on a Raspberry Pi: Ritmo-Linux-aarch
 ./Ritmo-Linux-x86_64.AppImage --appimage-extract-and-run
 ```
 
-(`uname -m` tells the architecture: `x86_64`, `aarch64`, `riscv64`, `ppc64`.)
+(`uname -m` tells the architecture: `x86_64`, `aarch64`, `riscv64`, `ppc64`, `ppc64le`.)
 
 #### Linux riscv64 and ppc64 (PowerPC 64 bit big endian)
 
-Two packages for each, to choose from. Both need Debian 13 or newer (riscv64)
-or Debian ports "sid" (ppc64): they are built with the glibc and the Qt 6 of
-those releases.
+Two packages for each, to choose from (three from 2.6, with the AppImage; the
+same for ppc64le, whose Debian name is `ppc64el`). They need Debian 13 or newer
+(riscv64, ppc64le) or Debian ports "sid" (ppc64): they are built with the glibc
+and the Qt 6 of those releases.
+
+From 2.6, **the AppImage**: one file, started as the x86_64 one. Its runtime
+needs FUSE 3 (`sudo apt install fuse3`); without it:
+`./Ritmo-2.6-riscv64.AppImage --appimage-extract-and-run`.
+
+```bash
+chmod +x Ritmo-2.6-riscv64.AppImage      # Ritmo-2.6-ppc64.AppImage, Ritmo-2.6-ppc64le.AppImage
+./Ritmo-2.6-riscv64.AppImage
+```
 
 1. **The `.deb`** (the simplest on Debian and its derivatives): `apt` installs
    Qt 6, PortAudio, RtMidi and the other libraries it needs by itself.
