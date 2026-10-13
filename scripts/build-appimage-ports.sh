@@ -107,7 +107,9 @@ test)
         # what the AppImage leaves to the system (glibc, the graphics and sound
         # libraries of the drivers), as on the machine of a user: the packages
         # that README.txt of the .tar.gz lists ("sudo apt install ...")
-        apt-get install -y --no-install-recommends file \
+        # (and a font: a desktop has some, the clean container none, and the
+        # menus of Qt would be empty boxes)
+        apt-get install -y --no-install-recommends file fonts-dejavu-core \
             $(sed -n 's/^ *sudo apt install //p' "$WORK/AppDir/README.txt")
     fi
     cd "$WORK"
