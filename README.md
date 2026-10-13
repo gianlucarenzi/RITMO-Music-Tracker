@@ -282,12 +282,14 @@ output for one session, e.g. `RMT_AUDIO_LATENCY_MS=100` (the default is three
 buffers, 60 ms on Linux); `RMT_AUDIO_DEBUG=1` shows the host APIs PortAudio
 found and the one used, the late audio ticks, the latency of the output and the
 underruns.
-On Linux the AppImage plays through the sound server (PulseAudio or PipeWire)
-when there is one, so the sound follows the output chosen in the desktop
-(Bluetooth headphones too) and has its own volume in the mixer;
-`RMT_AUDIO_HOST_API=ALSA` plays through ALSA instead (also `JACK`). The `.deb`
-and `.tar.gz` packages, and the AppImage without a sound server, play on the
-`default` device of ALSA.
+On Linux RITMO plays through the sound server (PulseAudio or PipeWire) when
+there is one, so the sound follows the output chosen in the desktop (Bluetooth
+headphones too) and has its own volume in the mixer: on the `default` device of
+ALSA when that one goes to the sound server (`pipewire-alsa`, or the `pulse`
+plugin of ALSA), otherwise, with the AppImage, talking to the sound server
+directly. The `.deb` and `.tar.gz` packages, and every package without a sound
+server, play on the `default` device of ALSA. `RMT_AUDIO_HOST_API=ALSA` (or
+`PulseAudio`, `JACK`) chooses the way for one session.
 
 **The sound ignores the headphones or the volume of the desktop.** If the sound
 keeps coming out of the speakers when headphones are connected, does not change
@@ -295,10 +297,13 @@ with the volume or the mute of the desktop, or RITMO is missing from the mixer,
 it goes straight to a sound card instead of through the sound server. Start
 RITMO with `RMT_AUDIO_DEBUG=1 ./Ritmo-Linux-x86_64.AppImage 2> ritmo-audio.log`,
 play a song and look at the last `DBG audio: host API` line of the log:
-- `host API PulseAudio`: the sound server, as it should be;
-- `host API ALSA, device default`: the `default` device of ALSA. `aplay -L`
-  tells where it goes: the description under `default` names the sound server
-  (PipeWire or PulseAudio) when it goes there. If it does not:
+- `host API PulseAudio`, or `host API ALSA, device default` after the line
+  `the default device of ALSA goes to the sound server`: the sound server, as
+  it should be;
+- `host API ALSA, device default` without that line: the `default` device of
+  ALSA goes to a sound card. `aplay -L` confirms it: the description under
+  `default` names the sound server (PipeWire or PulseAudio) when it goes
+  there. Then:
   - install the ALSA plugin of the sound server, which an upgrade that did not
     finish can also lose: `sudo apt install pipewire-alsa` with PipeWire
     (`dpkg -l pipewire-alsa` tells whether it is there), `libasound2-plugins`

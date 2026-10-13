@@ -29,6 +29,11 @@ Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
   latency: the write cursor uses the latency asked when it is larger. `RMT_AUDIO_HOST_API` chooses another host API,
   `RMT_AUDIO_DEBUG=1` lists them. If the stream cannot be opened, the default device of PortAudio. The `.deb` and `.tar.gz`
   keep the PortAudio of Debian (ALSA only).
+- 2.6: the default device of ALSA comes first when it goes to the sound server (an ALSA plugin of type ioplug:
+  pipewire of pipewire-alsa, pulse; libasound is loaded with dlopen to see it). On PipeWire 1.6 with Bluetooth
+  headphones the streams of the PulseAudio host API did not always move between the outputs (issue #2), while those
+  of pipewire-alsa did. The PulseAudio host API remains for the systems where the default device of ALSA is a sound
+  card.
 - 2.6: the audio output asks the device for a latency of at least 3 callbacks (60 ms with the 20 ms buffer of Linux), never
   less than the low latency of the device that `Pa_OpenDefaultStream` asked before. Through ALSA on PipeWire that low
   latency was a single quantum (21.3 ms): the output underflowed at the least delay of the sound server, with any size of

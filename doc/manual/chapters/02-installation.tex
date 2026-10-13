@@ -153,12 +153,14 @@ tracker stay square. The choice can be changed in the \menu{Options} dialog, and
 
 \section{Sound}
 
-The sound goes out through PortAudio, to the default output device of the system. With the AppImage, when a PulseAudio
-or PipeWire sound server runs, \RITMO{} is one of its clients like any other program: it plays on the output chosen in
-the desktop, follows it when it changes (Bluetooth headphones, for example) and has its own volume in the mixer. Without
-a sound server, and with the \texttt{.deb} and \texttt{.tar.gz} packages (their PortAudio has no PulseAudio support), it
-plays on the \texttt{default} device of ALSA, which goes where the configuration of ALSA says: on a PipeWire system the
-\texttt{pipewire-alsa} package sends it to the sound server. The \texttt{RMT\_AUDIO\_HOST\_API} environment variable
+The sound goes out through PortAudio, to the default output device of the system. On Linux, when a PulseAudio or
+PipeWire sound server runs, \RITMO{} is one of its clients like any other program: it plays on the output chosen in the
+desktop, follows it when it changes (Bluetooth headphones, for example) and has its own volume in the mixer. It plays on
+the \texttt{default} device of ALSA when that one goes to the sound server (the \texttt{pipewire-alsa} package, or the
+\texttt{pulse} plugin of ALSA). When it does not, the AppImage talks to the sound server directly (its PortAudio has
+PulseAudio support, which PipeWire understands too); the \texttt{.deb} and \texttt{.tar.gz} packages, whose PortAudio
+has not, and every package without a sound server play on the \texttt{default} device of ALSA, which goes where the
+configuration of ALSA says. The \texttt{RMT\_AUDIO\_HOST\_API} environment variable
 (\texttt{ALSA}, \texttt{JACK}, \texttt{PulseAudio} on Linux) chooses another way for one session. If the output cannot be opened
 the program prints a message and goes on without sound, so that songs can still be edited. If the sound
 crackles or is distorted, choose a larger \emph{audio buffer} in the configuration (section~\ref{sec:options}).
@@ -180,10 +182,12 @@ RMT_AUDIO_DEBUG=1 ./Ritmo-Linux-x86_64.AppImage 2> ritmo-audio.log
 grep 'DBG audio: host API' ritmo-audio.log
 \end{lstlisting}
 
-The last of those lines names the way the sound took. \texttt{host API PulseAudio} is the sound server, and is what the
-AppImage uses when the server runs. \texttt{host API ALSA, device default} is the \texttt{default} device of ALSA, and
-\texttt{aplay -L} tells where that one goes: the description under \texttt{default} names the sound server (PipeWire or
-PulseAudio) when it goes there, and a sound card when it does not. The usual reasons, and what to do:
+The last of those lines names the way the sound took. \texttt{host API ALSA, device default} after the line
+\texttt{the default device of ALSA goes to the sound server}, and \texttt{host API PulseAudio} (the AppImage when
+ALSA does not go there), are the sound server. \texttt{host API ALSA, device default} without that line is the
+\texttt{default} device of ALSA going to a sound card; \texttt{aplay -L} confirms it: the description under
+\texttt{default} names the sound server (PipeWire or PulseAudio) when it goes there, and a sound card when it does
+not. The usual reasons, and what to do:
 
 \begin{itemize}
   \item The ALSA plugin of the sound server is not installed (it can also be lost in an upgrade that did not finish).
