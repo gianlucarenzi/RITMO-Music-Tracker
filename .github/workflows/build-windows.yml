@@ -76,10 +76,12 @@ jobs:
             done
           done
           ls -la $DIST
+          # the version in the names of the ZIP and of the installer
+          echo "RITMO_PKG_VERSION=$(scripts/package-version.sh)" >> "$GITHUB_ENV"
 
       - name: Create ZIP archive
         shell: pwsh
-        run: Compress-Archive -Path dist/Ritmo -DestinationPath Ritmo-Windows-x64.zip -Force
+        run: Compress-Archive -Path dist/Ritmo -DestinationPath "Ritmo-Windows-x64-$env:RITMO_PKG_VERSION.zip" -Force
 
       - name: Create the installer (Inno Setup)
         shell: pwsh
@@ -95,17 +97,17 @@ jobs:
                   Where-Object { Test-Path $_ } | Select-Object -First 1
           }
           if (-not $iscc) { throw "ISCC.exe (Inno Setup) not found" }
-          & $iscc "/DAppVersion=$version" "/DSourceDir=$PWD\dist\Ritmo" "/O$PWD" scripts\ritmo.iss
+          & $iscc "/DAppVersion=$version" "/DSourceDir=$PWD\dist\Ritmo" "/O$PWD" "/FRitmo-Windows-x64-Setup-$env:RITMO_PKG_VERSION" scripts\ritmo.iss
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed" }
-          Get-Item Ritmo-Windows-x64-Setup.exe
+          Get-Item "Ritmo-Windows-x64-Setup-$env:RITMO_PKG_VERSION.exe"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: Ritmo-Windows-x64
           path: |
-            Ritmo-Windows-x64.zip
-            Ritmo-Windows-x64-Setup.exe
+            Ritmo-Windows-x64-*.zip
+            Ritmo-Windows-x64-Setup-*.exe
             ritmo-windows.png
 
       - name: Create release and upload asset
@@ -113,6 +115,6 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            Ritmo-Windows-x64.zip
-            Ritmo-Windows-x64-Setup.exe
+            Ritmo-Windows-x64-*.zip
+            Ritmo-Windows-x64-Setup-*.exe
           prerelease: ${{ contains(github.ref_name, '-rc') }}   # v2.0-rcN of scripts/push.sh

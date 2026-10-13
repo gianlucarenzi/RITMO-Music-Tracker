@@ -24,7 +24,8 @@
 #
 # Environment: RMT_APPIMAGE_DEPS=0 skips installing the dependencies (they
 # are there already), WORK is the build folder (default build-appimage/).
-# Output: $WORK/Ritmo-Linux-<arch>.AppImage and $WORK/ritmo-linux.png, the
+# Output: $WORK/Ritmo-Linux-<arch>-<version>.AppImage (the version of
+# scripts/package-version.sh) and $WORK/ritmo-linux.png, the
 # offscreen screenshot of the smoke test run of the AppImage itself.
 
 set -euo pipefail
@@ -156,8 +157,8 @@ export APPIMAGE_EXTRACT_AND_RUN=1           # no FUSE in containers
 export QMAKE=$QT_DIR/bin/qmake
 export LD_LIBRARY_PATH=$QT_DIR/lib:$PORTAUDIO_DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 export EXTRA_PLATFORM_PLUGINS=libqoffscreen.so  # for the smoke test below
-export OUTPUT=Ritmo-Linux-$ARCH.AppImage
-rm -f $OUTPUT
+export OUTPUT=Ritmo-Linux-$ARCH-$("$ROOT/scripts/package-version.sh").AppImage
+rm -f Ritmo-Linux-$ARCH*.AppImage
 ./linuxdeploy-$ARCH.AppImage --appdir "$APPDIR" \
     --executable "$APPDIR/usr/bin/ritmo" --desktop-file ritmo.desktop --icon-file ritmo.png \
     --plugin qt --output appimage

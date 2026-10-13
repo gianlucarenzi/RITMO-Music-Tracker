@@ -1,0 +1,3 @@
+# The shell scripts keep LF on every system: the Windows build runs
+# scripts/package-version.sh with the bash of MSYS2, which a CRLF breaks
+*.sh text eol=lf

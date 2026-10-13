@@ -81,7 +81,7 @@ jobs:
         with:
           name: Ritmo-Linux-${{ matrix.arch }}
           path: |
-            build-tarball/Ritmo-Linux-${{ matrix.arch }}.tar.gz
+            build-tarball/Ritmo-Linux-${{ matrix.arch }}-*.tar.gz
             build-tarball/ritmo_*.deb
             build-tarball/ritmo-linux.png
 
@@ -90,6 +90,6 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            build-tarball/Ritmo-Linux-${{ matrix.arch }}.tar.gz
+            build-tarball/Ritmo-Linux-${{ matrix.arch }}-*.tar.gz
             build-tarball/ritmo_*.deb
           prerelease: ${{ contains(github.ref_name, '-rc') }}   # v2.0-rcN of scripts/push.sh

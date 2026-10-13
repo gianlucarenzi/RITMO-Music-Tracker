@@ -18,7 +18,9 @@
 #
 # Environment: RMT_TARBALL_DEPS=0 skips installing the dependencies (they
 # are there already), WORK is the build folder (default build-tarball/).
-# Output: $WORK/Ritmo-Linux-<arch>.tar.gz and $WORK/ritmo-linux.png, the
+# Output: $WORK/Ritmo-Linux-<arch>-<version>.tar.gz (the version of
+# scripts/package-version.sh; the folder in it is Ritmo-Linux-<arch>) and
+# $WORK/ritmo-linux.png, the
 # offscreen screenshot of the smoke test.
 
 set -euo pipefail
@@ -129,7 +131,9 @@ The manual, the issues and the other downloads:
 https://github.com/gianlucarenzi/RITMO-Music-Tracker
 README
 
-tar -C "$WORK" -czf "$WORK/$NAME.tar.gz" "$NAME"
+TARBALL=$WORK/$NAME-$("$ROOT/scripts/package-version.sh").tar.gz
+rm -f "$WORK/$NAME"*.tar.gz
+tar -C "$WORK" -czf "$TARBALL" "$NAME"
 
 # --- checks ------------------------------------------------------------------
 
@@ -140,4 +144,4 @@ rm -f "$WORK/ritmo-linux.png"
     XDG_CONFIG_HOME=$WORK/config timeout 600 "$DIR/ritmo" "$ROOT/rmt/songs/rmt128/raster/gemx.rmt") || true
 test -f "$WORK/ritmo-linux.png"
 cat "$DIR/README.txt"
-ls -la "$WORK/$NAME.tar.gz" "$WORK/ritmo-linux.png"
+ls -la "$TARBALL" "$WORK/ritmo-linux.png"

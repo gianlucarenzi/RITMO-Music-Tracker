@@ -5,7 +5,8 @@
 ;   ISCC.exe /DAppVersion=2.3 /DSourceDir=dist\Ritmo /O. scripts\ritmo.iss
 ;
 ; AppVersion is the version of the program, SourceDir the folder with Ritmo.exe, its resources and
-; its DLLs. The result is Ritmo-Windows-x64-Setup.exe in the folder of /O.
+; its DLLs. The result is Ritmo-Windows-x64-Setup.exe in the folder of /O (the workflow adds the
+; version with /FRitmo-Windows-x64-Setup-<version>).
 
 #ifndef AppVersion
   #define AppVersion "0.0"

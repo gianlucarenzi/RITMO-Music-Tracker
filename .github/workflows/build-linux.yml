@@ -59,12 +59,12 @@ jobs:
         with:
           name: Ritmo-Linux-${{ matrix.arch }}
           path: |
-            build-appimage/Ritmo-Linux-${{ matrix.arch }}.AppImage
+            build-appimage/Ritmo-Linux-${{ matrix.arch }}-*.AppImage
             build-appimage/ritmo-linux.png
 
       - name: Create release and upload asset
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
-          files: build-appimage/Ritmo-Linux-${{ matrix.arch }}.AppImage
+          files: build-appimage/Ritmo-Linux-${{ matrix.arch }}-*.AppImage
           prerelease: ${{ contains(github.ref_name, '-rc') }}   # v2.0-rcN of scripts/push.sh
