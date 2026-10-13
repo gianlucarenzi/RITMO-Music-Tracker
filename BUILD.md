@@ -521,9 +521,9 @@ are only the artifacts, no release:
 
 | Workflow | Runner | Toolchain and libraries | Package |
 |----------|--------|-------------------------|---------|
-| `.github/workflows/build-linux.yml` | `ubuntu-latest`, container `ubuntu:20.04` (glibc 2.31, as Debian 11) | GCC 10, `librtmidi-dev` (ALSA) of Ubuntu 20.04, PortAudio master at a fixed commit built from source with `scripts/patches/portaudio-*.patch` (ALSA, JACK and PulseAudio), the official Qt 6.8.3 (`aqtinstall` in a Python 3.9 venv; Ubuntu 20.04 has no Qt6) | `Ritmo-Linux-x86_64.AppImage` (`linuxdeploy` + Qt plugin): runs on Debian 11 / Ubuntu 20.04 and newer, the build checks that no file in it needs a glibc after 2.31 |
-| `.github/workflows/build-windows.yml` | `windows-2022` | MSYS2 MINGW64: GCC, `qt6-base`, `portaudio`, `rtmidi` (WinMM) | `Ritmo-Windows-x64.zip`: `Ritmo.exe`, `resources/`, the Qt and MinGW DLLs (`windeployqt` + `ldd`); `Ritmo-Windows-x64-Setup.exe`: the installer of the same folder, made by Inno Setup from `scripts/ritmo.iss` |
-| `.github/workflows/build-macos.yml` | `macos-14` (Apple Silicon) | Apple Clang, the official Qt 6.8.3 `clang_64` (universal) for both. arm64: Homebrew `portaudio`, `rtmidi` (CoreMIDI). x86_64: PortAudio 19.7.0 and RtMidi 6.0.0 built from source for x86_64 (Homebrew no longer installs on Intel). Minimum macOS 12, as Qt 6.8 | `RMT-macOS-arm64.dmg` (native) and `RMT-macOS-x86_64.dmg` (Intel Macs, or Apple Silicon through Rosetta 2): `Ritmo.app` with the Qt frameworks and the libraries inside (`macdeployqt`, checked with the load commands of `otool -l`) |
+| `.github/workflows/build-linux.yml` | `ubuntu-latest`, container `ubuntu:20.04` (glibc 2.31, as Debian 11) | GCC 10, `librtmidi-dev` (ALSA) of Ubuntu 20.04, PortAudio master at a fixed commit built from source with `scripts/patches/portaudio-*.patch` (ALSA, JACK and PulseAudio), the official Qt 6.8.3 (`aqtinstall` in a Python 3.9 venv; Ubuntu 20.04 has no Qt6) | `Ritmo-Linux-x86_64-<version>.AppImage` (`linuxdeploy` + Qt plugin): runs on Debian 11 / Ubuntu 20.04 and newer, the build checks that no file in it needs a glibc after 2.31 |
+| `.github/workflows/build-windows.yml` | `windows-2022` | MSYS2 MINGW64: GCC, `qt6-base`, `portaudio`, `rtmidi` (WinMM) | `Ritmo-Windows-x64-<version>.zip`: `Ritmo.exe`, `resources/`, the Qt and MinGW DLLs (`windeployqt` + `ldd`); `Ritmo-Windows-x64-Setup-<version>.exe`: the installer of the same folder, made by Inno Setup from `scripts/ritmo.iss` |
+| `.github/workflows/build-macos.yml` | `macos-14` (Apple Silicon) | Apple Clang, the official Qt 6.8.3 `clang_64` (universal) for both. arm64: Homebrew `portaudio`, `rtmidi` (CoreMIDI). x86_64: PortAudio 19.7.0 and RtMidi 6.0.0 built from source for x86_64 (Homebrew no longer installs on Intel). Minimum macOS 12, as Qt 6.8 | `Ritmo-macOS-arm64-<version>.dmg` (native) and `Ritmo-macOS-x86_64-<version>.dmg` (Intel Macs, or Apple Silicon through Rosetta 2): `Ritmo.app` with the Qt frameworks and the libraries inside (`macdeployqt`, checked with the load commands of `otool -l`) |
 
 `Ritmo.app` needs nothing installed. It is signed ad hoc, not notarized, so
 macOS asks to open it with right click → Open the first time. Its
@@ -535,8 +535,14 @@ AppImage locally in the same system:
 
 ```bash
 docker run --rm -v "$PWD":/src -w /src ubuntu:20.04 scripts/build-appimage.sh
-# build-appimage/Ritmo-Linux-x86_64.AppImage
+# build-appimage/Ritmo-Linux-x86_64-<version>.AppImage
 ```
+
+`<version>`, in the names of all the packages, is the one of
+`scripts/package-version.sh`: the tag without the `v` on a tag (`2.6`,
+`2.6-rc3`, the version the program shows), `git describe` after it
+(`2.6-rc3-4-g43f47b8`, so that a test build is not taken for a release),
+`RMT_BASE_VERSION` without git. Up to 2.5 the names had no version.
 
 PortAudio is built from its sources there (`PORTAUDIO_COMMIT` in the script):
 its PulseAudio host API, which makes RITMO a client of the sound server
@@ -567,7 +573,7 @@ hand in any Debian of the architecture):
 ```bash
 docker run --rm --platform linux/riscv64 -v "$PWD":/src -w /src debian:trixie \
     sh -c 'scripts/build-tarball.sh && scripts/build-deb.sh'
-# build-tarball/Ritmo-Linux-riscv64.tar.gz  build-tarball/ritmo_<version>_riscv64.deb
+# build-tarball/Ritmo-Linux-riscv64-<version>.tar.gz  build-tarball/ritmo_<version>_riscv64.deb
 ```
 
 - `scripts/build-tarball.sh` installs the dependencies, builds, and makes the
