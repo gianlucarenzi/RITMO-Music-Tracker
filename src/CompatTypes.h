@@ -1289,7 +1289,8 @@ inline int AfxMessageBox(const char* text, UINT type = MB_OK, UINT = 0)
 class CRmtApp {
 public:
     CString GetVersionAndBuild() const;
-    void OpenOnlineHelp(); // frontend (opens the help URL)
+    void OpenManual(); // frontend (opens the user manual)
+    void OpenOnlineHelp(); // frontend (opens the reference of RMT)
     void OpenUrl(const char* url); // frontend (opens a web page in the browser)
 };
 extern CRmtApp g_app;

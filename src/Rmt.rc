@@ -1710,7 +1710,7 @@ END
 STRINGTABLE
 BEGIN
     ID_VIEW_TUNING          "Display the tuning menu."
-    ID_HELP_HELP_TOPICS     "Open the local help in a browser."
+    ID_HELP_HELP_TOPICS     "Open the user manual of RITMO in a browser"
     ID_HELP_ABOUT_APP       "Display information about the app and its version in a pop-up dialog"
 END
 
@@ -1727,7 +1727,7 @@ END
 
 STRINGTABLE
 BEGIN
-    ID_HELP_ONLINE_HELP     "Open the online help in a browser window"
+    ID_HELP_ONLINE_HELP     "Open the reference of RMT (menus, keys, instruments) in a browser"
     ID_HELP_ABOUT           "Display program information, version number and copyright"
 END
 

@@ -22,12 +22,16 @@
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QDesktopServices>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QHBoxLayout>
 #include <QIcon>
 #include <QImage>
+#include <QLabel>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QMenuBar>
@@ -36,6 +40,9 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <QPixmap>
+#include <QScreen>
+#include <QScrollArea>
+#include <QScrollBar>
 #include <QStatusBar>
 #include <QToolBar>
 #include <QPageSetupDialog>
@@ -44,6 +51,7 @@
 #include <QPrinter>
 #include <QTimer>
 #include <QUrl>
+#include <QVBoxLayout>
 #include <QWheelEvent>
 
 #include <chrono>
@@ -192,6 +200,59 @@ static QString AboutText(const QString& version)
            "Elan, Wrathchild, Kozyca, Born/LaResistance, Sal Esquivel, Nooly, "
            "The Chiptune Caf&eacute;, AtariAge, GBAtemp, the Polish Atarians of Atariarea "
            "and all the 8-bit Atarians all over the world!</p>";
+}
+
+// The About window: the icon and the text, which scrolls when the window
+// would be taller than the screen (large fonts, a small screen)
+static void ShowAbout(QWidget* parent, const QString& version)
+{
+    QDialog box(parent);
+    box.setWindowTitle("About RITMO");
+    // the icon of the program, enlarged without smoothing (pixel art)
+    auto* icon = new QLabel;
+    icon->setPixmap(QPixmap(":/ritmo-icon.png").scaled(128, 128, Qt::KeepAspectRatio, Qt::FastTransformation));
+    icon->setAlignment(Qt::AlignTop);
+    auto* text = new QLabel(AboutText(version));
+    text->setTextFormat(Qt::RichText);
+    text->setWordWrap(true);
+    text->setTextInteractionFlags(Qt::TextBrowserInteraction);
+    auto* scroll = new QScrollArea;
+    scroll->setWidget(text);
+    scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok);
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &box, &QDialog::accept);
+    auto* row = new QHBoxLayout;
+    row->addWidget(icon);
+    row->addWidget(scroll);
+    auto* layout = new QVBoxLayout(&box);
+    layout->addLayout(row);
+    layout->addWidget(buttons);
+    // about as wide as a message box (64 characters of the font), and as tall
+    // as the text, but the whole window within 9/10 of the width and 3/4 of
+    // the height of the screen: the height follows from the width
+    QScreen* screen = parent && parent->screen() ? parent->screen() : QGuiApplication::primaryScreen();
+    int scrollBar = scroll->verticalScrollBar()->sizeHint().width();
+    int roomWidth = screen->availableGeometry().width() * 9 / 10 - icon->sizeHint().width() - scrollBar
+                    - layout->contentsMargins().left() - layout->contentsMargins().right() - 2 * row->spacing();
+    text->setFixedWidth(std::min(text->fontMetrics().averageCharWidth() * 64, roomWidth));
+    int textHeight = text->heightForWidth(text->width());
+    int room = screen->availableGeometry().height() * 3 / 4 - buttons->sizeHint().height()
+               - layout->contentsMargins().top() - layout->contentsMargins().bottom() - layout->spacing();
+    text->setFixedHeight(textHeight);
+    scroll->setFixedSize(text->width() + scrollBar,
+                         std::max(icon->sizeHint().height(), std::min(textHeight, room)));
+    // test runs (RMT_QT_GRAB) show no modal window, unless RMT_QT_DIALOG=file.png
+    // asks for its image, as for the dialogs (RmtQtDialogs.cpp)
+    if (!qEnvironmentVariableIsEmpty("RMT_QT_GRAB")) {
+        QString shot = qEnvironmentVariable("RMT_QT_DIALOG");
+        if (shot.isEmpty()) return;
+        QTimer::singleShot(500, &box, [&box, shot] {
+            box.grab().save(shot);
+            box.accept();
+        });
+    }
+    box.exec();
 }
 
 class RmtQtBridge : public IRmtHost {
@@ -416,23 +477,17 @@ public:
         switch (id) {
             case ID_APP_ABOUT:
             case ID_HELP_ABOUT_APP:
-                if (qEnvironmentVariableIsEmpty("RMT_QT_GRAB")) {
-                    QMessageBox box(m_win);
-                    box.setWindowTitle("About RITMO");
-                    box.setTextFormat(Qt::RichText);
-                    box.setText(AboutText(QString::fromLocal8Bit(g_app.GetVersionAndBuild().GetString())));
-                    // the icon of the program, enlarged without smoothing (pixel art)
-                    box.setIconPixmap(QPixmap(":/ritmo-icon.png").scaled(128, 128, Qt::KeepAspectRatio, Qt::FastTransformation));
-                    box.exec();
-                }
+                ShowAbout(m_win, QString::fromLocal8Bit(g_app.GetVersionAndBuild().GetString()));
                 break;
             case ID_APP_EXIT:
                 m_win->close();
                 break;
             case ID_TOOLS_OPEN_ASAP_FILE: // no function yet: the item is grey
                 break;
-            case ID_HELP_ONLINE_HELP:
             case ID_HELP_HELP_TOPICS:
+                g_app.OpenManual();
+                break;
+            case ID_HELP_ONLINE_HELP:
                 g_app.OpenOnlineHelp();
                 break;
             default:
@@ -994,10 +1049,22 @@ void CRmtApp::OpenUrl(const char* url)
     }
 }
 
-// CRmtApp::OpenOnlineHelp()
+// The help is in the repository of RITMO, on GitHub (the branch master: the
+// program does not know whether its version has a tag yet). The page of the
+// reference of RMT that the help opened before, rmt_en.html of the repository
+// of RMT, is gone (issue #3).
+static const char* kRitmoRepository = "https://github.com/gianlucarenzi/RITMO-Music-Tracker/blob/master/";
+
+// CRmtApp::OpenManual(): Help (F1), the user manual of RITMO
+void CRmtApp::OpenManual()
+{
+    QDesktopServices::openUrl(QUrl(QString(kRitmoRepository) + "doc/manual/ritmo-manual.pdf"));
+}
+
+// CRmtApp::OpenOnlineHelp(): Online Help (SHIFT+F1), the reference of RMT: menus, keys, instruments
 void CRmtApp::OpenOnlineHelp()
 {
-    QDesktopServices::openUrl(QUrl("https://html-preview.github.io/?url=https://github.com/raster-atari-org/RASTER-Music-Tracker/blob/1.35/doc//rmt_en.html"));
+    QDesktopServices::openUrl(QUrl(QString(kRitmoRepository) + "doc/rmt_en.md"));
 }
 
 // ---------------------------------------------------------------------------
