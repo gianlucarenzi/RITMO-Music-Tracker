@@ -31,6 +31,16 @@ Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
 - 2.6: the AppImage is `Ritmo-<version>-<arch>.AppImage` (`Ritmo-2.6-x86_64.AppImage`), without `Linux`, as AppImageHub
   asks, and carries the update information (`gh-releases-zsync`, the newest release that is not a prerelease): the release
   also has its `.zsync`, so AppImageUpdate downloads only what changed.
+- 2.6: AppImages for riscv64, ppc64 (big endian) and ppc64le, and the packages of ppc64le (`.deb` and `.tar.gz`, Debian
+  name `ppc64el`). There is no official appimagetool, runtime or linuxdeploy for these architectures:
+  `scripts/build-appimage-ports.sh` makes an AppDir of the folder of the `.tar.gz` in the emulated Debian container, packs
+  it on the x86_64 runner with appimagetool for x86_64 and the runtime of the architecture from the ports in
+  gianlucarenzi/appimagetool (release `ports-2`) and gianlucarenzi/type2-runtime (release `ports-1`), checked against
+  their sha256 sums, and starts the AppImage in the container for a screenshot. Under qemu-user an AppImage gives "Exec
+  format error" (the binfmt_misc rule of QEMU wants zeros where the AppImage has its magic bytes): the test runs a copy
+  without them. Porting them showed two bugs, proposed to AppImage: an overflow in `portable_option()` of the runtime
+  (type2-runtime#155) and appimagetool reading the ELF section headers of the runtime in the byte order of the machine,
+  which crashed it with the runtime of big endian ppc64 (appimagetool#133).
 - 2.6: the audio output plays on the default device of the PulseAudio host API of PortAudio when there is one, so that
   RITMO is a client of the sound server (PulseAudio, or PipeWire through pipewire-pulse): it follows the output chosen in
   the desktop (Bluetooth headphones) and its volume. Through ALSA the `default` device went where the configuration of

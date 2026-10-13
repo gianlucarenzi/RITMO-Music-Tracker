@@ -4,8 +4,8 @@
 
 Everything the program needs is inside each package: the tracker drivers and the other files it
 loads at run time are in the \texttt{resources} folder next to the program. (The \texttt{.deb} of
-the Linux architectures without an AppImage asks the package manager for the libraries instead of
-carrying them, section~\ref{sec:linux-arch}.)
+riscv64, ppc64 and ppc64le asks the package manager for the libraries instead of carrying them,
+section~\ref{sec:linux-arch}.)
 
 \begin{center}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{6.2cm}@{}}
@@ -21,10 +21,12 @@ macOS 12 or later, Apple Silicon or Intel & \texttt{Ritmo-macOS-arm64-}\emph{ver
   \menu{Open} (the program is not signed) \\
 Linux aarch64: Raspberry Pi 3/4/5 with a 64 bit system (Raspberry Pi OS 13, Debian 13, Ubuntu 24.04 and newer) &
   \texttt{Ritmo-}\emph{version}\texttt{-\allowbreak aarch64.AppImage} & as the x86\_64 one \\
-Linux riscv64 (Debian 13 and newer) & \texttt{ritmo\_}\emph{version}\texttt{\_riscv64.deb}, \texttt{Ritmo-Linux-\allowbreak riscv64-}\emph{version}\texttt{.tar.gz} &
-  install the \texttt{.deb} with \texttt{apt}, or unpack the archive (section~\ref{sec:linux-arch}) \\
-Linux ppc64: PowerPC 64 bit big endian (Debian ports, \emph{sid}) & \texttt{ritmo\_}\emph{version}\texttt{\_ppc64.deb}, \texttt{Ritmo-Linux-\allowbreak ppc64-}\emph{version}\texttt{.tar.gz} &
+Linux riscv64 (Debian 13 and newer) & \texttt{Ritmo-}\emph{version}\texttt{-\allowbreak riscv64.AppImage}, \texttt{ritmo\_}\emph{version}\texttt{\_riscv64.deb}, \texttt{Ritmo-Linux-\allowbreak riscv64-}\emph{version}\texttt{.tar.gz} &
+  run the AppImage, install the \texttt{.deb} with \texttt{apt}, or unpack the archive (section~\ref{sec:linux-arch}) \\
+Linux ppc64: PowerPC 64 bit big endian (Debian ports, \emph{sid}) & \texttt{Ritmo-}\emph{version}\texttt{-\allowbreak ppc64.AppImage}, \texttt{ritmo\_}\emph{version}\texttt{\_ppc64.deb}, \texttt{Ritmo-Linux-\allowbreak ppc64-}\emph{version}\texttt{.tar.gz} &
   as riscv64 \\
+Linux ppc64le: PowerPC 64 bit little endian, POWER8 and newer (Debian 13 and newer) & \texttt{Ritmo-}\emph{version}\texttt{-\allowbreak ppc64le.AppImage}, \texttt{ritmo\_}\emph{version}\texttt{\_ppc64el.deb}, \texttt{Ritmo-Linux-\allowbreak ppc64el-}\emph{version}\texttt{.tar.gz} &
+  as riscv64 (from 2.6) \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -42,7 +44,8 @@ version (\texttt{Ritmo-Linux-x86\_64.AppImage}); from 2.6 the AppImage has no \t
 
 \section{Linux, architecture by architecture}\label{sec:linux-arch}
 
-\texttt{uname -m} tells the architecture of the machine: \texttt{x86\_64}, \texttt{aarch64}, \texttt{riscv64} or \texttt{ppc64}.
+\texttt{uname -m} tells the architecture of the machine: \texttt{x86\_64}, \texttt{aarch64}, \texttt{riscv64}, \texttt{ppc64} or
+\texttt{ppc64le} (whose Debian name, in the \texttt{.deb} and the \texttt{.tar.gz}, is \texttt{ppc64el}).
 
 \subsection{x86\_64 and aarch64 (Raspberry Pi): the AppImage}
 
@@ -61,13 +64,29 @@ The x86\_64 AppImage runs on Debian 11, Ubuntu 20.04 and newer. The aarch64 one 
 (\emph{trixie}), Debian 13, Ubuntu 24.04 and newer, on a Raspberry Pi 3, 4 or 5 with a 64 bit system (\texttt{uname -m} must say
 \texttt{aarch64}: on a 32 bit system it says \texttt{armv7l} and there is no package).
 
-\subsection{riscv64 and ppc64: the .deb}
+\subsection{riscv64, ppc64 and ppc64le: the AppImage}
 
-For Debian and the systems derived from it, riscv64 needs Debian 13 or newer, and ppc64 (PowerPC 64 bit \emph{big endian}) the
-\emph{sid} release of Debian ports, the only one that has this architecture. The \texttt{.deb} contains the program and
+From 2.6 these architectures have an AppImage too, started as the x86\_64 one:
+\begin{lstlisting}
+sudo apt install fuse3                     # FUSE for the AppImage
+chmod +x Ritmo-2.6-riscv64.AppImage        # Ritmo-2.6-ppc64.AppImage, Ritmo-2.6-ppc64le.AppImage
+./Ritmo-2.6-riscv64.AppImage mysong.rmt
+./Ritmo-2.6-riscv64.AppImage --appimage-extract-and-run mysong.rmt   # without FUSE
+\end{lstlisting}
+It carries the same files as the archive below: Qt~6, PortAudio and RtMidi, but not glibc and the graphics and sound
+libraries of the drivers, so it needs the same Debian releases and the packages that the \texttt{README.txt} of the archive
+lists. There is no official \texttt{appimagetool} for these architectures yet: the AppImages are made with its ports to
+riscv64, ppc64 and ppc64le and to their runtimes (\url{https://github.com/gianlucarenzi/appimagetool},
+\url{https://github.com/gianlucarenzi/type2-runtime}), proposed to the AppImage project.
+
+\subsection{riscv64, ppc64 and ppc64le: the .deb}
+
+For Debian and the systems derived from it, riscv64 and ppc64le (PowerPC 64 bit \emph{little endian}, POWER8 and newer) need
+Debian 13 or newer, and ppc64 (PowerPC 64 bit \emph{big endian}) the \emph{sid} release of Debian ports, the only one that has
+this architecture. The \texttt{.deb} contains the program and
 \texttt{apt} installs the libraries it needs (Qt~6, PortAudio, RtMidi...) by itself:
 \begin{lstlisting}
-sudo apt install ./ritmo_2.5_riscv64.deb   # ppc64: ./ritmo_2.5_ppc64.deb
+sudo apt install ./ritmo_2.6_riscv64.deb   # ./ritmo_2.6_ppc64.deb, ./ritmo_2.6_ppc64el.deb
 ritmo mysong.rmt                           # also in the menu of the desktop
 \end{lstlisting}
 The \texttt{./} before the name is needed: without it \texttt{apt} looks for a package of that name in the repositories.
@@ -76,13 +95,13 @@ The program goes in \texttt{/usr/lib/ritmo}, with the link \texttt{/usr/bin/ritm
 sudo apt remove ritmo
 \end{lstlisting}
 
-\subsection{riscv64 and ppc64: the archive}
+\subsection{riscv64, ppc64 and ppc64le: the archive}
 
 For the other distributions, or where \texttt{apt} is not used, the \texttt{.tar.gz} carries Qt~6, PortAudio and RtMidi (folders
 \texttt{lib} and \texttt{plugins}); of the machine it only uses glibc and the graphics (OpenGL) and sound (ALSA) libraries of its
 drivers. The \texttt{README.txt} inside lists the Debian packages for these:
 \begin{lstlisting}
-tar xzf Ritmo-Linux-riscv64-2.6.tar.gz     # ppc64: Ritmo-Linux-ppc64-2.6.tar.gz
+tar xzf Ritmo-Linux-riscv64-2.6.tar.gz     # Ritmo-Linux-ppc64-2.6.tar.gz, Ritmo-Linux-ppc64el-2.6.tar.gz
 cd Ritmo-Linux-riscv64                     # the folder has no version
 cat README.txt                             # the packages the machine needs
 sudo apt install <the packages of README.txt>
@@ -90,7 +109,7 @@ sudo apt install <the packages of README.txt>
 \end{lstlisting}
 \texttt{ritmo} is a script that sets where the libraries and the plug-ins are: it can be started from any folder, and the
 \texttt{resources} folder must stay next to it. Nothing is installed: to remove it, delete the folder. The glibc of the machine
-cannot be older than the one the archive was built with (Debian 13 for riscv64, \emph{sid} for ppc64).
+cannot be older than the one the archive was built with (Debian 13 for riscv64 and ppc64le, \emph{sid} for ppc64).
 
 \begin{note}
 There are no packages for PowerPC 32 bit and for ppc64le (little endian PowerPC). The packages of riscv64 and ppc64 have been built
