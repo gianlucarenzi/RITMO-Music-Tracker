@@ -25,6 +25,9 @@
 
 #ifdef RMT_HAVE_PORTAUDIO
 #include <portaudio.h>
+#ifdef __linux__
+#include <dlfcn.h>
+#endif
 #endif
 
 // ---------------------------------------------------------------------------
@@ -265,12 +268,48 @@ static bool SameName(const char* a, const char* b)
     return *a == *b;
 }
 
-// The output device: the default one of the PulseAudio host API when there
-// is one (a PortAudio built with it and a PulseAudio or PipeWire server), so
-// that RITMO is a client of the sound server like any other program: it
+// Whether the default device of ALSA goes to a sound server: it is then an
+// ALSA plugin of type ioplug (pipewire of pipewire-alsa, pulse), not a sound
+// card (hw, dmix, or plug in front of them). libasound is loaded here, so
+// that RITMO does not need it to start.
+static bool AlsaDefaultIsSoundServer()
+{
+#ifdef __linux__
+    void* lib = dlopen("libasound.so.2", RTLD_NOW);
+    if (!lib) return false;
+    typedef int (*Open)(void**, const char*, int, int);
+    typedef int (*Type)(void*);
+    typedef int (*Close)(void*);
+    auto open = (Open)dlsym(lib, "snd_pcm_open");
+    auto type = (Type)dlsym(lib, "snd_pcm_type");
+    auto close = (Close)dlsym(lib, "snd_pcm_close");
+    bool server = false;
+    void* pcm = nullptr;
+    // SND_PCM_STREAM_PLAYBACK 0, SND_PCM_NONBLOCK 1, SND_PCM_TYPE_IOPLUG 28
+    if (open && type && close && open(&pcm, "default", 0, 1) == 0) {
+        server = type(pcm) == 28;
+        close(pcm);
+    }
+    dlclose(lib);
+    return server;
+#else
+    return false;
+#endif
+}
+
+// The output device, so that RITMO is a client of the sound server
+// (PulseAudio or PipeWire) like any other program when there is one: it
 // plays on the output chosen in the desktop (Bluetooth headphones...) and
-// follows its volume. Otherwise the default device of PortAudio, that of
-// the first host API (ALSA on Linux), where the configuration of ALSA says.
+// follows its volume.
+// - The default device of ALSA when it goes to the sound server
+//   (pipewire-alsa, or the pulse plugin of ALSA): there moving the sound
+//   between the outputs of the desktop works best.
+// - Otherwise the default device of the PulseAudio host API, when there is
+//   one (a PortAudio built with it and a PulseAudio or PipeWire server): on
+//   a PipeWire without pipewire-alsa the default device of ALSA is a sound
+//   card, and the sound would ignore the desktop.
+// - Otherwise the default device of PortAudio, that of the first host API
+//   (ALSA on Linux), where the configuration of ALSA says.
 // RMT_AUDIO_HOST_API=<name>: the default device of another host API (ALSA,
 // JACK, PulseAudio... as RMT_AUDIO_DEBUG=1 lists them)
 static PaDeviceIndex OutputDevice()
@@ -283,8 +322,15 @@ static PaDeviceIndex OutputDevice()
         }
         std::fprintf(stderr, "RMT: no audio output on the host API %s\n", name);
     }
+    PaHostApiIndex alsa = Pa_HostApiTypeIdToHostApiIndex(paALSA);
+    const PaHostApiInfo* api = alsa >= 0 ? Pa_GetHostApiInfo(alsa) : nullptr;
+    if (api && api->defaultOutputDevice != paNoDevice && AlsaDefaultIsSoundServer()) {
+        if (std::getenv("RMT_AUDIO_DEBUG"))
+            std::fprintf(stderr, "DBG audio: the default device of ALSA goes to the sound server\n");
+        return api->defaultOutputDevice;
+    }
     PaHostApiIndex pulse = Pa_HostApiTypeIdToHostApiIndex(kPulseAudioHostApi);
-    const PaHostApiInfo* api = pulse >= 0 ? Pa_GetHostApiInfo(pulse) : nullptr;
+    api = pulse >= 0 ? Pa_GetHostApiInfo(pulse) : nullptr;
     if (api && api->defaultOutputDevice != paNoDevice) return api->defaultOutputDevice;
     return Pa_GetDefaultOutputDevice();
 }

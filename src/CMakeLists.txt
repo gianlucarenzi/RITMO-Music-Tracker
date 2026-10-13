@@ -352,6 +352,8 @@ endif()
 # Create executable
 add_executable(Rmt WIN32 ${RMT_SOURCES})
 target_link_libraries(Rmt PRIVATE Threads::Threads)
+# dlopen (libasound, to see where the default device of ALSA goes: CompatAudio.cpp)
+target_link_libraries(Rmt PRIVATE ${CMAKE_DL_LIBS})
 
 # Set target properties
 # VERSION/SOVERSION on an executable only make a versioned file plus a
