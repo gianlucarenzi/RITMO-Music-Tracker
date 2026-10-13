@@ -24,9 +24,11 @@
 #
 # Environment: RMT_APPIMAGE_DEPS=0 skips installing the dependencies (they
 # are there already), WORK is the build folder (default build-appimage/).
-# Output: $WORK/Ritmo-Linux-<arch>-<version>.AppImage (the version of
-# scripts/package-version.sh) and $WORK/ritmo-linux.png, the
-# offscreen screenshot of the smoke test run of the AppImage itself.
+# Output: $WORK/Ritmo-<version>-<arch>.AppImage (the version of
+# scripts/package-version.sh; no "Linux" in the name, as AppImageHub asks:
+# every AppImage is for Linux), its $WORK/Ritmo-<version>-<arch>.AppImage.zsync
+# for AppImageUpdate, and $WORK/ritmo-linux.png, the offscreen screenshot of
+# the smoke test run of the AppImage itself.
 
 set -euo pipefail
 
@@ -157,8 +159,12 @@ export APPIMAGE_EXTRACT_AND_RUN=1           # no FUSE in containers
 export QMAKE=$QT_DIR/bin/qmake
 export LD_LIBRARY_PATH=$QT_DIR/lib:$PORTAUDIO_DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 export EXTRA_PLATFORM_PLUGINS=libqoffscreen.so  # for the smoke test below
-export OUTPUT=Ritmo-Linux-$ARCH-$("$ROOT/scripts/package-version.sh").AppImage
-rm -f Ritmo-Linux-$ARCH*.AppImage
+export OUTPUT=Ritmo-$("$ROOT/scripts/package-version.sh")-$ARCH.AppImage
+# The update information in the AppImage: AppImageUpdate looks for the .zsync
+# of the newest release of GitHub (not the prereleases, the v2.x-rcN), which
+# appimagetool writes next to the AppImage
+export LDAI_UPDATE_INFORMATION="gh-releases-zsync|gianlucarenzi|RITMO-Music-Tracker|latest|Ritmo-*-$ARCH.AppImage.zsync"
+rm -f Ritmo-*-$ARCH.AppImage Ritmo-*-$ARCH.AppImage.zsync
 ./linuxdeploy-$ARCH.AppImage --appdir "$APPDIR" \
     --executable "$APPDIR/usr/bin/ritmo" --desktop-file ritmo.desktop --icon-file ritmo.png \
     --plugin qt --output appimage
@@ -178,4 +184,5 @@ rm -f ritmo-linux.png
 QT_QPA_PLATFORM=offscreen RMT_QT_GRAB=$PWD/ritmo-linux.png RMT_QT_GRAB_MS=3000 XDG_CONFIG_HOME=$PWD/config \
     timeout 120 ./$OUTPUT "$ROOT/rmt/songs/rmt128/raster/gemx.rmt" || true
 test -f ritmo-linux.png
-ls -la $OUTPUT ritmo-linux.png
+test -f $OUTPUT.zsync
+ls -la $OUTPUT $OUTPUT.zsync ritmo-linux.png

@@ -28,6 +28,9 @@ Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
   #2). `scripts/package-version.sh` gives it: the tag without the v on a tag, `git describe` after it, `RMT_BASE_VERSION`
   without git. `download-appimage.sh` finds both names. `.gitattributes` keeps the shell scripts at LF, as the Windows
   build runs one with the bash of MSYS2.
+- 2.6: the AppImage is `Ritmo-<version>-<arch>.AppImage` (`Ritmo-2.6-x86_64.AppImage`), without `Linux`, as AppImageHub
+  asks, and carries the update information (`gh-releases-zsync`, the newest release that is not a prerelease): the release
+  also has its `.zsync`, so AppImageUpdate downloads only what changed.
 - 2.6: the audio output plays on the default device of the PulseAudio host API of PortAudio when there is one, so that
   RITMO is a client of the sound server (PulseAudio, or PipeWire through pipewire-pulse): it follows the output chosen in
   the desktop (Bluetooth headphones) and its volume. Through ALSA the `default` device went where the configuration of

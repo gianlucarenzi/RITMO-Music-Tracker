@@ -9,7 +9,8 @@ name: Build RITMO on Linux
 #   GitHub in an Ubuntu 24.04 container: the official Qt 6 for ARM64 needs
 #   glibc 2.38, so it runs on Raspberry Pi OS 13 (trixie) and newer.
 # The official Qt 6, PortAudio and RtMidi go into the AppImage with
-# linuxdeploy. A tag v* builds them and publishes them as release assets;
+# linuxdeploy, with the update information for AppImageUpdate (and the .zsync
+# next to each AppImage). A tag v* builds them and publishes them as release assets;
 # started by hand it only keeps them as artifacts.
 
 on:
@@ -59,12 +60,15 @@ jobs:
         with:
           name: Ritmo-Linux-${{ matrix.arch }}
           path: |
-            build-appimage/Ritmo-Linux-${{ matrix.arch }}-*.AppImage
+            build-appimage/Ritmo-*-${{ matrix.arch }}.AppImage
+            build-appimage/Ritmo-*-${{ matrix.arch }}.AppImage.zsync
             build-appimage/ritmo-linux.png
 
       - name: Create release and upload asset
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
-          files: build-appimage/Ritmo-Linux-${{ matrix.arch }}-*.AppImage
+          files: |
+            build-appimage/Ritmo-*-${{ matrix.arch }}.AppImage
+            build-appimage/Ritmo-*-${{ matrix.arch }}.AppImage.zsync
           prerelease: ${{ contains(github.ref_name, '-rc') }}   # v2.0-rcN of scripts/push.sh

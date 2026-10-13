@@ -6,8 +6,8 @@
 # E.g.:  ./download-appimage.sh 2.4 ~/Downloads
 #
 # Needs the GitHub CLI (gh). The AppImage of the architecture of this machine
-# (x86_64 or aarch64) is saved as Ritmo-Linux-<arch>-<version>.AppImage
-# (RMT-Linux-x86_64-<version>.AppImage for the releases up to 2.2.1, which were called RMT).
+# (x86_64 or aarch64) is saved as Ritmo-<version>-<arch>.AppImage
+# (RMT-<version>-x86_64.AppImage for the releases up to 2.2.1, which were called RMT).
 
 set -e
 
@@ -34,7 +34,7 @@ echo "   Destination: $OUTPUT_DIR"
 TEMP_DIR=$(mktemp -d)
 trap "rm -rf $TEMP_DIR" EXIT
 
-if ! gh release download "$TAG" --repo "$REPO" --pattern "*-Linux-${ARCH}*.AppImage" --dir "$TEMP_DIR"; then
+if ! gh release download "$TAG" --repo "$REPO" --pattern "*-Linux-${ARCH}*.AppImage" --pattern "Ritmo-*-${ARCH}.AppImage" --dir "$TEMP_DIR"; then
     echo "❌ Error: cannot download version $VERSION"
     echo "   Check that the tag $TAG exists in the repository"
     exit 1
@@ -47,10 +47,11 @@ if [ -z "$APPIMAGE_FILE" ]; then
     exit 1
 fi
 
-# The name of the output file: Ritmo-Linux-... from 2.3, RMT-Linux-... up to 2.2.1
-# (from 2.6 the AppImage of the release already has the version in its name: the same one)
-PREFIX=$(basename "$APPIMAGE_FILE" | sed 's/-Linux.*//')
-OUTPUT_FILE="$OUTPUT_DIR/${PREFIX}-Linux-${ARCH}-${VERSION}.AppImage"
+# The name of the output file: Ritmo-... from 2.3, RMT-... up to 2.2.1 (up to 2.5
+# the AppImage of the release was Ritmo-Linux-<arch>.AppImage, from 2.6 it is
+# Ritmo-<version>-<arch>.AppImage: the same name)
+PREFIX=$(basename "$APPIMAGE_FILE" | sed 's/-.*//')
+OUTPUT_FILE="$OUTPUT_DIR/${PREFIX}-${VERSION}-${ARCH}.AppImage"
 
 # Move the file and make it executable
 mv "$APPIMAGE_FILE" "$OUTPUT_FILE"

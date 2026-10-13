@@ -119,7 +119,8 @@ The 2.5 release also has the packages for more Linux architectures:
 | Linux ppc64: PowerPC 64 bit big endian (Debian ports, sid) | [`ritmo_2.5_ppc64.deb`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/ritmo_2.5_ppc64.deb) or [`Ritmo-Linux-ppc64.tar.gz`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-Linux-ppc64.tar.gz) | see [below](#linux-riscv64-and-ppc64-powerpc-64-bit-big-endian) |
 
 From 2.6 the names of the packages carry the version, so that several versions
-can be kept side by side: `Ritmo-Linux-x86_64-2.6.AppImage`,
+can be kept side by side: `Ritmo-2.6-x86_64.AppImage` (the AppImage has no
+`Linux` in its name, and updates itself with AppImageUpdate),
 `Ritmo-Windows-x64-Setup-2.6.exe`, `Ritmo-macOS-arm64-2.6.dmg`... (`2.6-rc3` and
 so on for the test builds).
 

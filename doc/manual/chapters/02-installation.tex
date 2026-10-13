@@ -11,7 +11,7 @@ carrying them, section~\ref{sec:linux-arch}.)
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{6.2cm}@{}}
 \toprule
 System & Package & How to start it \\ \midrule
-Linux x86\_64 (Debian 11, Ubuntu 20.04 and newer) & \texttt{Ritmo-Linux-\allowbreak x86\_64-}\emph{version}\texttt{.AppImage} &
+Linux x86\_64 (Debian 11, Ubuntu 20.04 and newer) & \texttt{Ritmo-}\emph{version}\texttt{-\allowbreak x86\_64.AppImage} &
   make it executable (\texttt{chmod +x}) and run it \\
 Windows 64 bit & \texttt{Ritmo-Windows-x64-Setup-}\emph{version}\texttt{.exe}, \texttt{Ritmo-Windows-x64-}\emph{version}\texttt{.zip} &
   run the installer (it asks whether to install for all the users or for the current one, and offers a desktop icon and the
@@ -20,7 +20,7 @@ macOS 12 or later, Apple Silicon or Intel & \texttt{Ritmo-macOS-arm64-}\emph{ver
   drag \texttt{Ritmo.app} to Applications; the first time open it with the right button and
   \menu{Open} (the program is not signed) \\
 Linux aarch64: Raspberry Pi 3/4/5 with a 64 bit system (Raspberry Pi OS 13, Debian 13, Ubuntu 24.04 and newer) &
-  \texttt{Ritmo-Linux-\allowbreak aarch64-}\emph{version}\texttt{.AppImage} & as the x86\_64 one \\
+  \texttt{Ritmo-}\emph{version}\texttt{-\allowbreak aarch64.AppImage} & as the x86\_64 one \\
 Linux riscv64 (Debian 13 and newer) & \texttt{ritmo\_}\emph{version}\texttt{\_riscv64.deb}, \texttt{Ritmo-Linux-\allowbreak riscv64-}\emph{version}\texttt{.tar.gz} &
   install the \texttt{.deb} with \texttt{apt}, or unpack the archive (section~\ref{sec:linux-arch}) \\
 Linux ppc64: PowerPC 64 bit big endian (Debian ports, \emph{sid}) & \texttt{ritmo\_}\emph{version}\texttt{\_ppc64.deb}, \texttt{Ritmo-Linux-\allowbreak ppc64-}\emph{version}\texttt{.tar.gz} &
@@ -36,7 +36,8 @@ The packages of the versions up to 2.2.1 were called \texttt{RMT-*} and the prog
 (\texttt{Rmt.exe}). From the next releases the packages are \texttt{Ritmo-*} and the program
 \texttt{ritmo} (\texttt{Ritmo.exe}). From 2.6 their names carry the version, so that several can be kept side by side:
 \emph{version} is \texttt{2.6} for the release 2.6, \texttt{2.6-rc3} for a test build; up to 2.5 the names had no
-version (\texttt{Ritmo-Linux-x86\_64.AppImage}). The examples of this chapter use \texttt{2.6}.
+version (\texttt{Ritmo-Linux-x86\_64.AppImage}); from 2.6 the AppImage has no \texttt{Linux} in its name
+(\texttt{Ritmo-2.6-x86\_64.AppImage}) and can update itself with AppImageUpdate. The examples of this chapter use \texttt{2.6}.
 \end{note}
 
 \section{Linux, architecture by architecture}\label{sec:linux-arch}
@@ -49,12 +50,12 @@ An AppImage is one file with the program and everything it needs (Qt, PortAudio,
 \texttt{libfuse2} library to start (on Debian 13 and Ubuntu 24.04 the package is called \texttt{libfuse2t64}):
 \begin{lstlisting}
 sudo apt install libfuse2                  # libfuse2t64 on Debian 13 and Ubuntu 24.04
-chmod +x Ritmo-Linux-x86_64-2.6.AppImage   # Raspberry Pi: Ritmo-Linux-aarch64-2.6.AppImage
-./Ritmo-Linux-x86_64-2.6.AppImage mysong.rmt
+chmod +x Ritmo-2.6-x86_64.AppImage   # Raspberry Pi: Ritmo-2.6-aarch64.AppImage
+./Ritmo-2.6-x86_64.AppImage mysong.rmt
 \end{lstlisting}
 Without FUSE the file can still run, unpacking itself in a temporary folder:
 \begin{lstlisting}
-./Ritmo-Linux-x86_64-2.6.AppImage --appimage-extract-and-run mysong.rmt
+./Ritmo-2.6-x86_64.AppImage --appimage-extract-and-run mysong.rmt
 \end{lstlisting}
 The x86\_64 AppImage runs on Debian 11, Ubuntu 20.04 and newer. The aarch64 one needs glibc 2.38 or newer: Raspberry Pi OS 13
 (\emph{trixie}), Debian 13, Ubuntu 24.04 and newer, on a Raspberry Pi 3, 4 or 5 with a 64 bit system (\texttt{uname -m} must say
@@ -180,7 +181,7 @@ through the sound server but straight to a sound card. To find out where it goes
 the diagnostics on and play a song:
 
 \begin{lstlisting}
-RMT_AUDIO_DEBUG=1 ./Ritmo-Linux-x86_64-2.6.AppImage 2> ritmo-audio.log
+RMT_AUDIO_DEBUG=1 ./Ritmo-2.6-x86_64.AppImage 2> ritmo-audio.log
 grep 'DBG audio: host API' ritmo-audio.log
 \end{lstlisting}
 
