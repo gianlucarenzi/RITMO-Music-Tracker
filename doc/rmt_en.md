@@ -403,7 +403,7 @@ documentation).
 A debugging mode for pitch calculations: Pokey > Activate Pokey Explorer
 Mode (Ctrl+Shift+F5) stops the RMT routines and lets the keys write the
 POKEY registers directly; the Edit/Jam mode toggle leaves the mode again.
-With View > Pokey Chip Registers on, three rows below the register dumps
+With Pokey > Pokey Chip Registers on, three rows below the register dumps
 detail one channel: its AUDF and AUDC bytes, the first divisor of
 `AUDF + MODOFFSET` from 3 up ("MODULO"), the pitch formula's coarse divisor
 (28 at 64 kHz, 114 at 15 kHz, 1 at 1.79 MHz and for joined channels), the

@@ -5,6 +5,9 @@
 #
 #   doc/manual/make-screenshots.sh [path/to/ritmo]      (default: build-qt/out/ritmo)
 #   ONLY='dialog-*' doc/manual/make-screenshots.sh      only the images whose name matches
+#
+# All the images come from the Qt 5 build (build-qt, the default): offscreen, the Qt 6 one draws the
+# menus and the dialogs with a smaller font, and its images would not match the others.
 set -eu
 cd "$(dirname "$0")/../.."
 RMT=$(realpath "${1:-build-qt/out/ritmo}")
@@ -56,8 +59,10 @@ shot window-song "$SONG" 1500 RMT_QT_COMMANDS="$(id ID_EM_SONG)"
 shot window-info "$SONG" 1500 RMT_QT_COMMANDS="$(id ID_EM_INFO)"
 shot window-stereo "$STEREO" 1500
 shot window-playing "$STEREO" 6000 RMT_AUDIO_DUMP="$WORK/play.wav" RMT_QT_COMMANDS="$(id ID_PLAY1)"
-shot window-explorer "$SONG" 2500 RMT_QT_COMMANDS="$(id ID_EDIT_ACTIVATE_POKEY_EXPLORER_MODE),$(id ID_VIEW_POKEYREGS)"
-shot window-analyzer "$STEREO" 5000 RMT_AUDIO_DUMP="$WORK/play2.wav" RMT_QT_COMMANDS="$(id ID_VIEW_VOLUMEANALYZER),$(id ID_PLAY1)"
+# (the volume analyzer and the POKEY registers are on by default: their commands would
+# switch them off; the registers have room on the screen with the 4 tracks of a mono song)
+shot window-explorer "$SONG" 2500 RMT_QT_COMMANDS="$(id ID_EDIT_ACTIVATE_POKEY_EXPLORER_MODE)"
+shot window-analyzer "$SONG" 5000 RMT_AUDIO_DUMP="$WORK/play2.wav" RMT_QT_COMMANDS="$(id ID_PLAY1)"
 
 # the menus
 shot window-menus "$SONG" 1500 RMT_QT_MENU_GRAB="$OUT/menu"

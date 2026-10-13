@@ -27,7 +27,7 @@ figure~\ref{fig:window-tracks} (page~\pageref{fig:window-tracks}) and described 
     (\texttt{L1}\ldots\texttt{L4}, and \texttt{R1}\ldots\texttt{R4} for a stereo song). Each cell is the number of the track
     that plays there. The arrow marks the current song line. A line with \texttt{GO TO LINE} sends the song to another line:
     that is how a song loops.
-  \item[Pokey registers] With \menu{View $\rightarrow$ Pokey Chip Registers} on, the registers of the POKEY (\texttt{\$D200}\ldots), the
+  \item[Pokey registers] With \menu{Pokey $\rightarrow$ Pokey Chip Registers} on, the registers of the POKEY (\texttt{\$D200}\ldots), the
         pitch, volume and distortion of each channel, as the emulated chip has them at that moment. They are drawn on the right of the song area,
         so they need a window about 1250 pixels wide for a mono song (they fit the 1366$\times$768 window) and about 1720 for a stereo one, whose
         tracks take more room; on a narrower window they are not shown.
@@ -64,9 +64,11 @@ Info (\texttt{INFO EDIT}) & \key{SHIFT+F4} & the name, the speeds, the kind of s
 
 \shot{window-instruments}{The instrument part (\texttt{INSTRUMENT EDIT}) with an instrument loaded.}{0.98}
 
-\shot{window-song}{The song part: the cursor is in the song area.}{0.98}
+\shotpart{window-song}{The song part (the top right of the window): the cursor is in the song area, on the track of
+channel L1 in song line 00.}{0.4}{403.2bp 372.96bp 429.12bp 50.4bp}
 
-\shot{window-info}{The info part: the cursor is on the speed field.}{0.98}
+\shotpart{window-info}{The info part (the top left of the window): the cursor is on the name of the song, which
+is drawn in red.}{0.85}{0bp 434.16bp 580.32bp 54bp}
 
 \section{Edit mode and prove mode}
 
