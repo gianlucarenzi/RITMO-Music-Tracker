@@ -14,10 +14,13 @@
 #
 # Those Ubuntu versions have no Qt 6.8: the official Qt 6 is installed with
 # aqtinstall and goes into the AppImage.
-# GCC (10 on 20.04, the default one on 24.04), CMake (from pip on 20.04),
-# PortAudio and RtMidi come from Ubuntu. linuxdeploy with its Qt
-# plugin makes the AppImage; the ELF files in it may need no glibc newer
-# than MAX_GLIBC.
+# GCC (10 on 20.04, the default one on 24.04), CMake (from pip on 20.04)
+# and RtMidi come from Ubuntu. PortAudio is built from its sources
+# (PORTAUDIO_COMMIT): the PulseAudio host API, which makes RITMO a client of
+# the sound server (PulseAudio or PipeWire) like any other program, is in
+# no release yet, and the PortAudio of Ubuntu has only ALSA, JACK and OSS.
+# linuxdeploy with its Qt plugin makes the AppImage; the ELF files in it
+# may need no glibc newer than MAX_GLIBC.
 #
 # Environment: RMT_APPIMAGE_DEPS=0 skips installing the dependencies (they
 # are there already), WORK is the build folder (default build-appimage/).
@@ -27,6 +30,9 @@
 set -euo pipefail
 
 QT_VERSION=6.8.3
+# PortAudio master of 2026-10-08, with scripts/patches/portaudio-*.patch
+PORTAUDIO_COMMIT=d71746635dae088c5d7c808d5f29f0b939458739
+PORTAUDIO_DIR=/opt/portaudio
 ARCH=$(uname -m)
 case $ARCH in
     x86_64)
@@ -64,7 +70,7 @@ if [ "${RMT_APPIMAGE_DEPS:-1}" = 1 ]; then
     apt-get install -y --no-install-recommends \
         $COMPILER_PACKAGES $CMAKE_PACKAGES ninja-build pkg-config git ca-certificates wget file \
         python3-pip python3-dev $PYTHON_PACKAGES imagemagick \
-        portaudio19-dev librtmidi-dev libcups2 \
+        libasound2-dev libjack-jackd2-dev libpulse-dev librtmidi-dev libcups2 \
         libgl1-mesa-dev libegl1 libfontconfig1 libfreetype6 libdbus-1-3 \
         libxkbcommon-dev libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
         libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 libxcb-xfixes0 \
@@ -85,12 +91,37 @@ if [ "${RMT_APPIMAGE_DEPS:-1}" = 1 ]; then
     [ -d "$QT_DIR" ] || (cd /tmp && /opt/aqt-venv/bin/python -m aqt install-qt $QT_HOST desktop $QT_VERSION $QT_ARCH -O /opt/qt)
 fi
 
+# --- PortAudio ---------------------------------------------------------------
+
+# ALSA, JACK and PulseAudio; libasound and libjack stay those of the system
+# (the excludelist of AppImage), libpulse goes into the AppImage
+if [ ! -f "$PORTAUDIO_DIR/lib/libportaudio.so.2" ]; then
+    rm -rf "$WORK/portaudio"
+    mkdir -p "$WORK/portaudio"
+    wget -qO- https://github.com/PortAudio/portaudio/archive/$PORTAUDIO_COMMIT.tar.gz \
+        | tar -xz -C "$WORK/portaudio" --strip-components=1
+    for p in "$ROOT"/scripts/patches/portaudio-*.patch; do
+        (cd "$WORK/portaudio" && git apply "$p")
+    done
+    cmake -S "$WORK/portaudio" -B "$WORK/portaudio/build" -G Ninja -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DBUILD_SHARED_LIBS=ON \
+        -DPA_USE_ALSA=ON -DPA_USE_JACK=ON -DPA_USE_PULSEAUDIO=ON \
+        -DCMAKE_INSTALL_PREFIX="$PORTAUDIO_DIR" -DCMAKE_INSTALL_LIBDIR=lib
+    cmake --build "$WORK/portaudio/build"
+    cmake --install "$WORK/portaudio/build"
+fi
+# (PortAudio leaves out quietly a host API whose library it does not find)
+for lib in libasound libjack libpulse; do
+    objdump -p "$PORTAUDIO_DIR/lib/libportaudio.so.2" | grep -q "NEEDED *$lib\." \
+        || { echo "PortAudio was built without $lib"; exit 1; }
+done
+
 # --- build -------------------------------------------------------------------
 
 git config --global --add safe.directory "$ROOT" 2>/dev/null || true
 cmake -S . -B "$WORK/build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DRMT_QT_MAJOR=6 \
     -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX \
-    -DCMAKE_PREFIX_PATH="$QT_DIR"
+    -DCMAKE_PREFIX_PATH="$QT_DIR;$PORTAUDIO_DIR"
 cmake --build "$WORK/build" --parallel
 
 # --- AppDir ------------------------------------------------------------------
@@ -123,7 +154,7 @@ for tool in linuxdeploy-$ARCH.AppImage linuxdeploy-plugin-qt-$ARCH.AppImage; do
 done
 export APPIMAGE_EXTRACT_AND_RUN=1           # no FUSE in containers
 export QMAKE=$QT_DIR/bin/qmake
-export LD_LIBRARY_PATH=$QT_DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+export LD_LIBRARY_PATH=$QT_DIR/lib:$PORTAUDIO_DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
 export EXTRA_PLATFORM_PLUGINS=libqoffscreen.so  # for the smoke test below
 export OUTPUT=Ritmo-Linux-$ARCH.AppImage
 rm -f $OUTPUT

@@ -1,0 +1,49 @@
+PortAudio, PulseAudio host API: no PulseAudio server is not an error.
+
+Without a server (a system with ALSA only) PaPulseAudio_Initialize failed,
+and with it Pa_Initialize, for all the host APIs: no sound at all, ALSA
+included. With this patch the PulseAudio host API is left out and the
+others work. Applied by scripts/build-appimage.sh.
+
+diff --git a/src/hostapi/pulseaudio/pa_linux_pulseaudio.c b/src/hostapi/pulseaudio/pa_linux_pulseaudio.c
+index 3fe4109..63ae82c 100644
+--- a/src/hostapi/pulseaudio/pa_linux_pulseaudio.c
++++ b/src/hostapi/pulseaudio/pa_linux_pulseaudio.c
+@@ -562,6 +562,7 @@ PaError PaPulseAudio_Initialize( PaUtilHostApiRepresentation ** hostApi,
+                                  PaHostApiIndex hostApiIndex )
+ {
+     PaError result = paNoError;
++    int noServer = 0;
+     int i;
+     int ret = 0;
+     int lockTaken = 0;
+@@ -611,6 +612,7 @@ PaError PaPulseAudio_Initialize( PaUtilHostApiRepresentation ** hostApi,
+         PA_PULSEAUDIO_SET_LAST_HOST_ERROR( ret,
+                                            "PulseAudio_Initialize: Can't connect to server");
+         result = paUnanticipatedHostError;
++        noServer = 1;
+         goto error;
+     }
+ 
+@@ -625,6 +627,7 @@ PaError PaPulseAudio_Initialize( PaUtilHostApiRepresentation ** hostApi,
+ 
+         if( result > PA_OK )
+         {
++            noServer = 1;
+             goto error;
+         }
+ 
+@@ -799,6 +802,13 @@ PaError PaPulseAudio_Initialize( PaUtilHostApiRepresentation ** hostApi,
+         pulseaudioHostApi = NULL;
+     }
+ 
++    /* no PulseAudio server: no PulseAudio host API, the others still work */
++    if( noServer )
++    {
++        *hostApi = NULL;
++        return paNoError;
++    }
++
+     return result;
+ }
+ 

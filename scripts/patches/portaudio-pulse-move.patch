@@ -1,0 +1,23 @@
+PortAudio, PulseAudio host API: the streams can move to another sink.
+
+The streams were created with PA_STREAM_DONT_MOVE: a stream on the default
+sink stayed on the sink that was the default when it started, and the sound
+server refused to move it (a new default sink, Bluetooth headphones, the
+choice of the user in the mixer of the desktop). Without the flag the
+server moves it like the stream of any other program. Applied by
+scripts/build-appimage.sh.
+
+diff --git a/src/hostapi/pulseaudio/pa_linux_pulseaudio_cb.c b/src/hostapi/pulseaudio/pa_linux_pulseaudio_cb.c
+index 1103c98..4acc78c 100644
+--- a/src/hostapi/pulseaudio/pa_linux_pulseaudio_cb.c
++++ b/src/hostapi/pulseaudio/pa_linux_pulseaudio_cb.c
+@@ -776,8 +776,7 @@ PaError PaPulseAudio_StartStreamCb( PaStream * s )
+                                  PA_STREAM_AUTO_TIMING_UPDATE |
+                                  PA_STREAM_ADJUST_LATENCY |
+                                  PA_STREAM_NO_REMIX_CHANNELS |
+-                                 PA_STREAM_NO_REMAP_CHANNELS |
+-                                 PA_STREAM_DONT_MOVE;
++                                 PA_STREAM_NO_REMAP_CHANNELS;
+ 
+     if( stream->inputStream )
+     {
