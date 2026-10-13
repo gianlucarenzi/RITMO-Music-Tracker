@@ -15,7 +15,11 @@ RMT=$(realpath "${1:-build-qt/out/ritmo}")
 OUT=$PWD/doc/manual/images
 mkdir -p "$OUT"
 WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
+# the exports go to a folder with a fixed name: the stripped RMT dialog shows the path of the file
+EXPORTS=/tmp/ritmo
+rm -rf "$EXPORTS"
+mkdir -p "$EXPORTS"
+trap 'rm -rf "$WORK" "$EXPORTS"' EXIT
 REPO=$PWD
 export XDG_CONFIG_HOME="$WORK/config"      # the defaults, not the settings of the user
 export QT_QPA_PLATFORM=offscreen
@@ -90,7 +94,7 @@ for fmt in "stripped-rmt:1" "simple-asm:2" "sapr:3" "sap:5" "xex:6" "reloc-asm:7
     [ "$name" = sap ] && ext=sap
     [ "$name" = xex ] && ext=xex
     case $name in simple-asm | reloc-asm) ext=asm ;; esac
-    dialog "dialog-export-$name" "$SONG" "$(id ID_FILE_EXPORT_AS)" RMT_QT_FILEDIALOG="$WORK/out-$name.$ext@$idx"
+    dialog "dialog-export-$name" "$SONG" "$(id ID_FILE_EXPORT_AS)" RMT_QT_FILEDIALOG="$EXPORTS/gemx-$name.$ext@$idx"
     n=$((n + 1))
 done
 
