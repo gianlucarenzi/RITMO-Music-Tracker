@@ -115,8 +115,8 @@ The 2.5 release also has the packages for more Linux architectures:
 | System | Package | How to start it |
 |--------|---------|-----------------|
 | Linux aarch64: Raspberry Pi 3/4/5 with a 64 bit system (Raspberry Pi OS 13 trixie, Debian 13, Ubuntu 24.04 and newer) | [`Ritmo-Linux-aarch64.AppImage`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-Linux-aarch64.AppImage) | as the x86_64 AppImage |
-| Linux riscv64 (Debian 13 and newer) | [`ritmo_2.5_riscv64.deb`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/ritmo_2.5_riscv64.deb) or [`Ritmo-Linux-riscv64.tar.gz`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-Linux-riscv64.tar.gz) | see [below](#linux-riscv64-and-ppc64-powerpc-64-bit-big-endian) |
-| Linux ppc64: PowerPC 64 bit big endian (Debian ports, sid) | [`ritmo_2.5_ppc64.deb`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/ritmo_2.5_ppc64.deb) or [`Ritmo-Linux-ppc64.tar.gz`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-Linux-ppc64.tar.gz) | see [below](#linux-riscv64-and-ppc64-powerpc-64-bit-big-endian) |
+| Linux riscv64 (Debian 13 and newer) | [`ritmo_2.5_riscv64.deb`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/ritmo_2.5_riscv64.deb) or [`Ritmo-Linux-riscv64.tar.gz`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-Linux-riscv64.tar.gz) | see [below](#linux-riscv64-ppc64-and-ppc64le-powerpc-64-bit) |
+| Linux ppc64: PowerPC 64 bit big endian (Debian ports, sid) | [`ritmo_2.5_ppc64.deb`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/ritmo_2.5_ppc64.deb) or [`Ritmo-Linux-ppc64.tar.gz`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-Linux-ppc64.tar.gz) | see [below](#linux-riscv64-ppc64-and-ppc64le-powerpc-64-bit) |
 
 From 2.6 the names of the packages carry the version, so that several versions
 can be kept side by side: `Ritmo-2.6-x86_64.AppImage` (the AppImage has no
@@ -138,7 +138,7 @@ with its ports to riscv64, ppc64 and ppc64le
 ([appimagetool](https://github.com/gianlucarenzi/appimagetool),
 [runtime](https://github.com/gianlucarenzi/type2-runtime)), proposed to the
 AppImage project. They carry the same libraries as the `.tar.gz`, so they need
-the same Debian releases (see [below](#linux-riscv64-and-ppc64-powerpc-64-bit-big-endian)).
+the same Debian releases (see [below](#linux-riscv64-ppc64-and-ppc64le-powerpc-64-bit)).
 
 RITMO has been proposed for [AppImageHub](https://appimage.github.io), the
 catalog of AppImages: the request is
@@ -159,12 +159,14 @@ chmod +x Ritmo-Linux-x86_64.AppImage      # on a Raspberry Pi: Ritmo-Linux-aarch
 
 (`uname -m` tells the architecture: `x86_64`, `aarch64`, `riscv64`, `ppc64`, `ppc64le`.)
 
-#### Linux riscv64 and ppc64 (PowerPC 64 bit big endian)
+#### Linux riscv64, ppc64 and ppc64le (PowerPC 64 bit)
 
-Two packages for each, to choose from (three from 2.6, with the AppImage; the
-same for ppc64le, whose Debian name is `ppc64el`). They need Debian 13 or newer
-(riscv64, ppc64le) or Debian ports "sid" (ppc64): they are built with the glibc
-and the Qt 6 of those releases.
+Three packages for each, to choose from: the AppImage, the `.deb` and the
+`.tar.gz` (up to 2.5 only the last two, and only for riscv64 and ppc64; ppc64le,
+PowerPC 64 bit little endian, comes with 2.6, and its Debian name, in the `.deb`
+and the `.tar.gz`, is `ppc64el`). They need Debian 13 or newer (riscv64,
+ppc64le) or Debian ports "sid" (ppc64, big endian): they are built with the
+glibc and the Qt 6 of those releases.
 
 From 2.6, **the AppImage**: one file, started as the x86_64 one. Its runtime
 needs FUSE 3 (`sudo apt install fuse3`); without it:
@@ -179,7 +181,7 @@ chmod +x Ritmo-2.6-riscv64.AppImage      # Ritmo-2.6-ppc64.AppImage, Ritmo-2.6-p
    Qt 6, PortAudio, RtMidi and the other libraries it needs by itself.
 
    ```bash
-   sudo apt install ./ritmo_2.5_riscv64.deb     # ppc64: ./ritmo_2.5_ppc64.deb
+   sudo apt install ./ritmo_2.6_riscv64.deb     # ./ritmo_2.6_ppc64.deb, ./ritmo_2.6_ppc64el.deb
    ritmo                                              # or ritmo song.rmt; also in the menu of the desktop
    sudo apt remove ritmo                              # to remove it
    ```
@@ -194,8 +196,8 @@ chmod +x Ritmo-2.6-riscv64.AppImage      # Ritmo-2.6-ppc64.AppImage, Ritmo-2.6-p
    packages for these.
 
    ```bash
-   tar xzf Ritmo-Linux-riscv64.tar.gz                 # ppc64: Ritmo-Linux-ppc64.tar.gz
-   cd Ritmo-Linux-riscv64
+   tar xzf Ritmo-Linux-riscv64-2.6.tar.gz             # Ritmo-Linux-ppc64-2.6.tar.gz, Ritmo-Linux-ppc64el-2.6.tar.gz
+   cd Ritmo-Linux-riscv64                             # the folder has no version
    cat README.txt                                     # the packages the machine needs
    sudo apt install <the packages of README.txt>
    ./ritmo                                            # or ./ritmo song.rmt
@@ -204,17 +206,17 @@ chmod +x Ritmo-2.6-riscv64.AppImage      # Ritmo-2.6-ppc64.AppImage, Ritmo-2.6-p
    The `resources` folder must stay next to `ritmo`. Nothing is installed:
    to remove it, delete the folder.
 
-There are no packages for PowerPC 32 bit and for ppc64le (little endian
-PowerPC). The packages for riscv64 and ppc64 have been built and started
-(offscreen) in an emulator, not on real machines: if you try them, please
+There are no packages for PowerPC 32 bit. The packages for riscv64, ppc64 and
+ppc64le have been built and started (offscreen) in an emulator, not on real
+machines: if you try them, please
 [tell how it went](https://github.com/gianlucarenzi/RITMO-Music-Tracker/issues).
 
 The packages up to 2.2.1 were called `RMT-*` (the program `Rmt.exe`, `rmt`); from 2.3 they are `Ritmo-*` with the program `ritmo` / `Ritmo.exe`.
 
-Everything the program needs is inside each package (the `.deb` of riscv64
-and ppc64 instead asks `apt` for the libraries; the `.tar.gz` of the same
-architectures carries Qt, PortAudio and RtMidi and uses of the system only
-glibc and the graphics and sound libraries of the machine). The configuration is
+Everything the program needs is inside each package (the `.deb` of riscv64,
+ppc64 and ppc64le instead asks `apt` for the libraries; the `.tar.gz` and the
+AppImage of the same architectures carry Qt, PortAudio and RtMidi and use of
+the system only glibc and the graphics and sound libraries of the machine). The configuration is
 kept in `~/.config/ritmo-atari.org/ritmo.conf` on Linux, in the registry
 (`HKEY_CURRENT_USER\Software\ritmo-atari.org\ritmo`) on Windows and in
 `~/Library/Preferences/org.ritmo-atari.ritmo.plist` on macOS.
