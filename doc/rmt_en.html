@@ -1015,13 +1015,13 @@
 <td>Menu Help</td>
 <td>Help</td>
 <td><code>F1</code></td>
-<td>Open the local help in a browser.</td>
+<td>Open the user manual of RITMO in a browser</td>
 </tr>
 <tr class="even">
 <td>Menu Help</td>
 <td>Online Help</td>
 <td><code>Shift+F1</code></td>
-<td>Open the online help in a browser window</td>
+<td>Open the reference of RMT (menus, keys, instruments) in a browser</td>
 </tr>
 <tr class="odd">
 <td>Menu Help</td>
@@ -2621,7 +2621,7 @@
 <p>A system reset message (FF) resets the RMT routines and forgets the notes held on channels 2-16.</p>
 <p>Scripts can send MIDI messages with the <code>midi</code> command (see the scripting documentation).</p>
 <h2 id="pokey-explorer">Pokey Explorer</h2>
-<p>A debugging mode for pitch calculations: Pokey &gt; Activate Pokey Explorer Mode (Ctrl+Shift+F5) stops the RMT routines and lets the keys write the POKEY registers directly; the Edit/Jam mode toggle leaves the mode again. With View &gt; Pokey Chip Registers on, three rows below the register dumps detail one channel: its AUDF and AUDC bytes, the first divisor of <code>AUDF + MODOFFSET</code> from 3 up ("MODULO"), the pitch formula's coarse divisor (28 at 64 kHz, 114 at 15 kHz, 1 at 1.79 MHz and for joined channels), the free divisor, the modulo offset (1, 4 at 1.79 MHz, 7 for joined channels) and the resulting pitch.</p>
+<p>A debugging mode for pitch calculations: Pokey &gt; Activate Pokey Explorer Mode (Ctrl+Shift+F5) stops the RMT routines and lets the keys write the POKEY registers directly; the Edit/Jam mode toggle leaves the mode again. With Pokey &gt; Pokey Chip Registers on, three rows below the register dumps detail one channel: its AUDF and AUDC bytes, the first divisor of <code>AUDF + MODOFFSET</code> from 3 up ("MODULO"), the pitch formula's coarse divisor (28 at 64 kHz, 114 at 15 kHz, 1 at 1.79 MHz and for joined channels), the free divisor, the modulo offset (1, 4 at 1.79 MHz, 7 for joined channels) and the resulting pitch.</p>
 <p>The keys (the physical positions of the QWERTY layout; on the AZERTY and QWERTZ layouts the keys at the same positions, e.g. <code>Z</code> for <code>Y</code> on QWERTZ, <code>A</code> for <code>Q</code> on AZERTY - only <code>+</code> and <code>-</code> are the keys so labelled):</p>
 <table>
 <thead>

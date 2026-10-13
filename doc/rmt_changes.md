@@ -18,6 +18,11 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.6: Help (F1) opens the user manual of RITMO and Online Help (SHIFT+F1) the reference of RMT (`doc/rmt_en.md`), both
+  from the repository of RITMO on GitHub (branch master). Both opened `rmt_en.html` of the repository of RMT through
+  html-preview.github.io, a page that is gone ("Failed to fetch", issue #3). The About window is a dialog whose text
+  scrolls, within 9/10 of the width and 3/4 of the height of the screen: the message box grew taller than a small screen
+  with large fonts; `RMT_QT_DIALOG` saves its image, as for the other dialogs.
 - 2.6: the names of the packages carry the version (`Ritmo-Linux-x86_64-2.6.AppImage`, `Ritmo-Windows-x64-Setup-2.6.exe`,
   `Ritmo-macOS-arm64-2.6.dmg`, `Ritmo-Linux-riscv64-2.6.tar.gz`), so that several versions can be kept side by side (issue
   #2). `scripts/package-version.sh` gives it: the tag without the v on a tag, `git describe` after it, `RMT_BASE_VERSION`

@@ -160,8 +160,8 @@
 | Menu Tools | Run Script... |  | Run an RMT script file (open, export, save) on the current session |
 | Menu Tools | Options... |  | Display the configuration menu |
 | Menu Tools | Tuning... |  | Display the tuning menu. |
-| Menu Help | Help | `F1` | Open the local help in a browser. |
-| Menu Help | Online Help | `Shift+F1` | Open the online help in a browser window |
+| Menu Help | Help | `F1` | Open the user manual of RITMO in a browser |
+| Menu Help | Online Help | `Shift+F1` | Open the reference of RMT (menus, keys, instruments) in a browser |
 | Menu Help | About RITMO |  | Display information about the app and its version in a pop-up dialog |
 | Tool Bar Main | About |  | Display program information, version number and copyright |
 | Tool Bar Main | MIDI on/off |  | MIDI on/off |
