@@ -14,8 +14,8 @@
 # and the icon to be an AppDir ($WORK/AppDir).
 # pack makes $WORK/Ritmo-<version>-<arch>.AppImage and its .zsync with
 # appimagetool for x86_64 and the runtime of the architecture, from the ports
-# in gianlucarenzi/appimagetool and gianlucarenzi/type2-runtime (release
-# $PORTS_RELEASE, checked against the sha256 sums below): appimagetool does
+# in gianlucarenzi/appimagetool (release ports-2) and gianlucarenzi/type2-runtime
+# (release ports-1), checked against the sha256 sums below: appimagetool does
 # not need to run on the architecture it packs for, so no emulation there.
 # test runs the AppImage offscreen: $WORK/ritmo-appimage.png.
 #
@@ -30,11 +30,10 @@ WORK=${WORK:-$ROOT/build-tarball}
 # The tools of the ports: a fixed release, so that a release of RITMO does not
 # change when they are built again. When appimagetool and type2-runtime of
 # AppImage have these architectures, their continuous releases take over.
-PORTS_RELEASE=ports-1
-APPIMAGETOOL_URL=https://github.com/gianlucarenzi/appimagetool/releases/download/$PORTS_RELEASE/appimagetool-x86_64.AppImage
-RUNTIME_URL_BASE=https://github.com/gianlucarenzi/type2-runtime/releases/download/$PORTS_RELEASE
+APPIMAGETOOL_URL=https://github.com/gianlucarenzi/appimagetool/releases/download/ports-2/appimagetool-x86_64.AppImage
+RUNTIME_URL_BASE=https://github.com/gianlucarenzi/type2-runtime/releases/download/ports-1
 declare -A SHA256=(
-    [appimagetool-x86_64.AppImage]=e0f32a982d33eb568fd0ca105cd28beaaa79caade20759ef92020dfd5d9b4f09
+    [appimagetool-x86_64.AppImage]=a87b72efe8d4e4e952866ffae56a05714e19cdf5cb2d51e1076aa669873fe405
     [runtime-riscv64]=8a6daf401dd8ee4b438bd90a27cba13e21cbe172be126003dd969143d459390b
     [runtime-ppc64]=d88b7ec8ca4189a2c2ac2cd5a1db257b8fd49f002d0b06b9429467eb49f5653d
     [runtime-ppc64le]=e0ee28e9b9d18e3c81590c169600945cfc73f50e82586f0354a59d3c348d437a
