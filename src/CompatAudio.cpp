@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -253,6 +254,40 @@ static bool PortAudioReady()
     }
     return state > 0;
 }
+
+// paPulseAudio, not in the portaudio.h of PortAudio 19.7 and older
+static const PaHostApiTypeId kPulseAudioHostApi = (PaHostApiTypeId)16;
+
+static bool SameName(const char* a, const char* b)
+{
+    for (; *a && *b; a++, b++)
+        if (std::tolower((unsigned char)*a) != std::tolower((unsigned char)*b)) return false;
+    return *a == *b;
+}
+
+// The output device: the default one of the PulseAudio host API when there
+// is one (a PortAudio built with it and a PulseAudio or PipeWire server), so
+// that RITMO is a client of the sound server like any other program: it
+// plays on the output chosen in the desktop (Bluetooth headphones...) and
+// follows its volume. Otherwise the default device of PortAudio, that of
+// the first host API (ALSA on Linux), where the configuration of ALSA says.
+// RMT_AUDIO_HOST_API=<name>: the default device of another host API (ALSA,
+// JACK, PulseAudio... as RMT_AUDIO_DEBUG=1 lists them)
+static PaDeviceIndex OutputDevice()
+{
+    if (const char* name = std::getenv("RMT_AUDIO_HOST_API")) {
+        for (PaHostApiIndex i = 0; i < Pa_GetHostApiCount(); i++) {
+            const PaHostApiInfo* api = Pa_GetHostApiInfo(i);
+            if (api && SameName(api->name, name) && api->defaultOutputDevice != paNoDevice)
+                return api->defaultOutputDevice;
+        }
+        std::fprintf(stderr, "RMT: no audio output on the host API %s\n", name);
+    }
+    PaHostApiIndex pulse = Pa_HostApiTypeIdToHostApiIndex(kPulseAudioHostApi);
+    const PaHostApiInfo* api = pulse >= 0 ? Pa_GetHostApiInfo(pulse) : nullptr;
+    if (api && api->defaultOutputDevice != paNoDevice) return api->defaultOutputDevice;
+    return Pa_GetDefaultOutputDevice();
+}
 #endif
 
 HRESULT IDirectSoundBuffer::Play(DWORD, DWORD, DWORD)
@@ -279,7 +314,7 @@ HRESULT IDirectSoundBuffer::Play(DWORD, DWORD, DWORD)
     bufferMs = std::max(1, std::min(bufferMs, RMT_MAX_AUDIO_BUFFER_MS));
     unsigned long framesPerBuffer = f.nSamplesPerSec / 1000 * bufferMs;
     PaStreamParameters out = {};
-    out.device = Pa_GetDefaultOutputDevice();
+    out.device = OutputDevice();
     const PaDeviceInfo* outInfo = out.device != paNoDevice ? Pa_GetDeviceInfo(out.device) : nullptr;
     out.channelCount = f.nChannels;
     out.sampleFormat = format;
@@ -295,17 +330,34 @@ HRESULT IDirectSoundBuffer::Play(DWORD, DWORD, DWORD)
     }
     latencyMs = std::min(latencyMs, RMT_MAX_AUDIO_LATENCY_MS);
     out.suggestedLatency = std::max(outInfo ? outInfo->defaultLowOutputLatency : 0.0, latencyMs / 1000.0);
-    if (out.device == paNoDevice
-        || Pa_OpenStream(&s->stream, nullptr, &out, f.nSamplesPerSec, framesPerBuffer, paNoFlag,
-                         PlayCallback, this) != paNoError) {
+    PaError err = out.device == paNoDevice ? paInvalidDevice
+        : Pa_OpenStream(&s->stream, nullptr, &out, f.nSamplesPerSec, framesPerBuffer, paNoFlag, PlayCallback, this);
+    // the sound server refuses the stream: the default device of PortAudio
+    if (err != paNoError && out.device != Pa_GetDefaultOutputDevice() && Pa_GetDefaultOutputDevice() != paNoDevice) {
+        std::fprintf(stderr, "RMT: cannot open the audio output (%s), trying the default one\n", Pa_GetErrorText(err));
+        out.device = Pa_GetDefaultOutputDevice();
+        outInfo = Pa_GetDeviceInfo(out.device);
+        out.suggestedLatency = std::max(outInfo ? outInfo->defaultLowOutputLatency : 0.0, latencyMs / 1000.0);
+        err = Pa_OpenStream(&s->stream, nullptr, &out, f.nSamplesPerSec, framesPerBuffer, paNoFlag, PlayCallback, this);
+    }
+    if (err != paNoError) {
         std::fprintf(stderr, "RMT: cannot open the audio output (PortAudio)\n");
         delete s;
         return DS_OK; // go on silent
     }
     const PaStreamInfo* info = Pa_GetStreamInfo(s->stream);
-    double latency = info ? info->outputLatency : 0.02;
+    // the PulseAudio host API gives as latency only that of its own buffer
+    // (0 when the callbacks are as large as the pieces it sends), not that
+    // of the sound server: there the latency asked is the best measure
+    double latency = info ? std::max(info->outputLatency, out.suggestedLatency) : 0.02;
     if (std::getenv("RMT_AUDIO_DEBUG")) {
-        const PaDeviceInfo* device = Pa_GetDeviceInfo(Pa_GetDefaultOutputDevice());
+        for (PaHostApiIndex i = 0; i < Pa_GetHostApiCount(); i++) {
+            const PaHostApiInfo* api = Pa_GetHostApiInfo(i);
+            const PaDeviceInfo* device = api && api->defaultOutputDevice != paNoDevice ? Pa_GetDeviceInfo(api->defaultOutputDevice) : nullptr;
+            std::fprintf(stderr, "DBG audio: host API %s: %d devices, default output %s\n", api ? api->name : "?",
+                         api ? api->deviceCount : 0, device ? device->name : "none");
+        }
+        const PaDeviceInfo* device = Pa_GetDeviceInfo(out.device);
         const PaHostApiInfo* api = device ? Pa_GetHostApiInfo(device->hostApi) : nullptr;
         std::fprintf(stderr, "DBG audio: host API %s, device %s, %u Hz requested, %.0f Hz opened, %lu frames per callback, output latency %.1f ms\n",
                      api ? api->name : "?", device ? device->name : "?", (unsigned)f.nSamplesPerSec,

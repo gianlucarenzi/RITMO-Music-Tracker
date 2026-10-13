@@ -279,8 +279,36 @@ you make music with `systemctl --user stop fluidsynth`, or for good with
 If the sound still crackles or is distorted, choose a larger **Audio buffer**
 (30 or 40 ms) in the configuration, or start RITMO with a larger latency of the
 output for one session, e.g. `RMT_AUDIO_LATENCY_MS=100` (the default is three
-buffers, 60 ms on Linux); `RMT_AUDIO_DEBUG=1` shows the late audio ticks, the
-latency of the output and the underruns.
+buffers, 60 ms on Linux); `RMT_AUDIO_DEBUG=1` shows the host APIs PortAudio
+found and the one used, the late audio ticks, the latency of the output and the
+underruns.
+On Linux the AppImage plays through the sound server (PulseAudio or PipeWire)
+when there is one, so the sound follows the output chosen in the desktop
+(Bluetooth headphones too) and has its own volume in the mixer;
+`RMT_AUDIO_HOST_API=ALSA` plays through ALSA instead (also `JACK`). The `.deb`
+and `.tar.gz` packages, and the AppImage without a sound server, play on the
+`default` device of ALSA.
+
+**The sound ignores the headphones or the volume of the desktop.** If the sound
+keeps coming out of the speakers when headphones are connected, does not change
+with the volume or the mute of the desktop, or RITMO is missing from the mixer,
+it goes straight to a sound card instead of through the sound server. Start
+RITMO with `RMT_AUDIO_DEBUG=1 ./Ritmo-Linux-x86_64.AppImage 2> ritmo-audio.log`,
+play a song and look at the last `DBG audio: host API` line of the log:
+- `host API PulseAudio`: the sound server, as it should be;
+- `host API ALSA, device default`: the `default` device of ALSA. `aplay -L`
+  tells where it goes: the description under `default` names the sound server
+  (PipeWire or PulseAudio) when it goes there. If it does not:
+  - install the ALSA plugin of the sound server, which an upgrade that did not
+    finish can also lose: `sudo apt install pipewire-alsa` with PipeWire
+    (`dpkg -l pipewire-alsa` tells whether it is there), `libasound2-plugins`
+    with PulseAudio;
+  - rename an old `~/.asoundrc` or `/etc/asound.conf` that sends `default` to a
+    sound card;
+  - with the AppImage, `RMT_AUDIO_HOST_API=PulseAudio` asks for the sound server.
+
+Then `wpctl status` (PipeWire) or `pactl list short sink-inputs` lists RITMO
+among the programs that play.
 
 Issues of the Qt port are tracked on the [GitHub issue tracker of the port](https://github.com/gianlucarenzi/RITMO-Music-Tracker/issues).
 Issues of the original RMT are tracked on the [upstream issue tracker](https://github.com/raster-atari-org/RASTER-Music-Tracker/issues).

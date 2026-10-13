@@ -153,13 +153,55 @@ tracker stay square. The choice can be changed in the \menu{Options} dialog, and
 
 \section{Sound}
 
-The sound goes out through PortAudio, to the default output device of the system. If the output cannot be opened
+The sound goes out through PortAudio, to the default output device of the system. With the AppImage, when a PulseAudio
+or PipeWire sound server runs, \RITMO{} is one of its clients like any other program: it plays on the output chosen in
+the desktop, follows it when it changes (Bluetooth headphones, for example) and has its own volume in the mixer. Without
+a sound server, and with the \texttt{.deb} and \texttt{.tar.gz} packages (their PortAudio has no PulseAudio support), it
+plays on the \texttt{default} device of ALSA, which goes where the configuration of ALSA says: on a PipeWire system the
+\texttt{pipewire-alsa} package sends it to the sound server. The \texttt{RMT\_AUDIO\_HOST\_API} environment variable
+(\texttt{ALSA}, \texttt{JACK}, \texttt{PulseAudio} on Linux) chooses another way for one session. If the output cannot be opened
 the program prints a message and goes on without sound, so that songs can still be edited. If the sound
 crackles or is distorted, choose a larger \emph{audio buffer} in the configuration (section~\ref{sec:options}).
 The \texttt{RMT\_AUDIO\_BUFFER\_MS} environment variable (the size of the buffer in milliseconds, up to 50) sets
 another size for one session without changing the settings. The output keeps about three buffers of sound ready;
 \texttt{RMT\_AUDIO\_LATENCY\_MS} (in milliseconds, up to 200) sets another amount for one session, at the cost of a later
-sound after a key. \texttt{RMT\_AUDIO\_DEBUG=1} prints the latency opened by the output and counts its underruns.
+sound after a key. \texttt{RMT\_AUDIO\_DEBUG=1} lists the ways of output PortAudio found (the host APIs), prints the
+one chosen and the latency it opened, and counts the underruns.
+
+\subsection{When the sound ignores the desktop}
+
+If the sound of \RITMO{} keeps coming out of the speakers when headphones are connected, does not change with the
+volume or the mute of the desktop, or \RITMO{} is missing from the list of programs in the mixer, its sound does not go
+through the sound server but straight to a sound card. To find out where it goes, start \RITMO{} from a terminal with
+the diagnostics on and play a song:
+
+\begin{lstlisting}
+RMT_AUDIO_DEBUG=1 ./Ritmo-Linux-x86_64.AppImage 2> ritmo-audio.log
+grep 'DBG audio: host API' ritmo-audio.log
+\end{lstlisting}
+
+The last of those lines names the way the sound took. \texttt{host API PulseAudio} is the sound server, and is what the
+AppImage uses when the server runs. \texttt{host API ALSA, device default} is the \texttt{default} device of ALSA, and
+\texttt{aplay -L} tells where that one goes: the description under \texttt{default} names the sound server (PipeWire or
+PulseAudio) when it goes there, and a sound card when it does not. The usual reasons, and what to do:
+
+\begin{itemize}
+  \item The ALSA plugin of the sound server is not installed (it can also be lost in an upgrade that did not finish).
+        With PipeWire, on Debian and Ubuntu:
+\begin{lstlisting}
+dpkg -l pipewire-alsa            # "ii" at the start: installed
+sudo apt install pipewire-alsa
+\end{lstlisting}
+        With PulseAudio the plugin is in \texttt{libasound2-plugins}. Other distributions have packages with similar
+        names (\texttt{pipewire-alsa} on Fedora and Arch Linux).
+  \item An old \texttt{\textasciitilde/.asoundrc} or \texttt{/etc/asound.conf} sends the \texttt{default} device to a
+        sound card: rename it (for example to \texttt{.asoundrc.old}) and start \RITMO{} again.
+  \item With the AppImage, \texttt{RMT\_AUDIO\_HOST\_API=PulseAudio} makes it use the sound server even when it would
+        not choose it by itself; the line of the log says whether it found one.
+\end{itemize}
+
+After the change, \texttt{wpctl status} (PipeWire) or \texttt{pactl list short sink-inputs} lists \RITMO{} among the
+programs that play, and the sound follows the output and the volume of the desktop.
 
 \section{Where the settings are kept}
 

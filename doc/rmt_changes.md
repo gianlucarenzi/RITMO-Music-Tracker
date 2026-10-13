@@ -18,6 +18,17 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.6: the audio output plays on the default device of the PulseAudio host API of PortAudio when there is one, so that
+  RITMO is a client of the sound server (PulseAudio, or PipeWire through pipewire-pulse): it follows the output chosen in
+  the desktop (Bluetooth headphones) and its volume. Through ALSA the `default` device went where the configuration of
+  ALSA said, straight to the sound card on a system without pipewire-alsa. The PortAudio of Ubuntu has no PulseAudio host
+  API (it is in no release yet): `scripts/build-appimage.sh` builds PortAudio master at a fixed commit, with
+  `scripts/patches/portaudio-pulse-noserver.patch` (without a server Pa_Initialize failed for all the host APIs) and
+  `portaudio-pulse-move.patch` (the streams had PA_STREAM_DONT_MOVE: they stayed on the sink where they started, and the
+  server refused to move them to a new default sink or to the one chosen in the mixer). That host API gives 0 as output
+  latency: the write cursor uses the latency asked when it is larger. `RMT_AUDIO_HOST_API` chooses another host API,
+  `RMT_AUDIO_DEBUG=1` lists them. If the stream cannot be opened, the default device of PortAudio. The `.deb` and `.tar.gz`
+  keep the PortAudio of Debian (ALSA only).
 - 2.6: the audio output asks the device for a latency of at least 3 callbacks (60 ms with the 20 ms buffer of Linux), never
   less than the low latency of the device that `Pa_OpenDefaultStream` asked before. Through ALSA on PipeWire that low
   latency was a single quantum (21.3 ms): the output underflowed at the least delay of the sound server, with any size of
