@@ -61,9 +61,26 @@ cd "$WORK"
 [ -f runtime-$ARCH ] || wget -q -O runtime-$ARCH "$RUNTIME_URL"
 chmod +x appimagetool-$ARCH.AppImage
 export APPIMAGE_EXTRACT_AND_RUN=1           # no FUSE in containers
+
+# Emulated by QEMU (qemu-user with binfmt_misc), an AppImage does not start:
+# the rule of QEMU wants zeros in bytes 8-15 of the ELF header, where the
+# AppImage has its magic bytes AI\x02 ("Exec format error"). A copy without
+# them runs the same runtime and the same contents (the runtime does not
+# read them). On a real machine the AppImage itself runs.
+runnable() {
+    if "./$1" --appimage-version >/dev/null 2>&1; then
+        echo "./$1"
+    else
+        cp "$1" "$1.qemu"
+        printf '\0\0\0' | dd of="$1.qemu" bs=1 seek=8 count=3 conv=notrunc 2>/dev/null
+        echo "./$1.qemu"
+    fi
+}
+
 OUTPUT=Ritmo-$("$ROOT/scripts/package-version.sh")-$ARCH.AppImage
-rm -f Ritmo-*-$ARCH.AppImage Ritmo-*-$ARCH.AppImage.zsync
-ARCH=$ARCH ./appimagetool-$ARCH.AppImage --runtime-file runtime-$ARCH \
+rm -f Ritmo-*-$ARCH.AppImage Ritmo-*-$ARCH.AppImage.zsync Ritmo-*-$ARCH.AppImage.qemu
+APPIMAGETOOL=$(runnable appimagetool-$ARCH.AppImage)
+ARCH=$ARCH $APPIMAGETOOL --runtime-file runtime-$ARCH \
     -u "gh-releases-zsync|gianlucarenzi|RITMO-Music-Tracker|latest|Ritmo-*-$ARCH.AppImage.zsync" \
     "$APPDIR" "$OUTPUT"
 
@@ -76,6 +93,7 @@ test -f "$OUTPUT.zsync"
 # (more time when emulated: the window may take long to come up)
 rm -f ritmo-appimage.png
 QT_QPA_PLATFORM=offscreen RMT_QT_GRAB=$PWD/ritmo-appimage.png RMT_QT_GRAB_MS=3000 XDG_CONFIG_HOME=$PWD/config \
-    timeout 600 ./$OUTPUT "$ROOT/rmt/songs/rmt128/raster/gemx.rmt" || true
+    timeout 600 $(runnable $OUTPUT) "$ROOT/rmt/songs/rmt128/raster/gemx.rmt" || true
+rm -f $OUTPUT.qemu
 test -f ritmo-appimage.png
 ls -la $OUTPUT $OUTPUT.zsync ritmo-appimage.png
