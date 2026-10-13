@@ -279,8 +279,17 @@ you make music with `systemctl --user stop fluidsynth`, or for good with
 If the sound still crackles or is distorted, choose a larger **Audio buffer**
 (30 or 40 ms) in the configuration, or start RITMO with a larger latency of the
 output for one session, e.g. `RMT_AUDIO_LATENCY_MS=100` (the default is three
-buffers, 60 ms on Linux); `RMT_AUDIO_DEBUG=1` shows the late audio ticks, the
-latency of the output and the underruns.
+buffers, 60 ms on Linux); `RMT_AUDIO_DEBUG=1` shows the host APIs PortAudio
+found and the one used, the late audio ticks, the latency of the output and the
+underruns.
+On Linux the AppImage plays through the sound server (PulseAudio or PipeWire)
+when there is one, so the sound follows the output chosen in the desktop
+(Bluetooth headphones too) and has its own volume in the mixer;
+`RMT_AUDIO_HOST_API=ALSA` plays through ALSA instead (also `JACK`). The `.deb`
+and `.tar.gz` packages, and the AppImage without a sound server, play on the
+`default` device of ALSA: if the sound ignores the volume of the desktop or the
+headphones, that device does not go to the sound server (on PipeWire, install
+`pipewire-alsa`).
 
 Issues of the Qt port are tracked on the [GitHub issue tracker of the port](https://github.com/gianlucarenzi/RITMO-Music-Tracker/issues).
 Issues of the original RMT are tracked on the [upstream issue tracker](https://github.com/raster-atari-org/RASTER-Music-Tracker/issues).

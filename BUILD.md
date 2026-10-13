@@ -521,7 +521,7 @@ are only the artifacts, no release:
 
 | Workflow | Runner | Toolchain and libraries | Package |
 |----------|--------|-------------------------|---------|
-| `.github/workflows/build-linux.yml` | `ubuntu-latest`, container `ubuntu:20.04` (glibc 2.31, as Debian 11) | GCC 10, `portaudio19-dev`, `librtmidi-dev` (ALSA) of Ubuntu 20.04, the official Qt 6.8.3 (`aqtinstall` in a Python 3.9 venv; Ubuntu 20.04 has no Qt6) | `Ritmo-Linux-x86_64.AppImage` (`linuxdeploy` + Qt plugin): runs on Debian 11 / Ubuntu 20.04 and newer, the build checks that no file in it needs a glibc after 2.31 |
+| `.github/workflows/build-linux.yml` | `ubuntu-latest`, container `ubuntu:20.04` (glibc 2.31, as Debian 11) | GCC 10, `librtmidi-dev` (ALSA) of Ubuntu 20.04, PortAudio master at a fixed commit built from source with `scripts/patches/portaudio-*.patch` (ALSA, JACK and PulseAudio), the official Qt 6.8.3 (`aqtinstall` in a Python 3.9 venv; Ubuntu 20.04 has no Qt6) | `Ritmo-Linux-x86_64.AppImage` (`linuxdeploy` + Qt plugin): runs on Debian 11 / Ubuntu 20.04 and newer, the build checks that no file in it needs a glibc after 2.31 |
 | `.github/workflows/build-windows.yml` | `windows-2022` | MSYS2 MINGW64: GCC, `qt6-base`, `portaudio`, `rtmidi` (WinMM) | `Ritmo-Windows-x64.zip`: `Ritmo.exe`, `resources/`, the Qt and MinGW DLLs (`windeployqt` + `ldd`); `Ritmo-Windows-x64-Setup.exe`: the installer of the same folder, made by Inno Setup from `scripts/ritmo.iss` |
 | `.github/workflows/build-macos.yml` | `macos-14` (Apple Silicon) | Apple Clang, the official Qt 6.8.3 `clang_64` (universal) for both. arm64: Homebrew `portaudio`, `rtmidi` (CoreMIDI). x86_64: PortAudio 19.7.0 and RtMidi 6.0.0 built from source for x86_64 (Homebrew no longer installs on Intel). Minimum macOS 12, as Qt 6.8 | `RMT-macOS-arm64.dmg` (native) and `RMT-macOS-x86_64.dmg` (Intel Macs, or Apple Silicon through Rosetta 2): `Ritmo.app` with the Qt frameworks and the libraries inside (`macdeployqt`, checked with the load commands of `otool -l`) |
 
@@ -537,6 +537,17 @@ AppImage locally in the same system:
 docker run --rm -v "$PWD":/src -w /src ubuntu:20.04 scripts/build-appimage.sh
 # build-appimage/Ritmo-Linux-x86_64.AppImage
 ```
+
+PortAudio is built from its sources there (`PORTAUDIO_COMMIT` in the script):
+its PulseAudio host API, which makes RITMO a client of the sound server
+(PulseAudio, or PipeWire through `pipewire-pulse`), is in no release yet, and
+the `portaudio19-dev` of Ubuntu has only ALSA, JACK and OSS. Two patches in
+`scripts/patches/` are applied: without a PulseAudio server `Pa_Initialize`
+failed for all the host APIs (`portaudio-pulse-noserver.patch`), and the
+streams could not move to another sink (`portaudio-pulse-move.patch`, no
+`PA_STREAM_DONT_MOVE`). The script stops if PortAudio comes out without ALSA,
+JACK or PulseAudio. `libpulse` goes into the AppImage; `libasound` and
+`libjack` are those of the system (the excludelist of AppImage).
 
 ### Linux riscv64 and ppc64 (PowerPC 64 bit big endian)
 

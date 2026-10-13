@@ -153,13 +153,20 @@ tracker stay square. The choice can be changed in the \menu{Options} dialog, and
 
 \section{Sound}
 
-The sound goes out through PortAudio, to the default output device of the system. If the output cannot be opened
+The sound goes out through PortAudio, to the default output device of the system. With the AppImage, when a PulseAudio
+or PipeWire sound server runs, \RITMO{} is one of its clients like any other program: it plays on the output chosen in
+the desktop, follows it when it changes (Bluetooth headphones, for example) and has its own volume in the mixer. Without
+a sound server, and with the \texttt{.deb} and \texttt{.tar.gz} packages (their PortAudio has no PulseAudio support), it
+plays on the \texttt{default} device of ALSA, which goes where the configuration of ALSA says: on a PipeWire system the
+\texttt{pipewire-alsa} package sends it to the sound server. The \texttt{RMT\_AUDIO\_HOST\_API} environment variable
+(\texttt{ALSA}, \texttt{JACK}, \texttt{PulseAudio} on Linux) chooses another way for one session. If the output cannot be opened
 the program prints a message and goes on without sound, so that songs can still be edited. If the sound
 crackles or is distorted, choose a larger \emph{audio buffer} in the configuration (section~\ref{sec:options}).
 The \texttt{RMT\_AUDIO\_BUFFER\_MS} environment variable (the size of the buffer in milliseconds, up to 50) sets
 another size for one session without changing the settings. The output keeps about three buffers of sound ready;
 \texttt{RMT\_AUDIO\_LATENCY\_MS} (in milliseconds, up to 200) sets another amount for one session, at the cost of a later
-sound after a key. \texttt{RMT\_AUDIO\_DEBUG=1} prints the latency opened by the output and counts its underruns.
+sound after a key. \texttt{RMT\_AUDIO\_DEBUG=1} lists the ways of output PortAudio found (the host APIs), prints the
+one chosen and the latency it opened, and counts the underruns.
 
 \section{Where the settings are kept}
 
