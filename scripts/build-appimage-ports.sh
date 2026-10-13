@@ -105,7 +105,11 @@ test)
     if [ "${RMT_APPIMAGE_DEPS:-1}" = 1 ]; then
         export DEBIAN_FRONTEND=noninteractive
         apt-get update
-        apt-get install -y --no-install-recommends file
+        # what the AppImage leaves to the system (glibc, the graphics and sound
+        # libraries of the drivers), as on the machine of a user: the packages
+        # that README.txt of the .tar.gz lists ("sudo apt install ...")
+        apt-get install -y --no-install-recommends file \
+            $(sed -n 's/^ *sudo apt install //p' "$WORK/AppDir/README.txt")
     fi
     cd "$WORK"
     OUTPUT=$(ls Ritmo-*-"$(uname -m)".AppImage)
