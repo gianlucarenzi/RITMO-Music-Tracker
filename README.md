@@ -124,6 +124,10 @@ can be kept side by side: `Ritmo-2.6-x86_64.AppImage` (the AppImage has no
 `Ritmo-Windows-x64-Setup-2.6.exe`, `Ritmo-macOS-arm64-2.6.dmg`... (`2.6-rc3` and
 so on for the test builds).
 
+RITMO has been proposed for [AppImageHub](https://appimage.github.io), the
+catalog of AppImages: the request is
+[under review](https://github.com/AppImage/appimage.github.io/pull/10143).
+
 #### Starting RITMO on Linux, architecture by architecture
 
 **x86_64 and aarch64 (Raspberry Pi with a 64 bit system)**: an AppImage, with
