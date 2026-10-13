@@ -34,7 +34,7 @@ docker run --rm --platform linux/riscv64 -v "$PWD":/src -w /src debian:trixie \
 \texttt{scripts/build-deb.sh} makes the \texttt{.deb}, whose dependencies come from \texttt{dpkg-shlibdeps}. Both run the program
 without a display as a test.
 
-The engine on PowerPC 64 big endian is tested on every push (\texttt{.github/workflows/test-bigendian.yml}):
+The engine on PowerPC 64 big endian is tested on every push (\texttt{.github/\allowbreak workflows/\allowbreak test-\allowbreak bigendian.yml}):
 \texttt{RmtCoreTest} is built for x86\_64 and cross-compiled for ppc64, run by \texttt{qemu-ppc64}, and
 \texttt{scripts/test-endian.sh} compares the POKEY registers, the sound and the screen of every song of \texttt{rmt/songs}.
 

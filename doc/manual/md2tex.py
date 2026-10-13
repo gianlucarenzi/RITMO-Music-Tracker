@@ -65,7 +65,16 @@ def table_widths(block):
     def width(cell):  # a mono type cell (backquotes) is wider
         return int(len(cell) * (1.6 if "`" in cell else 1))
     longest = [min(max((width(r[c]) if c < len(r) else 0) for r in rows), 70) for c in range(n)]
+    # a column is never narrower than its longest word (names break only at _, - and /)
+    def word(cell):
+        return max((width(w) for w in re.split(r"[\s_/-]+", cell)), default=0)
+    words = [max((word(r[c]) if c < len(r) else 0) for r in rows) for c in range(n)]
     longest = [max(10, x) + 4 for x in longest]
+    # the widths are relative: the share of each column must hold its longest word, with about 65
+    # characters on a line (fewer in the smaller type of the tables with many columns, so to spare)
+    for _ in range(10):
+        total = sum(longest)
+        longest = [max(x, -(-(w + 2) * total // 65)) for x, w in zip(longest, words)]
     seps = "|" + "|".join("-" * x for x in longest) + "|"
     return sep, seps
 
@@ -127,15 +136,25 @@ tex = re.sub(r"\\begin\{longtable\}\[\]\{@\{\}(l+)@\{\}\}", wrap_last, tex)
 def breakable(m):
     inner = m.group(1)
     inner = inner.replace("\\_", "\\_\\allowbreak{}").replace("-", "-\\allowbreak{}")
+    inner = inner.replace("+", "+\\allowbreak{}").replace("/", "/\\allowbreak{}")
     return "\\texttt{" + inner + "}"
 tex = re.sub(r"\\texttt\{([^{}]*)\}", breakable, tex)
 tex = re.sub(r"\\_(?!\\allowbreak)", r"\\_\\allowbreak{}", tex)
+# a list of names with commas and no spaces (tracknumL1,tracknumL2,...) may be broken after the commas:
+# in the text only, not in the listings and on the lines of LaTeX commands
+def comma_breaks(part):
+    return "\n".join(l if l.lstrip().startswith("\\") else re.sub(r"(?<=\w),(?=[\w{])", lambda m: ",\\allowbreak{}", l)
+                     for l in part.split("\n"))
+parts = re.split(r"(\\begin\{lstlisting\}.*?\\end\{lstlisting\})", tex, flags=re.S)
+tex = "".join(part if part.startswith("\\begin{lstlisting}") else comma_breaks(part) for part in parts)
 
 # the tables with many columns in a smaller type and with less space between the columns
 def small(m):
     body = m.group(0)
     cols = re.match(r"\\begin\{longtable\}\[\]\{@\{\}(\w+)@\{\}\}", body)
-    if cols and len(cols.group(1)) >= 5:
+    # the columns: letters (l), or one p{...} each when the table has widths
+    n = len(cols.group(1)) if cols else body.split("\\toprule")[0].count("\\arraybackslash}p{")
+    if n >= 5:
         return "{\\footnotesize\\setlength{\\tabcolsep}{3pt}\n" + body + "\n}"
     return body
 tex = re.sub(r"\\begin\{longtable\}.*?\\end\{longtable\}", small, tex, flags=re.S)
