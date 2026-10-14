@@ -18,6 +18,16 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.6: new export "XEX Atari executable + RMT player" (File > Export As, script format `xex-rmt`): an XEX with the RMT
+  player and the module of the song, as RMT 1.28 exported it, with the text, the rasterbar and the colour of the XEX
+  dialog. The player is the one of the tracker driver in use: RMT 1.28 (the XEX routine `rmt_msx` of Rmt.exe, mono or
+  stereo) for Unpatched, the Simple RMT Player by VinsCool (mono or stereo, PAL or NTSC song) for Patch16, with the
+  frequency tables of the tuning in use; other drivers have no player and the export stops with a message. The players
+  are `rmt/resources/players/rmt_xex_*.obx`, built by `asm/ca65` (`make xexplayers`, `asm/Legacy/rmt_xex.a65` and
+  `asm/Patch-16/rmtplayer.a65` with `RITMOEXPORT`). The module goes up to $A000 (Patch16) or $BFFF, not the stream:
+  the stereo reference song at instrument speed 4, whose LZSS stream does not fit the VU-Player, fits. Checked in
+  atari800 (`-pokeyrec`) against the SAP-R of the same driver, frame by frame: songs at instrument speed 1, 2 and 4,
+  mono and stereo, both drivers, no difference; `scripts/check-xex-rmt.py` checks the files of the scripting tests.
 - 2.6: the SAP type B export loops for ever, as it was meant to. It set the loop counter of VU-Player to `$FF`
   (endless), but its INIT jumps to `SetNewSongPtrsFull`, whose `STX LOOP_COUNT` (X = 0) cleared it again: the player
   counted the loops and at the second end of the loop started a fade out, which in a SAP stops after one step, so from
