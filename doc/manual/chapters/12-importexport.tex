@@ -27,7 +27,7 @@ distortions (drums, basses\ldots) and correct the tunings of the original sample
 formats then show a dialog of options. Every format is written from the data of the song as the tracker plays it.
 
 \begin{center}
-\begin{tabular}{@{}p{4.2cm}p{9.6cm}@{}}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{4.2cm}p{9.6cm}@{}}
 \toprule
 Format & Use \\ \midrule
 RMT stripped song file (\texttt{.rmt}) & the module without the names and the unused tracks and instruments, to link in a program that uses
@@ -69,6 +69,10 @@ frequency according to the distortion of the instrument), how the duration is wr
 A SAP file has a header with the name, the author and the date, which the dialog fills with those of the song. The field
 \emph{Subsongs} lists, in hexadecimal, the song line each subsong starts from: \texttt{00} for one tune, \texttt{00 10} for two. SAP-R is the stream of
 the POKEY registers; LZSS compresses it, and the SAP file contains it with the player routine of the VU-Player.
+
+In the SAP file each subsong plays its intro once and then its loop for ever, at full volume. The SAP files of RITMO before 2.6 did
+not: at the second end of the loop the player started a fade out that stopped after one step, so from the third pass on the song
+played one volume step lower and one frame early.
 
 \subsection{XEX}
 
