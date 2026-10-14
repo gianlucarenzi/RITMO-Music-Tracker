@@ -19,15 +19,22 @@ Changes in RMT 2.00 (Planned)
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
 - 2.6: new export "XEX Atari executable + RMT player" (File > Export As, script format `xex-rmt`): an XEX with the RMT
-  player and the module of the song, as RMT 1.28 exported it, with the text, the rasterbar and the colour of the XEX
-  dialog. The player is the one of the tracker driver in use: RMT 1.28 (the XEX routine `rmt_msx` of Rmt.exe, mono or
-  stereo) for Unpatched, the Simple RMT Player by VinsCool (mono or stereo, PAL or NTSC song) for Patch16, with the
-  frequency tables of the tuning in use; other drivers have no player and the export stops with a message. The players
-  are `rmt/resources/players/rmt_xex_*.obx`, built by `asm/ca65` (`make xexplayers`, `asm/Legacy/rmt_xex.a65` and
-  `asm/Patch-16/rmtplayer.a65` with `RITMOEXPORT`). The module goes up to $A000 (Patch16) or $BFFF, not the stream:
-  the stereo reference song at instrument speed 4, whose LZSS stream does not fit the VU-Player, fits. Checked in
-  atari800 (`-pokeyrec`) against the SAP-R of the same driver, frame by frame: songs at instrument speed 1, 2 and 4,
-  mono and stereo, both drivers, no difference; `scripts/check-xex-rmt.py` checks the files of the scripting tests.
+  player of the tracker driver in use, the module of the song after it and RITMO PLAYER, the visualizer of RMTPLAY of
+  VERA_ATARI_PBI on the Atari screen (asm/rmtplay): NAME, AUTHOR and DATE of the export dialog (they scroll when
+  longer than 40 characters), one volume bar per channel, AUDF / AUDC / AUDCTL, song line, row, speed, play time. The
+  player is RMT 1.28 for the drivers Unpatched, Patch16 for Patch16 (with the frequency tables of the tuning in use);
+  other drivers have no player and the export stops with a message. An RMT8 song plays on two POKEYs (8 bars, the
+  right channels on $D210). Instrument speed 1-4: the deferred VBI calls the player that many times, back to back; an
+  NTSC song on a PAL machine and the other way round play at their own speed. The module goes after the program up
+  to $B820 (about 24 KB): the stereo reference song at instrument speed 4, whose LZSS stream does not fit the
+  VU-Player, fits. The players are `rmt/resources/players/rmtplay_v1/v6_mono/stereo.xex` (`make install` in
+  asm/rmtplay; `TABLES` of the Patch16 player is a configuration symbol of `scripts/mads2ca65.py`). Checked in
+  atari800 (`-pokeyrec`) against the SAP-R of the same driver, frame by frame: instrument speed 1, 2 and 4, mono and
+  stereo, both drivers; `scripts/check-xex-rmt.py` checks the files of the scripting tests.
+- 2.6: two songs in `rmt/songs/rmt128/others`: `stereo_reference_song.rmt` (the stereo reference song of the
+  scripting tests, 8 channels at instrument speed 4) and `mono_reference_song.rmt`, the same on one POKEY: the right
+  POKEY repeats the left one (drums, bass, melody) but for the echo of the melody, which goes into the melody channel
+  where the melody rests.
 - 2.6: the SAP type B export loops for ever, as it was meant to. It set the loop counter of VU-Player to `$FF`
   (endless), but its INIT jumps to `SetNewSongPtrsFull`, whose `STX LOOP_COUNT` (X = 0) cleared it again: the player
   counted the loops and at the second end of the loop started a fade out, which in a SAP stops after one step, so from

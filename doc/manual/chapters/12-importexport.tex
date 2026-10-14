@@ -37,7 +37,7 @@ SAP-R data stream (\texttt{.sapr}) & the register writes of the POKEY, frame by 
 Compressed SAP-R (\texttt{.lzss}) & the same, compressed, for the LZSS player \\
 SAP file + LZSS driver (\texttt{.sap}) & a file the Atari players (ASAP, the plug-ins of many players, ASMA) play directly \\
 XEX Atari executable (\texttt{.xex}) & a program for the Atari that plays the song when it is started \\
-XEX Atari executable + RMT player (\texttt{.xex}) & the same with the RMT player and the module, as RMT~1.28 exported it \\
+XEX Atari executable + RMT player (\texttt{.xex}) & the same with the RMT player and the module of the song \\
 Relocatable ASM for RMTPlayer (\texttt{.asm}) & the module as source with labels, to be placed in memory by your program \\
 WAV audio file (\texttt{.wav}) & the sound as a 16-bit, 44.1\,kHz, stereo file, the song played once up to its loop \\
 \bottomrule
@@ -87,18 +87,24 @@ the text as the Atari will draw it.
 
 \subsection{XEX with the RMT player}
 
-\dialog{dialog-export-xex-rmt}{The export of an Atari executable with the RMT player.}{10cm}
+\dialog{dialog-export-xex-rmt}{The export of an Atari executable with the RMT player.}{8cm}
 
 This XEX holds the RMT player and the module of the song, not the stream of the POKEY registers: the file is
-smaller, a long song or a stereo song at a high instrument speed fits, and the Atari computes the music as the tracker does. The
-player is the one of the tracker driver of the Options: with \emph{RMT 1.28 Unpatched} the XEX player of RMT~1.28 (the text and the
-rasterbar), with \emph{RMT 1.34 Patch16} the Simple RMT Player by VinsCool (the text, the volume of the channels, the play time),
-with the frequency tables of the tuning in use. With the other drivers there is no player and the export stops with a message.
+smaller, a long song or a stereo song at a high instrument speed fits, and the Atari computes the music as the tracker does.
+The player is the one of the tracker driver: RMT~1.28 for \emph{RMT 1.28 Unpatched}, Patch16 for \emph{RMT 1.34 Patch16}, with
+the frequency tables of the tuning in use. With the other drivers there is no player and the export stops with a message.
 
-The dialog is the one of the XEX export: the five lines of text, the rasterbar and its colour. The player always adjusts the
-speed to the region of the song on PAL and NTSC systems; the instrument speeds 1 to 4 are played spread over the frame, as in the
-tracker. The module goes from \texttt{\$4000} up to the screen of the player (\texttt{\$A000} for Patch16, \texttt{\$BFFF} for
-RMT~1.28); a bigger one stops the export with a message.
+The dialog asks for the three lines the program shows, NAME, AUTHOR and DATE (up to 200 characters each; a line
+longer than the 40 characters of the screen scrolls). It proposes them from the name of the song, as the tracker writes it:
+the name up to its first comma, the rest, and the first year it mentions.
+
+\dialog{atari-rmtplay}{RITMO PLAYER on the Atari, with the stereo reference song.}{10cm}
+
+On the Atari, RITMO PLAYER (the visualizer of RMTPLAY of VERA\_ATARI\_PBI) shows the three lines, one volume bar per
+channel, the POKEY registers, the song line, the row, the speed and the play time; \key{SPACE} pauses, \key{R} starts the
+song again and \key{ESC} goes back to DOS. An 8-track song plays on two POKEYs, with eight bars. The instrument speed (1 to
+4) is the number of calls of the player in every frame; a song for the other region (PAL or NTSC) plays at its own speed.
+The module goes after the program, up to \texttt{\$B820}: about 24\,KB; a bigger one stops the export with a message.
 
 \subsection{Relocatable ASM}
 

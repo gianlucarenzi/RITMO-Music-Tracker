@@ -97,7 +97,7 @@ when it is missing.
 | `lzss` | `.lzss` | none. Writes the full tune and, when they are longer than 16 bytes, the `_INTRO.lzss` and `_LOOP.lzss` siblings. |
 | `sap` | `.sap` | as `sapr` (a SAP of type B with the LZSS player of VU-Player V2; each songline listed in `subsongs` starts a subsong, `subsongs="00 10"` makes two) |
 | `xex` | `.xex` | `text` (the screen text, up to 5 lines of 40 characters, `\n` between lines; default: the song's name, date and author lines the dialog proposes), `rasterbar` (yes/no), `shuffle` (yes/no), `region-auto` (yes/no), `color` (the rasterbar color, 0-255) |
-| `xex-rmt` | `.xex` | `text`, `rasterbar`, `color` as `xex` (an XEX with the RMT player and the module: the player of the tracker driver, RMT 1.28 for `unpatched`, the Simple RMT Player for `patch16`; other drivers stop the script) |
+| `xex-rmt` | `.xex` | `name`, `author`, `date` (the three info lines of RITMO PLAYER, up to 200 characters each; default: the song name up to its first `, `, the rest, its first year; a module without a name gets its file name). An XEX with the RMT player of the tracker driver (`unpatched` or `patch16`; other drivers stop the script) and the module; an RMT8 song plays on two POKEYs. |
 | `rmtplayer-asm` | `.asm` | `startlabel` (default `RMT_SONG_DATA`), `relocate` (a comma list of `instruments`, `tracks`, `songlines`, or `none`), `instruments-label`, `tracks-label`, `songlines-label`, `asmformat`, `sfx`, `gvf`, `nos` |
 | `wav` | `.wav` | none (16-bit, 44.1 kHz, 2 channels, the song once up to its loop point) |
 
