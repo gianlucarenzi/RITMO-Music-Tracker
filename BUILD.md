@@ -1,6 +1,6 @@
 # Building RITMO with CMake
 
-RITMO is a **Qt** program (Qt6, or Qt 5.15): the same build on Linux, Windows
+RITMO is a **Qt 6** program: the same build on Linux, Windows
 (MinGW / MSYS2) and macOS. `-DRMT_BUILD_CORE_ONLY=ON` builds the engine and
 the audio/MIDI backends only, without Qt.
 
@@ -17,8 +17,7 @@ the audio/MIDI backends only, without Qt.
 ### Prerequisites
 
 - CMake 3.25+ and a C++20 compiler (GCC 10 or later)
-- Qt 6 (Core, Widgets); Qt 5.15 still works where Qt6 is not installed
-  (`-DRMT_QT_MAJOR=5` or `6` chooses the version)
+- Qt 6 (Core, Widgets, PrintSupport); Qt 5 is no longer supported (from 2.6)
 - PortAudio, for sound (without it the tracker runs silent)
 - RtMidi, for MIDI input (without it there are no MIDI IN devices)
 
@@ -210,6 +209,13 @@ QT_QPA_PLATFORM=offscreen RMT_QT_GRAB=shot.png RMT_QT_GRAB_MS=5000 \
     RMT_QT_COMMANDS=32856 RMT_QT_FILEDIALOG=rmt/imports/axel_f.mod \
     RMT_QT_DIALOG=import.png ./build-qt/out/ritmo      # import.png, import-2.png
 ```
+
+`RMT_QT_FONT="DejaVu Sans,12.75"` fixes the font of the menus and of the
+dialogs (as `QFont::fromString` reads it; the fixed-pitch text boxes take its
+size): offscreen Qt takes the font of the desktop, or its own small default,
+so without it the images change from a computer to another.
+`doc/manual/make-screenshots.sh` sets it. The About window is saved too, as
+the dialogs.
 
 `ID_FILE_NEW` = `0xE100`, `ID_FILE_OPEN` = `0xE101`, `ID_FILE_SAVE_AS` = `0xE104`, `ID_FILE_IMPORT` =
 32856, `ID_FILE_EXPORT_AS` = 32773, `ID_INSTR_LOAD` / `ID_INSTR_SAVE` = 32772
@@ -465,7 +471,6 @@ A commit without a tag reports exactly that, `2.6`; a tagged one reports its tag
 
 ## CMake Options
 
-- `-DRMT_QT_MAJOR=6|5` - Qt version of the frontend (default: Qt6, else Qt 5.15)
 - `-DRMT_BUILD_CORE_ONLY=ON` - Build the engine and backends only, no Qt
 - `-DRMT_CORE_TEST=ON` - Also build `RmtCoreTest` (with `RMT_BUILD_CORE_ONLY`)
 - `-DCMAKE_BUILD_TYPE=Release` - Build optimized release version

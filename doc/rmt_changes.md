@@ -18,6 +18,11 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.6: Qt 5 is no longer supported: the frontend builds with Qt 6 only (`-DRMT_QT_MAJOR` is gone, as the two `QT_VERSION`
+  branches of the code). The images of the manual came from the Qt 5 build, because offscreen Qt 6 drew the menus and the
+  dialogs with a smaller font: offscreen Qt takes the font of the desktop (Qt 5) or its own default (Qt 6). The test hook
+  `RMT_QT_FONT` ("family,points", as QFont::fromString reads it) now fixes it, for the fixed-pitch text too, and
+  `make-screenshots.sh` takes all the images with Qt 6 and the font they always had (DejaVu Sans, 17 pixels).
 - 2.6: the debug display (the line of internal values under the tracks: `GW=... GH=... PX=...`) is off by default, as the
   Options dialog and the manual ask ("enable it only if you know what it shows"); RMT had it on, and a first start of
   RITMO showed it. A configuration that has it on keeps it until it is switched off in Options.

@@ -6,8 +6,8 @@
 #   doc/manual/make-screenshots.sh [path/to/ritmo]      (default: build-qt/out/ritmo)
 #   ONLY='dialog-*' doc/manual/make-screenshots.sh      only the images whose name matches
 #
-# All the images come from the Qt 5 build (build-qt, the default): offscreen, the Qt 6 one draws the
-# menus and the dialogs with a smaller font, and its images would not match the others.
+# The font of the menus and of the dialogs is fixed (RMT_QT_FONT): offscreen Qt takes the one of the
+# desktop, or its own small default, and the images would change from a computer to another.
 set -eu
 cd "$(dirname "$0")/../.."
 RMT=$(realpath "${1:-build-qt/out/ritmo}")
@@ -23,6 +23,7 @@ trap 'rm -rf "$WORK" "$EXPORTS"' EXIT
 REPO=$PWD
 export XDG_CONFIG_HOME="$WORK/config"      # the defaults, not the settings of the user
 export QT_QPA_PLATFORM=offscreen
+export RMT_QT_FONT="DejaVu Sans,12.75"      # 17 pixels, as the images of the manual have always had
 # ... except the debug display of the status bar, which a manual does not show: a first run
 # saves the defaults, then the value is changed
 (cd "$WORK" && RMT_QT_GRAB="$WORK/first.png" RMT_QT_GRAB_MS=1500 RMT_QT_COMMANDS=32899 "$RMT") >/dev/null 2>&1 || true
