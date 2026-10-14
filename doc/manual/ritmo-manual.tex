@@ -16,6 +16,9 @@
 \usepackage{caption}
 \usepackage{booktabs}
 \usepackage{longtable}
+% less space after a table: a table that ends at the bottom of a page (its last row cannot move) would
+% run into the bottom margin with the default \bigskipamount
+\setlength{\LTpost}{\medskipamount}
 \usepackage{array}
 \usepackage{calc}
 \usepackage{enumitem}

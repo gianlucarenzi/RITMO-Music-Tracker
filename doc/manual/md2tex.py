@@ -65,9 +65,10 @@ def table_widths(block):
     def width(cell):  # a mono type cell (backquotes) is wider
         return int(len(cell) * (1.6 if "`" in cell else 1))
     longest = [min(max((width(r[c]) if c < len(r) else 0) for r in rows), 70) for c in range(n)]
-    # a column is never narrower than its longest word (names break only at _, - and /)
+    # a column is never narrower than its longest word (names break only at _, - and /); a word in
+    # capitals (UNPATCHED, PORTAMENTO) is wider than one of the same length in small letters
     def word(cell):
-        return max((width(w) for w in re.split(r"[\s_/-]+", cell)), default=0)
+        return max((int(width(w) * (1.25 if w.isupper() else 1)) for w in re.split(r"[\s_/-]+", cell)), default=0)
     words = [max((word(r[c]) if c < len(r) else 0) for r in rows) for c in range(n)]
     longest = [max(10, x) + 4 for x in longest]
     # the widths are relative: the share of each column must hold its longest word, with about 65
@@ -123,14 +124,20 @@ tex = res.stdout
 # the code blocks as listings, which break the long lines
 tex = tex.replace("\\begin{verbatim}", "\\begin{lstlisting}").replace("\\end{verbatim}", "\\end{lstlisting}")
 
-# the tables without widths (tab separated "simple" tables of rmt_format.md): the last column wraps
+# the tables without widths (tab separated "simple" tables of rmt_format.md): the last column wraps.
+# Not the tables with widths: pandoc 2.11 and newer gives them p{} columns, the older ones (2.9 of
+# Debian 11) l columns with each cell in a minipage of its width, which a p{} column would not hold
 def wrap_last(m):
     n = len(m.group(1))
     if n < 2 or n > 3:
         return m.group(0)
     last = "\\raggedright\\arraybackslash}p{" + ("0.62" if n == 2 else "0.62") + "\\columnwidth}"
     return "\\begin{longtable}[]{@{}" + "l" * (n - 1) + ">{" + last + "@{}}"
-tex = re.sub(r"\\begin\{longtable\}\[\]\{@\{\}(l+)@\{\}\}", wrap_last, tex)
+def wrap_last_table(m):
+    if "\\begin{minipage}" in m.group(0):
+        return m.group(0)
+    return re.sub(r"\\begin\{longtable\}\[\]\{@\{\}(l+)@\{\}\}", wrap_last, m.group(0), count=1)
+tex = re.sub(r"\\begin\{longtable\}.*?\\end\{longtable\}", wrap_last_table, tex, flags=re.S)
 
 # a long word in mono type (names with _ or -) may be broken at those characters
 def breakable(m):
