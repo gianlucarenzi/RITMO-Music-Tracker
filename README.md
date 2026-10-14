@@ -51,8 +51,8 @@ move your work between the Windows version and this one.
 
 The [**RITMO User Manual (PDF)**](doc/manual/ritmo-manual.pdf), with screenshots of the windows, the menus and the
 dialogs, explains the program from the first song to the scripting and the export formats. It is written in
-LaTeX and built by `doc/manual/build.sh` (XeLaTeX and pandoc; `--screenshots` takes the screenshots from the
-program itself). The reference documents are also in `doc/` as Markdown.
+LaTeX and built by `doc/manual/build.sh` (XeLaTeX, pandoc and Python 3; `--screenshots` takes the screenshots from
+the program itself, a Qt 6 build). The reference documents are also in `doc/` as Markdown.
 
 
 ### Screenshots

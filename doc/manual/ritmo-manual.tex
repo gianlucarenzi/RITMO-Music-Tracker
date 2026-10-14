@@ -72,11 +72,14 @@
     \fbox{\includegraphics[width=#3\textwidth]{images/#1.png}}%
     \caption{#2}\label{fig:#1}%
   \end{figure}}
-% a part of a screenshot, enlarged: \shotpart{file}{caption}{width as a fraction of the text width}{the
-% trim: left bottom right top, in bp; the screenshots have 100 dpi, so a pixel is 0.72 bp}
-\newcommand{\shotpart}[4]{%
+% a pixel of the screenshots: they have 96 dpi (Qt 6 writes it in the PNG), so a pixel is 72/96 bp
+\newlength{\screenpx}
+\setlength{\screenpx}{0.75bp}
+% a part of a screenshot, enlarged: \shotpart{file}{caption}{width as a fraction of the text width}
+% {left}{bottom}{right}{top}, what is cut away on each side, in pixels of the screenshot
+\newcommand{\shotpart}[7]{%
   \begin{figure}[H]\centering
-    \fbox{\includegraphics[width=#3\textwidth,trim=#4,clip]{images/#1.png}}%
+    \fbox{\includegraphics[width=#3\textwidth,trim=#4\screenpx{} #5\screenpx{} #6\screenpx{} #7\screenpx,clip]{images/#1.png}}%
     \caption{#2}\label{fig:#1}%
   \end{figure}}
 % a screenshot of a dialog, at its own size: \dialog{file}{caption}{width in cm}

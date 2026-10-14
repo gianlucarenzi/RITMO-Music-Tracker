@@ -3,6 +3,8 @@
 # "dump actions" and "dump notekeys":
 #   doc/rmt_action_infos.md   every menu item and toolbar button with its key and description
 #   doc/rmt_note_keys.md      the note keys of the QWERTY, QWERTZ and AZERTY layouts
+# and, with pandoc, doc/rmt_en.html: the reference of RMT with those tables in it. The user manual
+# (doc/manual/ritmo-manual.pdf) is built by doc/manual/build.sh.
 #
 #   scripts/make-docs.sh [path/to/ritmo]      (default: build-qt/out/ritmo)
 set -eu
@@ -19,7 +21,7 @@ dump notekeys $PWD/doc/rmt_note_keys.md
 SCRIPT
 "$RMT" "/SCRIPT:$WORK/docs.rmtscript"
 
-# The manual: doc/rmt_en.md with the generated tables included, as HTML (doc/rmt_en.html), when pandoc is there
+# The reference of RMT: doc/rmt_en.md with the generated tables included, as HTML (doc/rmt_en.html), when pandoc is there
 if command -v pandoc >/dev/null; then
     awk -v dir=doc '
         /^<!-- include: .* -->$/ { f = $3; while ((getline line < (dir "/" f)) > 0) print line; close(dir "/" f); next }

@@ -21,14 +21,10 @@ rm -rf "$EXPORTS"
 mkdir -p "$EXPORTS"
 trap 'rm -rf "$WORK" "$EXPORTS"' EXIT
 REPO=$PWD
-export XDG_CONFIG_HOME="$WORK/config"      # the defaults, not the settings of the user
+# the defaults, not the settings of the user (the debug display of the status bar is off there)
+export XDG_CONFIG_HOME="$WORK/config"
 export QT_QPA_PLATFORM=offscreen
 export RMT_QT_FONT="DejaVu Sans,12.75"      # 17 pixels, as the images of the manual have always had
-# ... except the debug display of the status bar, which a manual does not show: a first run
-# saves the defaults, then the value is changed
-(cd "$WORK" && RMT_QT_GRAB="$WORK/first.png" RMT_QT_GRAB_MS=1500 RMT_QT_COMMANDS=32899 "$RMT") >/dev/null 2>&1 || true
-CONF=$(find "$XDG_CONFIG_HOME" -name 'ritmo.conf')
-sed -i 's/^VIEW_DEBUGDISPLAY=.*/VIEW_DEBUGDISPLAY=0/' "$CONF"
 
 SONG=rmt/songs/rmt128/raster/gemx.rmt                 # mono, 4 tracks
 STEREO=rmt/songs/rmt128/others/hightide.rmt           # stereo, 8 tracks
