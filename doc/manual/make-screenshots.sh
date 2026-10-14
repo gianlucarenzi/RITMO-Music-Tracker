@@ -83,13 +83,13 @@ dialog dialog-size-optimization "$SONG" "$(id ID_SONG_SIZEOPTIMIZATION)"
 dialog dialog-import "" "$(id ID_FILE_IMPORT)" RMT_QT_FILEDIALOG="$REPO/rmt/imports/axel_f.mod"
 # the export dialogs: the file dialog is answered with a name and the file type (file@N)
 n=0
-for fmt in "stripped-rmt:1" "simple-asm:2" "sapr:3" "sap:5" "xex:6" "reloc-asm:7"; do
+for fmt in "stripped-rmt:1" "simple-asm:2" "sapr:3" "sap:5" "xex:6" "xex-rmt:7" "reloc-asm:8"; do
     name=${fmt%%:*}
     idx=${fmt##*:}
     ext=rmt
     [ "$name" = sapr ] && ext=sapr
     [ "$name" = sap ] && ext=sap
-    [ "$name" = xex ] && ext=xex
+    case $name in xex | xex-rmt) ext=xex ;; esac
     case $name in simple-asm | reloc-asm) ext=asm ;; esac
     dialog "dialog-export-$name" "$SONG" "$(id ID_FILE_EXPORT_AS)" RMT_QT_FILEDIALOG="$EXPORTS/gemx-$name.$ext@$idx"
     n=$((n + 1))

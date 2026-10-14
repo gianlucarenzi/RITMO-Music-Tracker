@@ -62,6 +62,11 @@ bool CRmtAtariBinaries::GetTrackerDriverBinary(TrackerDriverVersion trackerDrive
     return true;
 }
 
+CByteArray* CRmtAtariBinaries::LoadPlayerBinary(const CString& fileName)
+{
+    return LoadResourceByteArray(std::filesystem::path("resources/players"), fileName);
+}
+
 bool CRmtAtariBinaries::GetVUPlayerBinary(byte*& binary, WORD& size)
 {
     binary = nullptr;

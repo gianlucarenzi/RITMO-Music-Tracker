@@ -64,7 +64,7 @@ enum class SongIOType : int {
     RMW = 2,         // For load and save. TODO: How to represent V2 later?
     RMTSTRIPPED = 3, // Only for export, but resul can also be imported again as RMT
     SAP = 4,         // Only for export, TODO Enable import
-    XEX = 5,         // Only for export, TODO: Not used anymore? Old RMT 1.28 XEX export is disabled?
+    XEX_RMTPLAYER = 5, // Only for export: XEX with the RMT player and the module, as RMT 1.28 exported it
     TXT = 6,         // TODO: For import and export?
     ASM = 7,         // Only for export
     // RMF = 8,        // Obsolete: the "RMF" format Raster started and never completed

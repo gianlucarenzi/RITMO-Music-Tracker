@@ -142,6 +142,7 @@ CExpMSXDlg::CExpMSXDlg(CWnd* pParent) : CDialog(CExpMSXDlg::IDD, pParent)
     m_meter = FALSE;
     m_msx_shuffle = FALSE;
     m_region_auto = FALSE;
+    m_rmtPlayer = FALSE;
     m_metercolor = 0;
 }
 void CExpMSXDlg::DoDataExchange(CDataExchange*) {}

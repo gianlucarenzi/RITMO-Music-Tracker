@@ -207,6 +207,7 @@ enum PlayMode : int {
     "Compressed SAP-R data stream (*.lzss)|*.lzss|"     \
     "SAP file + LZSS driver (*.sap)|*.sap|"             \
     "XEX Atari executable + LZSS driver (*.xex)|*.xex|" \
+    "XEX Atari executable + RMT player (*.xex)|*.xex|"  \
     "Relocatable ASM for RMTPlayer (*.asm)|*.asm|"      \
     "WAV audio file (*.wav)|*.wav|"                     \
     "|"
@@ -221,14 +222,15 @@ enum PlayMode : int {
 //#define FILE_EXPORT_FILTER_IDX_MAX FILE_EXPORT_FILTER_IDX_RELOC_ASM
 //#define FILE_EXPORT_EXTENSIONS_ARRAY { ".rmt",".asm",".sapr",".lzss",".sap",".xex",".asm" };
 //#define FILE_EXPORT_EXTENSIONS_LENGTH_ARRAY { 4, 4, 5, 5, 4, 4, 4}
-#define FILE_EXPORT_FILTER_IDX_RELOC_ASM 7
-#define FILE_EXPORT_FILTER_IDX_WAV       8
-#define FILE_EXPORT_FILTER_IDX_MIN       FILE_EXPORT_FILTER_IDX_STRIPPED_RMT
-#define FILE_EXPORT_FILTER_IDX_MAX       FILE_EXPORT_FILTER_IDX_WAV
-#define FILE_EXPORT_EXTENSIONS_ARRAY     { ".rmt", ".asm", ".sapr", ".lzss", ".sap", ".xex", ".asm", ".wav" };
+#define FILE_EXPORT_FILTER_IDX_XEX_RMTPLAYER 7
+#define FILE_EXPORT_FILTER_IDX_RELOC_ASM     8
+#define FILE_EXPORT_FILTER_IDX_WAV           9
+#define FILE_EXPORT_FILTER_IDX_MIN           FILE_EXPORT_FILTER_IDX_STRIPPED_RMT
+#define FILE_EXPORT_FILTER_IDX_MAX           FILE_EXPORT_FILTER_IDX_WAV
+#define FILE_EXPORT_EXTENSIONS_ARRAY         { ".rmt", ".asm", ".sapr", ".lzss", ".sap", ".xex", ".xex", ".asm", ".wav" };
 #define FILE_EXPORT_EXTENSIONS_LENGTH_ARRAY \
     {                                       \
-        4, 4, 5, 5, 4, 4, 4, 4              \
+        4, 4, 5, 5, 4, 4, 4, 4, 4           \
     }
 
 // ----------------------------------------------------------------------------

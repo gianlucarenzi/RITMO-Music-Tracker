@@ -227,6 +227,7 @@ set(RMT_HEADERS
     RmtFile.h
     RmtMidi.h
     RmtView.h
+    rmt_xex.h
     RuntimeException.h
     Script.h
     ScriptMessages.h

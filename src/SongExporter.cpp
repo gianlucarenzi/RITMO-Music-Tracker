@@ -1,6 +1,7 @@
 #include "PlatformTypes.h"
 #include "SongExporter.h"
 #include <iomanip>
+#include <memory>
 #include <vector>
 
 #include "AtariIO.h"
@@ -18,6 +19,9 @@
 #include "SAPFileExporter.h"
 
 #include "VUPlayer.h"
+#include "rmt_xex.h"
+#include "Atari.h"
+#include "Global.h"
 
 #include "WaveFileExporter.h"
 
@@ -361,6 +365,142 @@ bool CSongExporter::ExportXEX_LZSS(CSongExport& songExport, CXEXFile xexFile, st
     return true;
 }
 
+bool CSongExporter::ExportXEX_RMTPlayer(CSongExport& songExport, TExportDescription* exportDesc, std::ofstream& ou)
+{
+    CXEXFile xexFile;
+
+    if (!ShowXEXExportDialog(songExport.GetSong(), xexFile, true)) {
+        return false;
+    }
+    return ExportXEX_RMTPlayer(songExport, exportDesc, xexFile, ou);
+}
+
+/// <summary>
+/// The players are in resources/players, built by asm/ca65 (make xexplayers), without a module; rmt_xex.h has the
+/// addresses patched here:
+/// - rmt_xex_v1_mono/stereo.obx (drivers Unpatched): the RMT 1.28 player at $3400 and the XEX routine of RMT 1.28 at
+///   $3E00, which shows 5 lines of text from $3F00, takes the rasterbar colour from $3FC8 and the spacing of the player
+///   calls (in line pairs, bit 7 = twice) from $3FC9, which the tracker sets
+/// - rmt_xex_v6_mono/stereo_pal/ntsc.obx (driver Patch16): the Simple RMT Player by VinsCool, with the screen at $A000
+///   (the text at line_1), the rasterbar colour in its main loop and the frequency tables at $B000, which RITMO
+///   computes from the tuning: they are taken from the memory of the tracker driver
+/// The module goes from $4000 up to the screen of the player ($A000) or the end of the RAM ($BFFF).
+/// </summary>
+bool CSongExporter::ExportXEX_RMTPlayer(CSongExport& songExport, TExportDescription* exportDesc, CXEXFile xexFile, std::ofstream& ou)
+{
+    // The driver the tracker plays the song with (the one of the Options, or the RMT 1.28 Unpatched one a song with
+    // the Autofilter may be played with)
+    bool patch16;
+    switch (g_AtariTrackerDriver->GetLoadedVersion()) {
+        case TrackerDriverVersion::UNPATCHED:
+        case TrackerDriverVersion::UNPATCHED_WITH_TUNING:
+            patch16 = false;
+            break;
+        case TrackerDriverVersion::PATCH16:
+            patch16 = true;
+            break;
+        default:
+            SendErrorMessage("XEX with the RMT player",
+                             "There is an RMT player for the drivers RMT 1.28 Unpatched and RMT 1.34 Patch16 only\n"
+                             "(Options > RMT Driver Version).\n\n"
+                             "The XEX export with the LZSS driver plays the song with any driver.");
+            return false;
+    }
+    if (xexFile.instrspeed < 1 || xexFile.instrspeed > 4) {
+        SendErrorMessage("XEX with the RMT player", "The RMT player plays instrument speeds 1 to 4 only.");
+        return false;
+    }
+
+    CString fileName;
+    fileName.Format("rmt_xex_v%d_%s%s.obx", patch16 ? 6 : 1, xexFile.isStereo ? "stereo" : "mono",
+                    patch16 ? (xexFile.isNTSC ? "_ntsc" : "_pal") : "");
+    std::unique_ptr<CByteArray> binary(CRmtAtariBinaries::LoadPlayerBinary(fileName));
+    if (!binary || binary->GetSize() < 6) {
+        CString message;
+        message.Format("Couldn't load the RMT player '%s'.", (LPCTSTR)fileName);
+        SendErrorMessage("Export aborted", message);
+        return false;
+    }
+
+    // The blocks of the player, in their order
+    byte mem[RAM_SIZE]{};
+    std::vector<std::pair<MemoryAddress, MemoryAddress>> blocks;
+    const byte* data = binary->GetData();
+    long size = binary->GetSize(), p = 0;
+    while (p + 4 <= size) {
+        if (data[p] == 0xFF && data[p + 1] == 0xFF) {
+            p += 2;
+            continue;
+        }
+        MemoryAddress from = data[p] | data[p + 1] << 8, to = data[p + 2] | data[p + 3] << 8;
+        if (to < from || p + 4 + (to - from) >= size) {
+            break;
+        }
+        memcpy(mem + from, data + p + 4, to - from + 1);
+        blocks.push_back({ from, to });
+        p += 4 + (to - from + 1);
+    }
+
+    MemoryAddress text, color;
+    MemoryAddress moduleEnd = exportDesc->firstByteAfterModule; // first byte after the module
+    MemoryAddress moduleLimit;
+    if (patch16) {
+        text = xexFile.isNTSC ? RMTXEX_V6_MONO_NTSC_LINE_1 : RMTXEX_V6_MONO_PAL_LINE_1;
+        color = xexFile.isNTSC ? RMTXEX_V6_MONO_NTSC_RASTERBAR_COLOUR : RMTXEX_V6_MONO_PAL_RASTERBAR_COLOUR;
+        moduleLimit = RMTXEX_V6_MONO_PAL_LINE_0;
+    } else {
+        text = RMTXEX_MSX_VIDEO;
+        color = RMTXEX_MSX_COLOR;
+        moduleLimit = RAM_MAX_ADDRESS + 1;
+    }
+    if (blocks.empty() || (patch16 && mem[color - 1] != 0xA0)) { // LDY #colour
+        CString message;
+        message.Format("The RMT player '%s' is not the one this program expects.", (LPCTSTR)fileName);
+        SendErrorMessage("Export aborted", message);
+        return false;
+    }
+    if (moduleEnd > moduleLimit) {
+        CString message;
+        message.Format("Error, the module ($%04X - $%04X) is too big for the RMT player!\n\n"
+                       "The player has room for a module of %d bytes ($%04X - $%04X).\n"
+                       "The XEX export with the LZSS driver may fit it.",
+                       exportDesc->targetAddrOfModule, moduleEnd - 1, moduleLimit - exportDesc->targetAddrOfModule,
+                       exportDesc->targetAddrOfModule, moduleLimit - 1);
+        SendErrorMessage("Buffer Overflow", message);
+        return false;
+    }
+
+    // The text of the dialog (5 lines of 40 characters) and the rasterbar colour (0 = black, no rasterbar)
+    memcpy(mem + text, xexFile.atariText, CXEXFile::ATARI_TEXT_SIZE);
+    mem[color] = xexFile.displayRasterbar ? (byte)xexFile.rasterbarColor : 0;
+    if (patch16) {
+        // The frequency tables of the tuning, as the tracker driver plays them
+        memcpy(mem + 0xB000, g_Atari.GetMemoryAt(0xB000), 0x600);
+    } else {
+        // The line pairs between the player calls, for a PAL or an NTSC song (156 = twice 78: once per frame)
+        static const byte spacingPAL[4] = { 156, 78, 52, 39 };
+        static const byte spacingNTSC[4] = { 131, 66, 44, 33 };
+        mem[RMTXEX_MSX_VCADDITION] = (xexFile.isNTSC ? spacingNTSC : spacingPAL)[xexFile.instrspeed - 1];
+    }
+
+    // The player, its text (in a block of its own for RMT 1.28), the module and the run address
+    bool header = true;
+    for (const auto& block : blocks) {
+        CAtariIO::SaveBinaryBlock(ou, mem, block.first, block.second, header);
+        header = false;
+    }
+    if (!patch16) {
+        CAtariIO::SaveBinaryBlock(ou, mem, RMTXEX_MSX_VIDEO, RMTXEX_MSX_VCADDITION, false);
+    }
+    CAtariIO::SaveBinaryBlock(ou, exportDesc->mem, exportDesc->targetAddrOfModule, moduleEnd - 1, false);
+    if (!patch16) {
+        mem[0x2E0] = RMTXEX_MSX_START & 0xFF;
+        mem[0x2E1] = RMTXEX_MSX_START >> 8;
+        CAtariIO::SaveBinaryBlock(ou, mem, 0x2E0, 0x2E1, false);
+    }
+    return true;
+}
+
 /// <summary>
 /// Dumps, compresses and lays out the subtunes the way VU-Player V2 reads them: per subtune an entry in the song
 /// index (the address of its section list and of its sequence list), the timers, and the intro and loop LZSS streams
@@ -490,15 +630,20 @@ bool CSongExporter::BuildLzssSubtunes(CSongExport& songExport, const int* subtun
 }
 
 // The XEX dialog process was split to a different function for clarity, same will be done for SAP later...
-bool CSongExporter::ShowXEXExportDialog(const CSong& song, CXEXFile& xexFile)
+bool CSongExporter::ShowXEXExportDialog(const CSong& song, CXEXFile& xexFile, bool rmtPlayer)
 {
     xexFile.InitFromSong(song);
 
     CExpMSXDlg dlg;
     CString str;
     dlg.m_txt = DefaultXexText(xexFile);
+    dlg.m_rmtPlayer = rmtPlayer;
 
-    str.Format("Playback speed will be adjusted to %s Hz on both PAL and NTSC systems.", (xexFile.isNTSC ? "60" : "50"));
+    if (rmtPlayer) {
+        str.Format("The RMT player adjusts the playback speed to %s Hz on both PAL and NTSC systems.", (xexFile.isNTSC ? "60" : "50"));
+    } else {
+        str.Format("Playback speed will be adjusted to %s Hz on both PAL and NTSC systems.", (xexFile.isNTSC ? "60" : "50"));
+    }
     dlg.m_speedinfo = str;
 
     if (dlg.DoModal() != IDOK) {

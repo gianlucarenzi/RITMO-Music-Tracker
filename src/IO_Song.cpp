@@ -520,6 +520,7 @@ void CSong::FileExportAs()
     if (m_lastExportIOType == SongIOType::LZSS) dlg.m_ofn.nFilterIndex = FILE_EXPORT_FILTER_IDX_LZSS;
     if (m_lastExportIOType == SongIOType::LZSS_SAP) dlg.m_ofn.nFilterIndex = FILE_EXPORT_FILTER_IDX_SAP;
     if (m_lastExportIOType == SongIOType::LZSS_XEX) dlg.m_ofn.nFilterIndex = FILE_EXPORT_FILTER_IDX_XEX;
+    if (m_lastExportIOType == SongIOType::XEX_RMTPLAYER) dlg.m_ofn.nFilterIndex = FILE_EXPORT_FILTER_IDX_XEX_RMTPLAYER;
     if (m_lastExportIOType == SongIOType::ASM_RMTPLAYER) dlg.m_ofn.nFilterIndex = FILE_EXPORT_FILTER_IDX_RELOC_ASM;
     if (m_lastExportIOType == SongIOType::WAV) dlg.m_ofn.nFilterIndex = FILE_EXPORT_FILTER_IDX_WAV;
 
@@ -572,6 +573,10 @@ void CSong::FileExportAs()
 
             case FILE_EXPORT_FILTER_IDX_XEX:
                 m_lastExportIOType = SongIOType::LZSS_XEX;
+                break;
+
+            case FILE_EXPORT_FILTER_IDX_XEX_RMTPLAYER:
+                m_lastExportIOType = SongIOType::XEX_RMTPLAYER;
                 break;
 
             case FILE_EXPORT_FILTER_IDX_RELOC_ASM: // Relocatable ASM for RMTPlayer
@@ -1215,6 +1220,7 @@ bool CSong::ExportV2(CSong& song, std::ofstream& ou, SongIOType iotype, LPCTSTR 
         case SongIOType::LZSS: return songExporter.ExportLZSS(songExport, ou);
         case SongIOType::LZSS_SAP: return songExporter.ExportSAP_B_LZSS(songExport, ou);
         case SongIOType::LZSS_XEX: return songExporter.ExportXEX_LZSS(songExport, ou);
+        case SongIOType::XEX_RMTPLAYER: return songExporter.ExportXEX_RMTPlayer(songExport, &exportDesc, ou);
         case SongIOType::WAV: return songExporter.ExportWAV(songExport, ou, g_Pokey, g_Atari.GetMemoryAt(0));
         default:
             break;

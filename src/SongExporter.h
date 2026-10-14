@@ -76,13 +76,23 @@ public:
     // Non-interactive version.
     bool ExportXEX_LZSS(CSongExport& songExport, CXEXFile xexFile, std::ofstream& ou);
 
+    /// <summary>
+    /// Export an XEX with the RMT player and the module (exportDesc, at $4000), as RMT 1.28 exported it: the player of
+    /// the tracker driver in use (RMT 1.28 for Unpatched, the Simple RMT Player for Patch16) shows the text of the
+    /// XEX dialog and plays the song as the tracker does
+    /// </summary>
+    bool ExportXEX_RMTPlayer(CSongExport& songExport, TExportDescription* exportDesc, std::ofstream& ou);
+
+    // Non-interactive version.
+    bool ExportXEX_RMTPlayer(CSongExport& songExport, TExportDescription* exportDesc, CXEXFile xexFile, std::ofstream& ou);
+
 
 private:
     static void StrToAtariVideo(char* txt, int count);
 
     // A dumb SAP-R LZSS optimisations bruteforcer, returns the optimal value and buffer
     static int BruteforceOptimalLZSS(unsigned char* src, int srclen, unsigned char* dst);
-    static bool ShowXEXExportDialog(const CSong& song, CXEXFile& xexFile);
+    static bool ShowXEXExportDialog(const CSong& song, CXEXFile& xexFile, bool rmtPlayer = false);
 
 public:
     // The 5 lines of 40 characters the XEX export dialog proposes (the last one used, else the song's data), and the

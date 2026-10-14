@@ -16,6 +16,8 @@ export lzss s1.lzss
 # "LZSS data is too big to fit in memory", see stereo-too-big.rmtscript
 export rmtplayer-asm s1_player.asm
 export wav s1.wav
+# the XEX with the RMT player has room for it: the module, not the stream
+export xex-rmt s1_rmt.xex text="STEREO"
 
 export stripped-rmt s2.rmt address=$4800 sfx=yes
 export asm s2.asm type=song prefix=ST

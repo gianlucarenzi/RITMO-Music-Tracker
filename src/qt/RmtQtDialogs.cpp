@@ -455,7 +455,7 @@ static INT_PTR RunExportStrippedRmt(QWidget* parent, CExportStrippedRMTDialog* d
     return ExecDialog(dialog, [buttons] { ClickOk(buttons); }) ? IDOK : IDCANCEL;
 }
 
-// IDD_EXPMSX - CExpMSXDlg (XEX with the LZSS driver); the options are kept
+// IDD_EXPMSX - CExpMSXDlg (XEX with the LZSS driver, or with the RMT player: m_rmtPlayer); the options are kept
 // for the next export like g_msxcheck, g_msx_shuffle, g_region_auto, g_msxcol
 // (also set by the script command "export xex", ScriptRunner.cpp)
 BOOL g_msxcheck = 1;
@@ -466,7 +466,7 @@ int g_msxcol = 6;
 static INT_PTR RunExportXex(QWidget* parent, CExpMSXDlg* dlg)
 {
     QDialog dialog(parent);
-    dialog.setWindowTitle("Export Atari executable MSX");
+    dialog.setWindowTitle(dlg->m_rmtPlayer ? "Export Atari executable with the RMT player" : "Export Atari executable MSX");
     auto* layout = new QVBoxLayout(&dialog);
 
     layout->addWidget(new QLabel("Text displayed on screen during music playback. 4+1 lines, 40 characters per line.\n"
@@ -518,6 +518,9 @@ static INT_PTR RunExportXex(QWidget* parent, CExpMSXDlg* dlg)
     auto* regionAuto = new QCheckBox("Automatically adjust playback speed");
     regionAuto->setChecked(g_region_auto != 0);
     layout->addWidget(regionAuto);
+    // the RMT player has no shuffled colours and always adjusts the speed
+    shuffle->setVisible(!dlg->m_rmtPlayer);
+    regionAuto->setVisible(!dlg->m_rmtPlayer);
 
     // CExpMSXDlg::OnHScroll(): the color is 2 x the scroll position
     auto changeColor = [&](int c) {
