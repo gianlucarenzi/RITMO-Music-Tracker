@@ -8,8 +8,6 @@ MADS is not installed:
 cd asm/ca65
 make            # build/rmt_driver_v6.obx, rmt_driver_v1.obx, rmt_sap4.obx, rmt_sap8.obx, rmt_msx.obx, rmf_play.xex
 make check      # the drivers must be byte for byte those of rmt/resources/drivers
-make xexplayers # the players of the XEX export with the RMT player, build/rmt_xex_*.obx and build/rmt_xex.h
-make install-xexplayers   # copy them to rmt/resources/players and src/rmt_xex.h
 ```
 
 It needs `ca65` and `ld65` (cc65 2.19 or later), `make`, `awk` and a POSIX shell.
@@ -40,14 +38,12 @@ says which source it comes from. The binary files the sources include (`ins`: `f
 | `build/rmf_play.xex` | `Legacy/rmf/rmf_play.s` (RMF player with `test.rmf`) | assembled, no reference |
 | `make players`: `build/rmtplayer.xex`, `rmtplayer.sap` | `Patch-16/rmtplayer.s` (Simple RMT Player with `music.rmt`, XEX or SAP) | the SAP played on the 6502 of RMT gives the POKEY registers of the Patch16 driver of RMT, frame by frame |
 | `make players`: `build/rmtvis.xex` | `Patch-16/rmtvis.s` (RMT Visualizer with `music.rmt`) | assembled, no reference |
-| `make xexplayers`: `build/rmt_xex_v1_mono.obx`, `_stereo.obx` | `Legacy/rmt_xex.s` (the RMT 1.28 player at $3400, `STEREOMODE` 0 or 1) followed by `Legacy/rmt_msx.s` (the XEX routine of RMT 1.28 at $3E00, text at $3F00), without a module | the XEX of RITMO with a song gives the POKEY registers of its SAP-R (driver Unpatched) in atari800, frame by frame |
-| `make xexplayers`: `build/rmt_xex_v6_mono_pal.obx`, `_mono_ntsc`, `_stereo_pal`, `_stereo_ntsc` | `Patch-16/rmtplayer.s` with `RITMOEXPORT=1` (no `music.rmt`), `STEREOMODE`, `REGIONPLAYBACK` | the same with the driver Patch16; the addresses RITMO patches (`line_1`, `rasterbar_colour`) go to `build/rmt_xex.h` |
 
 The players are assembled with `FEAT_IS_TRACKER=0` and `FEAT_IS_SIMPLEP=1` (the player routine at $3100); with
 MADS these are the values to set in `rmt_feat.a65`. The SAP export and the "XEX + LZSS driver" export of RITMO do not
 use these players: they use `rmt/resources/players/vu_player_v2.obx` (VUPlayer, from
-https://github.com/VinsCool/VUPlayer-LZSS) and the LZSS streams. The "XEX + RMT player" export uses the
-`rmt_xex_*.obx` players of `make xexplayers`, copied to `rmt/resources/players` by `make install-xexplayers`.
+https://github.com/VinsCool/VUPlayer-LZSS) and the LZSS streams. The "XEX + RMT player" export uses the players of
+`asm/rmtplay` (`Legacy/rmt_xex.s` and `Patch-16/rmtplayr.s`, assembled by `obx.sh`, with the visualizer of RMTPLAY).
 
 The feature switches and the configuration symbols (`FEAT_*`, `STEREOMODE`, `EXPORTXEX`, `EXPORTSAP`, `VLINE`,
 ...) can be given to `obx.sh` as ca65 options, for example `-D FEAT_IS_TRACKER=0 -D FEAT_IS_SIMPLEP=1`: their

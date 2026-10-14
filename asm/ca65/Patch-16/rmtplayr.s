@@ -38,7 +38,10 @@ TRACKS = 8
 TRACKS = 4
 .endif
 
-TABLES = $B000	; This may be moved elsewhere if necessary 
+; This may be moved elsewhere if necessary 
+.ifndef TABLES
+TABLES = $B000
+.endif
 
 INSTRPAR = 12
 

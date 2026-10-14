@@ -1,6 +1,9 @@
 The RMT driver's 6502 code is located in this folder.
 Current asm sources are split between 2 versions: Legacy and Patch-16
 
+The players of the "XEX Atari executable + RMT player" export of RITMO (RITMO PLAYER: the RMT player of a driver with
+the visualizer of RMTPLAY of VERA_ATARI_PBI) are built in rmtplay/ with cc65 (see rmtplay/README.md).
+
 The same sources for ca65 (cc65), to build the drivers and players without MADS, are in ca65/ (see ca65/README.md):
 generated from these by scripts/mads2ca65.py, "make check" there verifies that the drivers come out byte for byte
 as rmt_driver_v1.obx and rmt_driver_v6.obx.

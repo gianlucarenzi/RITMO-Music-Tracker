@@ -32,13 +32,6 @@ EXPORTSAP = 0
 STARTLINE = 0
 .endif
 
-; 1 => no module: the XEX export of RITMO adds the module at MODUL, the text of line_1..line_5 and the
-; rasterbar colour (rasterbar_colour)
-
-.ifndef RITMOEXPORT
-RITMOEXPORT = 0
-.endif
-
 ; playback speed will be adjusted accordingly in the other region
 
 ; 0 => PAL
@@ -1264,8 +1257,6 @@ oldvbi = *
 
 ;-----------------
 
-	.assert !(*>MODUL), error, "ERT *>MODUL"	; the player code must end before the RMT module
-
 ; text strings, each line holds 40 characters, line 5 is toggled with the SHIFT key
 
 	ORG	$A000	; must be at this memory address 
@@ -1401,10 +1392,8 @@ line_6 = *
 
 ; insert actual .rmt module
 
-.if RITMOEXPORT=0
 	OPT_H	0	; RMT module is standard Atari binary file already
 	.incbin "music.rmt"	; include music RMT module
-.endif
 
 ;---------------------------------------------------------------------------------------------------------------------------------------------;
 

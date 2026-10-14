@@ -5,14 +5,11 @@
 ;	RMT_XEX
 ;
 ;	The RMT 1.28 player for the "XEX Atari executable + RMT player" export of RITMO: rmt.a65 at $3400,
-;	every feature of rmt_feat.a65. asm/ca65/Makefile appends the XEX routine of RMT 1.28 (rmt_msx.a65 at
-;	$3E00: 5 lines of text at $3F00, the 5th shown in place of the 4th with SHIFT, rasterbar), as Rmt.exe
-;	exported it. The tracker adds the text ($3F00), the rasterbar colour ($3FC8), the line spacing of the
-;	instrument speed ($3FC9), the module at $4000 and the run address.
+;	every feature of rmt_feat.a65; asm/rmtplay puts it next to the visualizer, the tracker adds the module.
 ;
 ;0 => 4 tracks mono, 1 => 8 tracks stereo
 .ifndef STEREOMODE
 STEREOMODE = 0
 .endif
 	.include "rmt.s"
-	.assert !(RMTPLAYEREND>$3E00), error, "ERT RMTPLAYEREND>$3E00"	;the player must end before the XEX routine
+	.assert !(RMTPLAYEREND>$4000), error, "ERT RMTPLAYEREND>$4000"	;the player must end before the program at $4000 (asm/rmtplay)

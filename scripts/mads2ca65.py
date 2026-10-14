@@ -36,7 +36,7 @@ NEGATE = {"beq": "bne", "bne": "beq", "bcc": "bcs", "bcs": "bcc", "bpl": "bmi", 
 
 # configuration symbols: a definition becomes ".ifndef X / X = ... / .endif" so that ca65 -D X=... chooses them
 CONFIG_SYMBOLS = {"STEREOMODE", "EXPORTXEX", "EXPORTSAP", "REGIONPLAYBACK", "STARTLINE", "VLINE", "DISPLAYNOTES",
-                  "RITMOEXPORT"}
+                  "TABLES"}
 
 REPEAT_COUNTER = "I"
 
