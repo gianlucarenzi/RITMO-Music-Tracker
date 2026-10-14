@@ -13,6 +13,12 @@ void VUPlayer::PatchMemoryForSAP_B(byte* memory, const CSong& song, int subsongs
     // Patch: change a $00 to $FF to force the LOOP flag to be infinite
     memory[VUPlayer::LOOP_FLAG] = 0xFF;
 
+    // Patch: the SAP INIT below jumps to SetNewSongPtrsFull, whose STX LOOP_COUNT (X = 0) would clear the flag again:
+    // the player would then count the loops and start a fade out at the second end of the loop. NOPs keep the $FF.
+    for (int i = 0; i < 3; i++) {
+        memory[VUPlayer::LOOP_COUNT_RESET + i] = 0xEA;
+    }
+
     // SAP initialisation patch: the SAP player calls INIT with the subtune number in A
     // clang-format off
     byte sapbytes[14] = {

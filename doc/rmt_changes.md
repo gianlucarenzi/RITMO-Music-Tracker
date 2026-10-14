@@ -18,6 +18,12 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.6: the SAP type B export loops for ever, as it was meant to. It set the loop counter of VU-Player to `$FF`
+  (endless), but its INIT jumps to `SetNewSongPtrsFull`, whose `STX LOOP_COUNT` (X = 0) cleared it again: the player
+  counted the loops and at the second end of the loop started a fade out, which in a SAP stops after one step, so from
+  the third pass on the song played one volume step lower and one frame early. That `STX` is now NOPs in the SAP
+  (`VUPlayer::LOOP_COUNT_RESET`), and `scripts/check-sap.py` checks it. Found by playing the SAP on a 6502 emulator against
+  the LZSS streams decoded from the file. The XEX export is unchanged (there VU-Player counts the loops as before).
 - 2.6: Qt 5 is no longer supported: the frontend builds with Qt 6 only (`-DRMT_QT_MAJOR` is gone, as the two `QT_VERSION`
   branches of the code). The images of the manual came from the Qt 5 build, because offscreen Qt 6 drew the menus and the
   dialogs with a smaller font: offscreen Qt takes the font of the desktop (Qt 5) or its own default (Qt 6). The test hook

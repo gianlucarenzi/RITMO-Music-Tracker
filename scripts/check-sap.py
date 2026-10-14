@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Checks the structure of a SAP file of type B written by "export sap": the header, that the binary blocks
 cover the INIT and PLAYER addresses and every address the code at INIT jumps to (the earlier export left the
-player's driver out, so no player could run it), and that the song index has one entry per subsong.
+player's driver out, so no player could run it), that the loop counter stays at $FF (endless loop: an earlier
+export let INIT clear it, and the player faded out at the second end of the loop), and that the song index has one
+entry per subsong.
 
     scripts/check-sap.py file.sap [songs]
 """
@@ -59,6 +61,10 @@ else:
     fail("no JMP in the INIT stub")
 if memory[0x1990:0x1993] != bytes([0x60, 0xEA, 0xEA]):
     fail("the player's main loop is not patched to RTS")
+# endless loop: the loop counter at $0D3E is $FF and INIT (SetNewSongPtrsFull) does not clear it (STX $0D3E -> NOPs),
+# otherwise the player fades out at the second end of the loop
+if memory[0x0D3E] != 0xFF or memory[0x0CE3:0x0CE6] != bytes([0xEA, 0xEA, 0xEA]):
+    fail("the loop counter is not kept at $FF (endless loop)")
 # the song index at $1F40: 4 bytes per subsong (section list address, sequence list address), all inside the data
 for song in range(songs):
     e = 0x1F40 + 4 * song

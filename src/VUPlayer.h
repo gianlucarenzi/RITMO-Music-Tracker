@@ -13,6 +13,7 @@ public:
     static constexpr MemoryAddress SONG_SPEED = LZSSP_PLAYER_SONG_SPEED; // VUPlayer's address for setting the song speed
     static constexpr MemoryAddress DO_PLAY_ADDR = LZSSP_DO_PLAY;         // VUPlayer's address for Play, for SAP exports bypassing the mainloop code
     static constexpr MemoryAddress RTS_NOP = LZSSP_VU_PLAYER_RTS_NOP;    // VUPlayer's address for JMP loop being patched to RTS NOP NOP with the SAP format
+    static constexpr MemoryAddress LOOP_COUNT_RESET = LZSSP_SETNEWSONGPTRSFULL + 8; // STX LOOP_COUNT in SetNewSongPtrsFull, patched to NOPs with the SAP format
     static constexpr MemoryAddress INIT_SAP = 0X1E9B;                    // VUPlayer SAP initialisation hack
 
     static constexpr MemoryAddress LZSS_POINTER = LZSSP_SONGINDEX; // All the LZSS subtunes index will occupy this memory page
