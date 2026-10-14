@@ -18,6 +18,16 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.6: RITMO PLAYER (the XEX with the RMT player) keeps up with the frame at instrument speed 4: with 8 tracks the
+  player takes up to half a frame and the screen of the visualizer moved only about 30 times a second (a pass of the
+  main loop in one frame 55% of the time). The bars now write only the rows between the old and the new top (all 8
+  rows of every bar that moved took about 120 scan lines a frame), a long NAME / AUTHOR / DATE line scrolls with a
+  copy and a fill of its screen codes (a character at a time it took about 200 scan lines at every scroll step) and
+  its offset is kept step by step (no 32 bit shift and modulo), the play time is written without divisions. Measured
+  in atari800 (counters in a test build, 3000 passes): stereo_reference_song.rmt and claude_3ch_stereo_speed_4.rmt
+  55% -> 100% of the passes in one frame, the mono songs 99-100% as before; the screen after 600 frames is the same,
+  so are the POKEY registers (`-pokeyrec`). The program is 254-333 bytes shorter, so is the start of the module
+  (src/rmt_xex.h).
 - 2.6: new export "XEX Atari executable + RMT player" (File > Export As, script format `xex-rmt`): an XEX with the RMT
   player of the tracker driver in use, the module of the song after it and RITMO PLAYER, the visualizer of RMTPLAY of
   VERA_ATARI_PBI on the Atari screen (asm/rmtplay): NAME, AUTHOR and DATE of the export dialog (they scroll when

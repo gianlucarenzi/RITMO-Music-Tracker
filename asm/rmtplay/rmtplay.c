@@ -98,7 +98,6 @@ static unsigned char fontbuf[2048];         /* 1 KB font, aligned inside (low me
 static unsigned char *font;                 /* ANTIC font (CHBAS) */
 static unsigned char bar_px[RMT_TRACKS];    /* height shown, with fall-off */
 static unsigned char bar_shown[RMT_TRACKS]; /* height drawn on screen */
-static unsigned char bar_glyph[RMT_TRACKS][BAR_ROWS]; /* glyph drawn on each row, from the bottom */
 static unsigned char line_buf[40];
 
 /* value shown in each field: a field is written again only when it changes ($FFFF = not drawn yet) */
@@ -160,15 +159,18 @@ static void put_hex(unsigned char x, unsigned char y, unsigned char v)
     put_codes(x, y, line_buf, 2);
 }
 
-static void put_dec(unsigned char x, unsigned char y, unsigned int v, unsigned char digits)
+/* two decimal digits of v (0..99): the tens by subtraction (the division of cc65 takes hundreds of cycles) */
+static void put_dec2(unsigned char x, unsigned char y, unsigned char v)
 {
-    unsigned char i = digits;
+    unsigned char *p = row_ptr[y] + x;
+    unsigned char t = 0x10;     /* screen code of '0' */
 
-    while (i--) {
-        line_buf[i] = screen_code('0' + v % 10);
-        v /= 10;
+    while (v >= 10) {
+        v -= 10;
+        ++t;
     }
-    put_codes(x, y, line_buf, digits);
+    p[0] = t;
+    p[1] = 0x10 + v;
 }
 
 /* ---- font with the bar glyphs ----------------------------------------- */
@@ -247,20 +249,30 @@ static void dli_off(void)
 /* NAME, AUTHOR, DATE: on rows ROW_NAME, ROW_NAME + 1, ROW_NAME + 2 */
 static unsigned char info_len[3];
 static unsigned char info_shown[3];         /* scroll offset drawn */
-static unsigned char info_cells[3][40];     /* screen codes on the row */
+#if SCROLL_GAP < 40
+#error "info_render() needs the blanks of a whole row"
+#endif
 
-/* the 40 cells of a long info line, from scroll offset k */
-static void info_render(unsigned char i, unsigned char k, unsigned char *buf)
+/* The 40 cells of a long info line from scroll offset k, written to the screen. rmt_info[i] holds its screen codes
+ * (draw_static), the SCROLL_GAP blanks follow: with a gap of a whole row the 40 cells are the text then blanks, or
+ * blanks then the text again, a copy and a fill. Building the row a character at a time (and then comparing it with
+ * the one on the screen) took about 200 scan lines at every step of a scroll. */
+static void info_render(unsigned char i, unsigned char k)
 {
-    const char *s = rmt_info[i];
-    unsigned char len = info_len[i];
-    unsigned char period = len + SCROLL_GAP;
-    unsigned char n;
+    unsigned char *dst = row_ptr[ROW_NAME + i];
+    const unsigned char *s = (const unsigned char *)rmt_info[i];
+    unsigned char len = info_len[i], n;
 
-    for (n = 0; n < 40; n++) {
-        buf[n] = k < len ? screen_code((unsigned char)s[k]) : 0;
-        if (++k == period)
-            k = 0;
+    if (k < len) {
+        n = len - k;
+        if (n > 40)
+            n = 40;
+        memcpy(dst, s + k, n);
+        memset(dst + n, 0, 40 - n);
+    } else {
+        n = len + SCROLL_GAP - k;   /* blanks before the text comes round again: 1..40 */
+        memset(dst, 0, n);
+        memcpy(dst + n, s, 40 - n);
     }
 }
 
@@ -287,9 +299,10 @@ static void draw_static(void)
             put_center(ROW_NAME + i, rmt_info[i]);
             continue;
         }
+        for (x = 0; x < info_len[i]; x++)      /* the long lines as screen codes, once */
+            rmt_info[i][x] = screen_code((unsigned char)rmt_info[i][x]);
         info_shown[i] = 0;
-        info_render(i, 0, info_cells[i]);
-        put_codes(0, ROW_NAME + i, info_cells[i], 40);
+        info_render(i, 0);
     }
 
     for (i = 0; i < RMT_TRACKS; i++) {
@@ -315,35 +328,72 @@ static void draw_static(void)
 /* ---- dynamic parts ----------------------------------------------------- */
 
 /* Coarse scroll of the info lines longer than 40 characters: the text and SCROLL_GAP blanks go round in the 40
- * columns of the row. The offset comes from the play time, so it stops in pause and starts again from 0 (after
- * the wait) when the song is restarted. Only the cells that change are written (info_cells[] keeps the row). */
-static void draw_info(unsigned long frames, unsigned char fps)
-{
-    unsigned int wait = fps * SCROLL_WAIT;
-    unsigned int step;
-    unsigned char i, k, x;
-    unsigned char *old;
+ * columns of the row, after SCROLL_WAIT seconds of play one character every 2^SCROLL_SHIFT frames. It follows the
+ * frames played (it stops in pause and starts again from 0 when the song is restarted), kept step by step: the
+ * offset from the total of the frames took a 32 bit shift and a 16 bit modulo per line every other frame. Only the
+ * row is written at each step only (info_render). */
+static unsigned int info_wait;              /* frames of play before the long lines scroll */
+static unsigned char info_sub;              /* frames since the last scroll step */
 
-    step = frames < wait ? 0 : (unsigned int)((frames - wait) >> SCROLL_SHIFT);
+static void info_reset(unsigned char fps)
+{
+    unsigned char i;
+
+    info_wait = fps * SCROLL_WAIT;
+    info_sub = 0;
+    for (i = 0; i < 3; i++)
+        if (info_len[i] > 40 && info_shown[i]) {
+            info_shown[i] = 0;
+            info_render(i, 0);
+        }
+}
+
+static void draw_info(unsigned char adv)    /* frames played since the last call */
+{
+    unsigned char i, k, n, period;
+
+    if (info_wait) {
+        if (info_wait > adv) {
+            info_wait -= adv;
+            return;
+        }
+        adv -= (unsigned char)info_wait;
+        info_wait = 0;
+    }
+    info_sub += adv;
+    n = info_sub >> SCROLL_SHIFT;
+    if (!n)
+        return;
+    info_sub &= (1 << SCROLL_SHIFT) - 1;
     for (i = 0; i < 3; i++) {
         if (info_len[i] <= 40)
             continue;
-        k = (unsigned char)(step % (unsigned char)(info_len[i] + SCROLL_GAP));
-        if (k == info_shown[i])
-            continue;
+        period = info_len[i] + SCROLL_GAP;
+        k = info_shown[i] + n;
+        while (k >= period)
+            k -= period;
         info_shown[i] = k;
-        info_render(i, k, line_buf);
-        old = info_cells[i];
-        for (x = 0; x < 40; x++)
-            if (line_buf[x] != old[x])
-                row_ptr[ROW_NAME + i][x] = old[x] = line_buf[x];
+        info_render(i, k);
     }
 }
 
 /* the volume of each channel as it is now; a bar falls 2 pixels per frame (elapsed: frames since the last call) */
+/* the left column of each bar */
+static const unsigned char bar_x[RMT_TRACKS] = {
+#if RMT_TRACKS > 4
+    BAR_X0, BAR_X0 + BAR_STEP, BAR_X0 + 2 * BAR_STEP, BAR_X0 + 3 * BAR_STEP,
+    BAR_X0 + 4 * BAR_STEP, BAR_X0 + 5 * BAR_STEP, BAR_X0 + 6 * BAR_STEP, BAR_X0 + 7 * BAR_STEP
+#else
+    BAR_X0, BAR_X0 + BAR_STEP, BAR_X0 + 2 * BAR_STEP, BAR_X0 + 3 * BAR_STEP
+#endif
+};
+
+/* Only the rows between the old and the new top of a bar are written: going through the 8 rows of every bar that
+ * moved took about 120 scan lines a frame with 8 tracks at instrument speed 4 (most bars move every frame), and with
+ * the player on the VBI the main loop got through a frame only one time in two. */
 static void draw_bars(unsigned char paused, unsigned char elapsed)
 {
-    unsigned char i, r, h, g, k, target, fall;
+    unsigned char i, r, last, h, g, target, fall;
     unsigned char *p;
 
     fall = elapsed > 32 ? 64 : elapsed << 1;
@@ -356,19 +406,33 @@ static void draw_bars(unsigned char paused, unsigned char elapsed)
             h = (h - target > fall) ? h - fall : target;
         bar_px[i] = h;
 
-        if (h == bar_shown[i])
+        g = bar_shown[i];
+        if (h == g)
             continue;       /* only the bars that moved */
         bar_shown[i] = h;
-        p = row_ptr[BAR_TOP + BAR_ROWS - 1] + BAR_X0 + i * BAR_STEP;    /* bottom row */
-        for (r = 0; r < BAR_ROWS; r++) {
-            g = h > 8 ? 8 : h;
-            h -= g;
-            g = g ? GLYPH_BASE + g : 0;
-            if (g != bar_glyph[i][r]) {     /* only the rows that change */
-                bar_glyph[i][r] = g;
-                for (k = 0; k < BAR_W; k++)
-                    p[k] = g;
-            }
+        if (g < h) {        /* r = 0 is the bottom row */
+            r = g >> 3;
+            last = (h - 1) >> 3;
+        } else {
+            r = h >> 3;
+            last = (g - 1) >> 3;
+        }
+        p = row_ptr[BAR_TOP + BAR_ROWS - 1 - r] + bar_x[i];
+        for (; r <= last; r++) {
+            g = r << 3;     /* pixels of the bar in row r */
+            g = h > g ? h - g : 0;
+            if (g > 8)
+                g = 8;
+            if (g)
+                g += GLYPH_BASE;
+            p[0] = g;
+            p[1] = g;
+            p[2] = g;
+#if BAR_W > 3
+            p[3] = g;
+            p[4] = g;
+            p[5] = g;
+#endif
             p -= 40;
         }
     }
@@ -456,8 +520,8 @@ static void count_time(unsigned char elapsed, unsigned char fps)
 static void draw_state(unsigned char paused)
 {
     if (changed(F_SEC, ((unsigned int)time_min << 8) | time_sec)) {
-        put_dec(5, ROW_STATE, time_min, 2);
-        put_dec(8, ROW_STATE, time_sec, 2);
+        put_dec2(5, ROW_STATE, time_min);
+        put_dec2(8, ROW_STATE, time_sec);
     }
     if (changed(F_PAUSE, paused))
         put_text(33, ROW_STATE, paused ? "PAUSED" : "      ", 0x80 * paused);
@@ -472,7 +536,7 @@ int main(void)
     unsigned char tick, last, k, i, elapsed, odd = 0;
     unsigned char old_color1 = OS.color1, old_color2 = OS.color2, old_color4 = OS.color4;
     unsigned char old_chbas = OS.chbas;
-    unsigned long frames = 0;
+    unsigned char adv = 0;          /* frames played since the last draw_info() */
 
 #if RMT_TRACKS > 4
     song_shift = 3;     /* 8 bytes per song line */
@@ -487,7 +551,6 @@ int main(void)
     scr = OS.savmsc;
     for (i = 0; i < 24; i++)
         row_ptr[i] = scr + i * 40;
-    memset(bar_glyph, 0xFF, sizeof bar_glyph);
     memset(reg_shown, 0xFF, sizeof reg_shown);
     OS.color1 = 0x0C;
     OS.color2 = 0x00;
@@ -495,6 +558,7 @@ int main(void)
     memset(shown, 0xFF, sizeof shown);
     make_font();
     draw_static();
+    info_reset(fps);
 
     rmt_init(rmt_song);
     rmt_vbi_on();
@@ -507,7 +571,7 @@ int main(void)
             ;
         elapsed = (unsigned char)(tick - last);
         if (!paused) {
-            frames += elapsed;
+            adv += elapsed;
             count_time(elapsed, fps);
         }
         last = tick;
@@ -520,7 +584,8 @@ int main(void)
         } else {
             draw_position();
             draw_state(paused);
-            draw_info(frames, fps);
+            draw_info(adv);
+            adv = 0;
         }
 
         if (!kbhit())
@@ -538,7 +603,8 @@ int main(void)
         else if (k == 'r' || k == 'R') {
             rmt_vbi_off();
             rmt_init(rmt_song);
-            frames = 0;
+            adv = 0;
+            info_reset(fps);
             time_frames = time_sec = time_min = 0;
             paused = 0;
             rmt_vbi_on();

@@ -50,3 +50,9 @@ POKEYs), both drivers. With 8 tracks at instrument speed 4 the player takes up t
 Patch16); the recorder of atari800 then sometimes samples POKEY in the middle of the calls of a frame or of their
 register writes, the music itself is the stream of the SAP-R. `scripts/check-xex-rmt.py` checks the files the
 scripting tests export.
+
+The main loop keeps up with the frame next to the player: in atari800 (counters in a test build, 3000 passes, Patch16)
+a pass takes one frame 100% of the time with stereo_reference_song.rmt and claude_3ch_stereo_speed_4.rmt (8 tracks at
+instrument speed 4) and with the mono reference song, against 55% for the stereo songs before the bars wrote only the
+rows that change (all 8 rows of every bar that moved took about 120 scan lines a frame) and a long info line scrolled
+with a copy and a fill (about 200 scan lines at every step, a character at a time).
