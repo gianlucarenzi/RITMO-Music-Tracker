@@ -19,6 +19,8 @@
 % less space after a table: a table that ends at the bottom of a page (its last row cannot move) would
 % run into the bottom margin with the default \bigskipamount
 \setlength{\LTpost}{\medskipamount}
+% the counter of the unnumbered tables of pandoc 3 (its own template defines it; the older ones do not use it)
+\makeatletter\@ifundefined{c@none}{\newcounter{none}}{}\makeatother
 \usepackage{array}
 \usepackage{calc}
 \usepackage{enumitem}
