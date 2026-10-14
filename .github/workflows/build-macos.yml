@@ -104,7 +104,7 @@ jobs:
           # The arm64 Homebrew of the runner must not be used by the x86_64 build
           IGNORE=
           [ "$ARCH" = x86_64 ] && IGNORE="-DCMAKE_IGNORE_PREFIX_PATH=/opt/homebrew"
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DRMT_QT_MAJOR=6 \
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_OSX_ARCHITECTURES=$ARCH -DCMAKE_OSX_DEPLOYMENT_TARGET=$MACOS_MIN \
             -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH" $IGNORE
 

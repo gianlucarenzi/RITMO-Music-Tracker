@@ -19,6 +19,7 @@
 
 #include <QApplication>
 #include <QDir>
+#include <QFont>
 #include <QIcon>
 #include <QKeyEvent>
 #include <QMenu>
@@ -130,14 +131,19 @@ int main(int argc, char** argv)
         qputenv("QT_QPA_PLATFORM", "offscreen");
     }
 #endif
-    // Qt6 scales by the fractional desktop DPI (Xft.dpi 106 -> 1.1), which
-    // blurs the pixel-exact bitmaps; round it down to a whole factor like Qt5
-    // did (1.5 -> 1, not 2: the window must still fit the screen).
-#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    // Qt scales by the fractional desktop DPI (Xft.dpi 106 -> 1.1), which
+    // blurs the pixel-exact bitmaps; round it down to a whole factor (1.5 ->
+    // 1, not 2: the window must still fit the screen).
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor);
-#endif
     QApplication app(argc, argv);
     QApplication::setApplicationName("RITMO");
+    // RMT_QT_FONT="DejaVu Sans,12.75": the font of the menus and of the
+    // dialogs (as QFont::fromString reads it), for test runs and screenshots
+    // that do not depend on the font of the desktop
+    if (qEnvironmentVariableIsSet("RMT_QT_FONT")) {
+        QFont font;
+        if (font.fromString(qEnvironmentVariable("RMT_QT_FONT"))) QApplication::setFont(font);
+    }
     QIcon icon; // the icon of the windows (and of the task bar), see res/ritmo-icon.png
     icon.addFile(":/ritmo-icon-16.png"); // drawn by hand, the title bar of the windows
     icon.addFile(":/ritmo-icon-32.png");

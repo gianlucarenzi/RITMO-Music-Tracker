@@ -539,11 +539,7 @@ public:
             }
             if (hint.empty()) return {};
             QKeySequence sequence(QString::fromLatin1(hint.c_str()), QKeySequence::PortableText);
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-            const int combined = sequence.count() == 1 ? sequence[0].toCombined() : 0; // Qt6: QKeyCombination
-#else
-            const int combined = sequence.count() == 1 ? sequence[0] : 0;
-#endif
+            const int combined = sequence.count() == 1 ? sequence[0].toCombined() : 0;
             if (combined == 0 || combined == Qt::Key_unknown) return {};
             return { sequence };
         };

@@ -323,21 +323,10 @@ if(WIN32 AND NOT PortAudio_FOUND AND NOT PORTAUDIO_LIB)
     endif()
 endif()
 
-# Qt native GUI frontend: Qt6, or Qt 5.15 where Qt6 is not installed.
-# -DRMT_QT_MAJOR=5 forces Qt5.
+# Qt native GUI frontend: Qt6
 if(NOT RMT_BUILD_CORE_ONLY)
-    set(RMT_QT_MAJOR "" CACHE STRING "Qt major version of the frontend (6 or 5; empty: Qt6, else Qt5)")
-    if(RMT_QT_MAJOR)
-        find_package(QT NAMES Qt${RMT_QT_MAJOR} REQUIRED COMPONENTS Core)
-    else()
-        find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
-    endif()
-    if(QT_VERSION_MAJOR EQUAL 5)
-        find_package(Qt5 5.15 REQUIRED COMPONENTS Core Widgets PrintSupport)
-    else()
-        find_package(Qt6 REQUIRED COMPONENTS Core Widgets PrintSupport)
-    endif()
-    message(STATUS "Qt frontend: Qt ${QT_VERSION}")
+    find_package(Qt6 REQUIRED COMPONENTS Core Widgets PrintSupport)
+    message(STATUS "Qt frontend: Qt ${Qt6_VERSION}")
 endif()
 
 # std::thread (song timer of CompatAudio.cpp, backends)
@@ -377,7 +366,7 @@ target_include_directories(Rmt PRIVATE
 # Qt native GUI frontend
 if(NOT RMT_BUILD_CORE_ONLY)
     set_target_properties(Rmt PROPERTIES AUTOMOC ON AUTORCC ON AUTOUIC OFF)
-    target_link_libraries(Rmt PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::PrintSupport)
+    target_link_libraries(Rmt PRIVATE Qt6::Core Qt6::Widgets Qt6::PrintSupport)
     target_compile_definitions(Rmt PRIVATE RMT_QT_GUI=1)
     target_include_directories(Rmt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/qt)
 endif()

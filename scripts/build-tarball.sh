@@ -45,7 +45,7 @@ fi
 
 ARCH=$(dpkg --print-architecture)          # riscv64, ppc64, powerpc...
 git config --global --add safe.directory "$ROOT" 2>/dev/null || true
-cmake -S . -B "$WORK/build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DRMT_QT_MAJOR=6
+cmake -S . -B "$WORK/build" -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build "$WORK/build" --parallel
 
 # --- archive -----------------------------------------------------------------

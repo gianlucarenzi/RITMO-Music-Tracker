@@ -122,7 +122,7 @@ done
 # --- build -------------------------------------------------------------------
 
 git config --global --add safe.directory "$ROOT" 2>/dev/null || true
-cmake -S . -B "$WORK/build" -G Ninja -DCMAKE_BUILD_TYPE=Release -DRMT_QT_MAJOR=6 \
+cmake -S . -B "$WORK/build" -G Ninja -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX \
     -DCMAKE_PREFIX_PATH="$QT_DIR;$PORTAUDIO_DIR"
 cmake --build "$WORK/build" --parallel

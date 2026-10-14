@@ -23,6 +23,7 @@
 
 #include <utility>
 
+#include <QApplication>
 #include <QButtonGroup>
 #include <QCheckBox>
 #include <QClipboard>
@@ -337,6 +338,8 @@ static QFont MonoFont()
         font.setFamily("Monospace");
         font.setStyleHint(QFont::TypeWriter);
     }
+    // the size of the font that RMT_QT_FONT fixed for the test runs (main-qt.cpp)
+    if (qEnvironmentVariableIsSet("RMT_QT_FONT")) font.setPointSizeF(QApplication::font().pointSizeF());
     return font;
 }
 
