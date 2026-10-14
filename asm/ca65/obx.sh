@@ -2,6 +2,7 @@
 # obx.sh out source.s [ca65 options...] - assemble a ca65 source of asm/ca65 into an Atari binary file as MADS
 # does: two passes of ca65 (the first finds the empty segments, see mads.inc), then ld65 with obx.cfg.
 #   asm/ca65/obx.sh build/tracker.obx Patch-16/rmtplayr.s -D FEAT_IS_TRACKER=1
+# OBX_SYMBOLS="name ...": also print "OBX_SYMBOL name XXXX" for each symbol (the addresses a tracker patches).
 set -e
 [ $# -ge 2 ] || { echo "usage: $0 out source.s [ca65 options...]" >&2; exit 2; }
 out=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
@@ -15,6 +16,9 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 printf '.include "mads.inc"\n.include "%s/%s"\nOBX_END\n' "$srcdir" "$(basename "$src")" >"$tmp/main.s"
+for sym in ${OBX_SYMBOLS:-}; do
+    printf '.out .sprintf("OBX_SYMBOL %s %%04X", %s)\n' "$sym" "$sym" >>"$tmp/main.s"
+done
 : >"$tmp/obx_empty.inc"
 # from the temporary folder: ca65 2.19 puts the folder of the main file before an absolute include name
 asm() {

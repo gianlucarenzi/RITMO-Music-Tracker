@@ -35,7 +35,8 @@ CONDS = {"eq": "beq", "ne": "bne", "cc": "bcc", "cs": "bcs", "pl": "bpl", "mi": 
 NEGATE = {"beq": "bne", "bne": "beq", "bcc": "bcs", "bcs": "bcc", "bpl": "bmi", "bmi": "bpl", "bvc": "bvs", "bvs": "bvc"}
 
 # configuration symbols: a definition becomes ".ifndef X / X = ... / .endif" so that ca65 -D X=... chooses them
-CONFIG_SYMBOLS = {"STEREOMODE", "EXPORTXEX", "EXPORTSAP", "REGIONPLAYBACK", "STARTLINE", "VLINE", "DISPLAYNOTES"}
+CONFIG_SYMBOLS = {"STEREOMODE", "EXPORTXEX", "EXPORTSAP", "REGIONPLAYBACK", "STARTLINE", "VLINE", "DISPLAYNOTES",
+                  "RITMOEXPORT"}
 
 REPEAT_COUNTER = "I"
 

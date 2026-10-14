@@ -23,6 +23,11 @@ EXPORTSAP	equ 0
 
 STARTLINE	equ 0
 
+; 1 => no module: the XEX export of RITMO adds the module at MODUL, the text of line_1..line_5 and the
+; rasterbar colour (rasterbar_colour)
+
+RITMOEXPORT	equ 0
+
 ; playback speed will be adjusted accordingly in the other region
 
 REGIONPLAYBACK	equ 1		; 0 => PAL
@@ -1114,6 +1119,8 @@ oldvbi
 	
 ;-----------------
 
+	ERT *>MODUL		; the player code must end before the RMT module
+
 ; text strings, each line holds 40 characters, line 5 is toggled with the SHIFT key
 
 	org $A000		; must be at this memory address 
@@ -1217,8 +1224,10 @@ line_6	dta d"VUPlayer by VinsCool                "
 
 ; insert actual .rmt module
 
+	IFT RITMOEXPORT==0
 	opt h-			; RMT module is standard Atari binary file already
 	ins "music.rmt"		; include music RMT module
+	EIF
 
 ;---------------------------------------------------------------------------------------------------------------------------------------------;
 
