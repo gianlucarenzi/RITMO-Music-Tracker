@@ -18,6 +18,9 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.6: the debug display (the line of internal values under the tracks: `GW=... GH=... PX=...`) is off by default, as the
+  Options dialog and the manual ask ("enable it only if you know what it shows"); RMT had it on, and a first start of
+  RITMO showed it. A configuration that has it on keeps it until it is switched off in Options.
 - 2.6: Help (F1) opens the user manual of RITMO and Online Help (SHIFT+F1) the reference of RMT (`doc/rmt_en.md`), both
   from the repository of RITMO on GitHub (branch master). Both opened `rmt_en.html` of the repository of RMT through
   html-preview.github.io, a page that is gone ("Failed to fetch", issue #3). The About window is a dialog whose text
