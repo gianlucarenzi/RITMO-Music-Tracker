@@ -87,7 +87,6 @@ public:
     BOOL m_meter;
     BOOL m_msx_shuffle;
     BOOL m_region_auto;
-    BOOL m_rmtPlayer; // XEX with the RMT player: no shuffle, the player always adjusts the speed
 
     CString m_speedinfo;
 

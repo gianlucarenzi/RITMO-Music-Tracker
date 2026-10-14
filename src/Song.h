@@ -297,7 +297,7 @@ public:
     void RenumberAllTracks(int type);
     void RenumberAllInstruments(int type);
 
-    CString GetFilename() { return m_filename; };
+    CString GetFilename() const { return m_filename; };
     SongIOType GetIOType() { return m_ioType; };
 
     // For the script runner: the file FileSave() writes, and the last export format (as the dialogs set them)

@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Checks the structure of an XEX written by "export xex-rmt" (the XEX with the RMT player): the binary blocks, that a
-block at $4000 holds the RMT module (RMT4 / RMT8 as expected), that the run address is in a block, which player it is
-(RMT 1.28: the XEX routine at $3E00 and its text at $3F00; Patch16: the Simple RMT Player, its text at $A190) and that
-the text of the first line is there.
+"""Checks the structure of an XEX written by "export xex-rmt" (the XEX with the RMT player, asm/rmtplay): which
+player it holds (RMT 1.28 at $3400 or Patch16 at $3100 with its tables at $3A00, mono or stereo), that the module
+(RMT4 / RMT8 as expected) is where src/rmt_xex.h says and rmt_song / rmt_song_end point to it, that the run address
+is in a block and that the NAME line is the one given.
 
-    scripts/check-xex-rmt.py file.xex tracks first-line
+    scripts/check-xex-rmt.py file.xex tracks name
 """
+import os
+import re
 import sys
 
 
@@ -14,9 +16,11 @@ def fail(message):
     sys.exit(1)
 
 
+header = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "rmt_xex.h")
+defines = dict(re.findall(r"#define (RMTXEX_\w+) (0x[0-9A-Fa-f]+|\d+)", open(header).read()))
 data = open(sys.argv[1], "rb").read()
 tracks = int(sys.argv[2])
-first_line = sys.argv[3]
+name = sys.argv[3]
 if data[:2] != b"\xff\xff":
     fail("no Atari binary header")
 
@@ -26,6 +30,7 @@ p = 0
 while p + 4 <= len(data):
     if data[p:p + 2] == b"\xff\xff":
         p += 2
+        continue
     first = data[p] | data[p + 1] << 8
     last = data[p + 2] | data[p + 3] << 8
     p += 4
@@ -36,21 +41,35 @@ while p + 4 <= len(data):
         loaded[a] = True
     p += last - first + 1
 
-if memory[0x4000:0x4004] != b"RMT%d" % tracks:
-    fail("no RMT%d module at $4000" % tracks)
+if loaded[0x3A00] and loaded[0x3100]:
+    driver = "V6"
+elif loaded[0x3400]:
+    driver = "V1"
+else:
+    fail("neither the RMT 1.28 player ($3400) nor the Patch16 player ($3100, tables at $3A00)")
+variant = "%s_%s" % (driver, "STEREO" if tracks == 8 else "MONO")
+
+
+def symbol(s):
+    return int(defines["RMTXEX_%s_%s" % (variant, s)], 0)
+
+
+module = symbol("MODULE")
+if memory[module:module + 4] != b"RMT%d" % tracks:
+    fail("no RMT%d module at %04X" % (tracks, module))
+song = symbol("RMT_SONG")
+start = memory[song] | memory[song + 1] << 8
+end = memory[song + 2] | memory[song + 3] << 8
+if start != module or not loaded[end - 1] or end > int(defines["RMTXEX_MODULE_LIMIT"], 0):
+    fail("rmt_song / rmt_song_end (%04X / %04X) do not point to the module" % (start, end))
 if not (loaded[0x2E0] and loaded[0x2E1]):
     fail("no run address")
 run = memory[0x2E0] | memory[0x2E1] << 8
 if not loaded[run]:
     fail("the run address %04X is not in a block" % run)
-if loaded[0xA190] and loaded[0xB000] and loaded[0xBC00]:
-    player, text = "Simple RMT Player", 0xA190
-elif loaded[0x3E00] and loaded[0x3F00]:
-    player, text = "RMT 1.28", 0x3F00
-else:
-    fail("neither the RMT 1.28 player nor the Simple RMT Player")
-# the text as ANTIC screen codes (SongExporter::StrToAtariVideo)
-codes = bytes((c - 32) if 32 <= c < 96 else c for c in first_line.encode("latin-1"))
-if memory[text:text + len(codes)] != codes:
-    fail("the first text line at %04X is not %r" % (text, first_line))
-print("ok   %s: %s, RMT%d module at $4000, run %04X, text at %04X" % (sys.argv[1].rsplit("/", 1)[-1], player, tracks, run, text))
+info = symbol("RMT_INFO")
+line = bytes(memory[info:info + int(defines["RMTXEX_INFO_MAX"]) + 1]).split(b"\0")[0].decode("latin-1")
+if line != name:
+    fail("the NAME line is %r, not %r" % (line, name))
+print("ok   %s: %s player, RMT%d module at $%04X-$%04X, run %04X, NAME %r"
+      % (sys.argv[1].rsplit("/", 1)[-1], "Patch16" if driver == "V6" else "RMT 1.28", tracks, start, end - 1, run, line))

@@ -84,7 +84,7 @@ const std::vector<TExportFormat>& ExportFormats()
         { "lzss", ".lzss", SongIOType::LZSS, {} },
         { "sap", ".sap", SongIOType::LZSS_SAP, { "author", "name", "date", "subsongs" } },
         { "xex", ".xex", SongIOType::LZSS_XEX, { "text", "rasterbar", "shuffle", "region-auto", "color" } },
-        { "xex-rmt", ".xex", SongIOType::XEX_RMTPLAYER, { "text", "rasterbar", "color" } },
+        { "xex-rmt", ".xex", SongIOType::XEX_RMTPLAYER, { "name", "author", "date" } },
         { "rmtplayer-asm", ".asm", SongIOType::ASM_RMTPLAYER, { "startlabel", "relocate", "instruments-label", "tracks-label", "songlines-label", "asmformat", "sfx", "gvf", "nos" } },
         { "wav", ".wav", SongIOType::WAV, {} },
     };
@@ -657,18 +657,14 @@ void CScriptRunner::Export(const TScriptCommand& command)
                 break;
             }
             case SongIOType::XEX_RMTPLAYER: {
-                // CSongExporter::ShowXEXExportDialog(rmtPlayer) without the dialog: the same text and rasterbar
-                CXEXFile xexFile;
+                // CSongExporter::ShowRmtXexExportDialog without the dialog: NAME, AUTHOR, DATE (default: from the
+                // song name, as the dialog proposes them)
+                CRmtXexFile xexFile;
                 xexFile.InitFromSong(m_song);
-                CString text = c.HasOption("text") ? ToCString(UnescapeLines(c.GetOption("text", ""))) : CSongExporter::DefaultXexText(xexFile);
-                g_rmtmsxtext = text;
-                g_rmtmsxtext.Replace("\x0d\x0d", "\x0d"); // 13, 13 => 13
-                CSongExporter::SetXexText(xexFile, text);
-                g_msxcheck = OptionBoolean(c, "rasterbar", g_msxcheck);
-                g_msxcol = c.HasOption("color") ? ParseInt(c, "color", c.GetOption("color", ""), 0, 255) : g_msxcol;
-                xexFile.rasterbarColor = g_msxcol;
-                xexFile.displayRasterbar = g_msxcheck != 0;
-                exportResult = songExporter.ExportXEX_RMTPlayer(songExport, &exportDesc, xexFile, out);
+                if (c.HasOption("name")) xexFile.name = ToCString(c.GetOption("name", ""));
+                if (c.HasOption("author")) xexFile.author = ToCString(c.GetOption("author", ""));
+                if (c.HasOption("date")) xexFile.date = ToCString(c.GetOption("date", ""));
+                exportResult = songExporter.ExportXEX_RMTPlayer(songExport, xexFile, out);
                 break;
             }
             case SongIOType::WAV:

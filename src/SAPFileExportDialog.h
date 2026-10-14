@@ -24,6 +24,7 @@ public:
     CString m_date;
     CString m_name;
     CString m_subsongs;
+    BOOL m_noSubsongs = FALSE; // the XEX export with the RMT player: NAME, AUTHOR and DATE only
 
 
     // Overrides

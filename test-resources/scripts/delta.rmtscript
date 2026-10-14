@@ -17,7 +17,7 @@ export sapr d1.sapr date="01/01/2026"
 export lzss d1.lzss
 export sap d1.sap date="01/01/2026"
 export xex d1.xex text="DELTA\nBY RASTER\n01/01/2026\nLINE FOUR\nLINE FIVE"
-export xex-rmt d1_rmt.xex text="DELTA\nBY RASTER\n01/01/2026\nLINE FOUR\nLINE FIVE"
+export xex-rmt d1_rmt.xex
 export rmtplayer-asm d1_player.asm
 export wav d1.wav
 
@@ -28,7 +28,7 @@ export asm d3.asm type=tracks notes=index durations=duration-note prefix=""
 export sapr d2.sapr author="Author Two" name="Name Two" date="02/02/2026" subsongs="0"
 export sap d2.sap author="Author Two" name="Name Two" date="02/02/2026" subsongs="0"
 export xex d2.xex text="ONE\nTWO" rasterbar=no shuffle=no region-auto=no color=20
-export xex-rmt d2_rmt.xex text="ONE\nTWO" rasterbar=no color=20
+export xex-rmt d2_rmt.xex name="Name Two" author="Author Two, a line longer than the forty characters of the screen" date="02/02/2026"
 export rmtplayer-asm d2_player.asm startlabel=SONG relocate=instruments,tracks,songlines instruments-label=INS tracks-label=TRK songlines-label=LIN asmformat=atasm sfx=yes gvf=yes nos=yes
 export rmtplayer-asm d3_player.asm relocate=none asmformat=xasm sfx=no gvf=no nos=no
 
@@ -36,11 +36,11 @@ export rmtplayer-asm d3_player.asm relocate=none asmformat=xasm sfx=no gvf=no no
 set ntsc yes
 export sapr d3.sapr date="01/01/2026"
 export xex d3.xex text="NTSC"
-export xex-rmt d3_rmt.xex text="NTSC"
+export xex-rmt d3_rmt.xex name="NTSC"
 export wav d2.wav
 set ntsc no
 set driver unpatched
 export sapr d4.sapr date="01/01/2026"
-export xex-rmt d4_rmt.xex text="RMT 1.28"
+export xex-rmt d4_rmt.xex name="RMT 1.28"
 set driver patch16
 echo delta done

@@ -23,6 +23,20 @@ public:
     void InitFromSong(const CSong& song);
 };
 
+// The XEX with the RMT player (asm/rmtplay): the three info lines of its screen and what chooses the player
+class CRmtXexFile {
+public:
+    CString name, author, date; // up to RMTXEX_INFO_MAX characters each, the longer ones scroll on the Atari
+    int instrspeed;
+    bool isStereo;
+    bool isNTSC;
+
+    // As tools/rmtinfo.py of VERA_ATARI_PBI takes them from the text of a module: the song name up to its first
+    // ", " is NAME, the rest AUTHOR, DATE its first year (19xx/20xx) unless AUTHOR shows it already; a module
+    // without a name gets its file name as NAME
+    void InitFromSong(const CSong& song);
+};
+
 class CSongExporter {
 public:
     CSongExporter();
@@ -77,14 +91,14 @@ public:
     bool ExportXEX_LZSS(CSongExport& songExport, CXEXFile xexFile, std::ofstream& ou);
 
     /// <summary>
-    /// Export an XEX with the RMT player and the module (exportDesc, at $4000), as RMT 1.28 exported it: the player of
-    /// the tracker driver in use (RMT 1.28 for Unpatched, the Simple RMT Player for Patch16) shows the text of the
-    /// XEX dialog and plays the song as the tracker does
+    /// Export an XEX with the RMT player of the tracker driver in use (RMT 1.28 for Unpatched, Patch16), the module
+    /// after it, and the visualizer of RMTPLAY of VERA_ATARI_PBI (asm/rmtplay): NAME, AUTHOR, DATE, the volume bars,
+    /// the POKEY registers, the song position; an RMT8 song plays on the second POKEY too
     /// </summary>
-    bool ExportXEX_RMTPlayer(CSongExport& songExport, TExportDescription* exportDesc, std::ofstream& ou);
+    bool ExportXEX_RMTPlayer(CSongExport& songExport, std::ofstream& ou);
 
     // Non-interactive version.
-    bool ExportXEX_RMTPlayer(CSongExport& songExport, TExportDescription* exportDesc, CXEXFile xexFile, std::ofstream& ou);
+    bool ExportXEX_RMTPlayer(CSongExport& songExport, const CRmtXexFile& xexFile, std::ofstream& ou);
 
 
 private:
@@ -92,7 +106,8 @@ private:
 
     // A dumb SAP-R LZSS optimisations bruteforcer, returns the optimal value and buffer
     static int BruteforceOptimalLZSS(unsigned char* src, int srclen, unsigned char* dst);
-    static bool ShowXEXExportDialog(const CSong& song, CXEXFile& xexFile, bool rmtPlayer = false);
+    static bool ShowXEXExportDialog(const CSong& song, CXEXFile& xexFile);
+    static bool ShowRmtXexExportDialog(const CSong& song, CRmtXexFile& xexFile);
 
 public:
     // The 5 lines of 40 characters the XEX export dialog proposes (the last one used, else the song's data), and the

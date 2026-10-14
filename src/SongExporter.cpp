@@ -1,5 +1,6 @@
 #include "PlatformTypes.h"
 #include "SongExporter.h"
+#include <algorithm>
 #include <iomanip>
 #include <memory>
 #include <vector>
@@ -365,28 +366,86 @@ bool CSongExporter::ExportXEX_LZSS(CSongExport& songExport, CXEXFile xexFile, st
     return true;
 }
 
-bool CSongExporter::ExportXEX_RMTPlayer(CSongExport& songExport, TExportDescription* exportDesc, std::ofstream& ou)
+void CRmtXexFile::InitFromSong(const CSong& song)
 {
-    CXEXFile xexFile;
+    instrspeed = song.GetInstrumentSpeed();
+    isStereo = song.IsStereo();
+    isNTSC = song.IsNTSC();
 
-    if (!ShowXEXExportDialog(songExport.GetSong(), xexFile, true)) {
+    CString text = song.GetName();
+    text.Trim();
+    if (text.IsEmpty() || text == "Noname song") {
+        // a module without its text (a stripped module): its file name, as rmtinfo.py does
+        CString file = song.GetFilename();
+        int slash = std::max(file.ReverseFind('/'), file.ReverseFind('\\'));
+        file = file.Mid(slash + 1);
+        int dot = file.ReverseFind('.');
+        text = dot > 0 ? file.Left(dot) : file;
+    }
+    int comma = text.Find(", ");
+    if (comma >= 0) {
+        name = text.Left(comma);
+        author = text.Mid(comma + 2);
+    } else {
+        name = text;
+        author = "";
+    }
+    name.Trim();
+    author.Trim();
+    // the first year of the text, unless the author line shows it already
+    date = "";
+    for (int i = 0; i + 4 <= text.GetLength(); i++) {
+        CString year = text.Mid(i, 4);
+        bool digits = true;
+        for (int j = 0; j < 4; j++) digits &= isdigit((unsigned char)year.GetAt(j)) != 0;
+        bool alone = (i == 0 || !isdigit((unsigned char)text.GetAt(i - 1))) && (i + 4 == text.GetLength() || !isdigit((unsigned char)text.GetAt(i + 4)));
+        if (digits && alone && (year.Left(2) == "19" || year.Left(2) == "20")) {
+            if (author.Find(year) < 0) {
+                date = year;
+            }
+            break;
+        }
+    }
+}
+
+bool CSongExporter::ShowRmtXexExportDialog(const CSong& song, CRmtXexFile& xexFile)
+{
+    xexFile.InitFromSong(song);
+
+    CSAPFileExportDialog dlg;
+    dlg.m_title = "Export Atari executable with the RMT player";
+    dlg.m_name = xexFile.name;
+    dlg.m_author = xexFile.author;
+    dlg.m_date = xexFile.date;
+    dlg.m_noSubsongs = TRUE;
+    if (dlg.DoModal() != IDOK) {
         return false;
     }
-    return ExportXEX_RMTPlayer(songExport, exportDesc, xexFile, ou);
+    xexFile.name = dlg.m_name;
+    xexFile.author = dlg.m_author;
+    xexFile.date = dlg.m_date;
+    return true;
+}
+
+bool CSongExporter::ExportXEX_RMTPlayer(CSongExport& songExport, std::ofstream& ou)
+{
+    CRmtXexFile xexFile;
+
+    if (!ShowRmtXexExportDialog(songExport.GetSong(), xexFile)) {
+        return false;
+    }
+    return ExportXEX_RMTPlayer(songExport, xexFile, ou);
 }
 
 /// <summary>
-/// The players are in resources/players, built by asm/ca65 (make xexplayers), without a module; rmt_xex.h has the
-/// addresses patched here:
-/// - rmt_xex_v1_mono/stereo.obx (drivers Unpatched): the RMT 1.28 player at $3400 and the XEX routine of RMT 1.28 at
-///   $3E00, which shows 5 lines of text from $3F00, takes the rasterbar colour from $3FC8 and the spacing of the player
-///   calls (in line pairs, bit 7 = twice) from $3FC9, which the tracker sets
-/// - rmt_xex_v6_mono/stereo_pal/ntsc.obx (driver Patch16): the Simple RMT Player by VinsCool, with the screen at $A000
-///   (the text at line_1), the rasterbar colour in its main loop and the frequency tables at $B000, which RITMO
-///   computes from the tuning: they are taken from the memory of the tracker driver
-/// The module goes from $4000 up to the screen of the player ($A000) or the end of the RAM ($BFFF).
+/// The players are resources/players/rmtplay_v1/v6_mono/stereo.xex, built by asm/rmtplay (make install): the
+/// visualizer of RMTPLAY (a cc65 program at $4000) followed by the RMT player of a driver at its own address, RMT 1.28
+/// (v1, drivers Unpatched) at $3400 or Patch16 (v6) at $3100 with its frequency tables at $3A00, which RITMO computes
+/// from the tuning: they are taken from the memory of the tracker driver. rmt_xex.h has the addresses patched here:
+/// the module goes right after the program (RMTXEX_*_MODULE) up to RMTXEX_MODULE_LIMIT, rmt_song / rmt_song_end
+/// point to it, rmt_song_ntsc says the region of the song, rmt_info holds NAME, AUTHOR and DATE.
 /// </summary>
-bool CSongExporter::ExportXEX_RMTPlayer(CSongExport& songExport, TExportDescription* exportDesc, CXEXFile xexFile, std::ofstream& ou)
+bool CSongExporter::ExportXEX_RMTPlayer(CSongExport& songExport, const CRmtXexFile& xexFile, std::ofstream& ou)
 {
     // The driver the tracker plays the song with (the one of the Options, or the RMT 1.28 Unpatched one a song with
     // the Autofilter may be played with)
@@ -411,18 +470,27 @@ bool CSongExporter::ExportXEX_RMTPlayer(CSongExport& songExport, TExportDescript
         return false;
     }
 
-    CString fileName;
-    fileName.Format("rmt_xex_v%d_%s%s.obx", patch16 ? 6 : 1, xexFile.isStereo ? "stereo" : "mono",
-                    patch16 ? (xexFile.isNTSC ? "_ntsc" : "_pal") : "");
-    std::unique_ptr<CByteArray> binary(CRmtAtariBinaries::LoadPlayerBinary(fileName));
+    struct TVariant {
+        const char* fileName;
+        MemoryAddress module, song, info;
+    };
+    static const TVariant variants[4] = {
+        { "rmtplay_v1_mono.xex", RMTXEX_V1_MONO_MODULE, RMTXEX_V1_MONO_RMT_SONG, RMTXEX_V1_MONO_RMT_INFO },
+        { "rmtplay_v1_stereo.xex", RMTXEX_V1_STEREO_MODULE, RMTXEX_V1_STEREO_RMT_SONG, RMTXEX_V1_STEREO_RMT_INFO },
+        { "rmtplay_v6_mono.xex", RMTXEX_V6_MONO_MODULE, RMTXEX_V6_MONO_RMT_SONG, RMTXEX_V6_MONO_RMT_INFO },
+        { "rmtplay_v6_stereo.xex", RMTXEX_V6_STEREO_MODULE, RMTXEX_V6_STEREO_RMT_SONG, RMTXEX_V6_STEREO_RMT_INFO },
+    };
+    const TVariant& variant = variants[(patch16 ? 2 : 0) + (xexFile.isStereo ? 1 : 0)];
+
+    std::unique_ptr<CByteArray> binary(CRmtAtariBinaries::LoadPlayerBinary(variant.fileName));
     if (!binary || binary->GetSize() < 6) {
         CString message;
-        message.Format("Couldn't load the RMT player '%s'.", (LPCTSTR)fileName);
+        message.Format("Couldn't load the RMT player '%s'.", variant.fileName);
         SendErrorMessage("Export aborted", message);
         return false;
     }
 
-    // The blocks of the player, in their order
+    // The blocks of the program and of the player, in their order
     byte mem[RAM_SIZE]{};
     std::vector<std::pair<MemoryAddress, MemoryAddress>> blocks;
     const byte* data = binary->GetData();
@@ -440,64 +508,62 @@ bool CSongExporter::ExportXEX_RMTPlayer(CSongExport& songExport, TExportDescript
         blocks.push_back({ from, to });
         p += 4 + (to - from + 1);
     }
-
-    MemoryAddress text, color;
-    MemoryAddress moduleEnd = exportDesc->firstByteAfterModule; // first byte after the module
-    MemoryAddress moduleLimit;
-    if (patch16) {
-        text = xexFile.isNTSC ? RMTXEX_V6_MONO_NTSC_LINE_1 : RMTXEX_V6_MONO_PAL_LINE_1;
-        color = xexFile.isNTSC ? RMTXEX_V6_MONO_NTSC_RASTERBAR_COLOUR : RMTXEX_V6_MONO_PAL_RASTERBAR_COLOUR;
-        moduleLimit = RMTXEX_V6_MONO_PAL_LINE_0;
-    } else {
-        text = RMTXEX_MSX_VIDEO;
-        color = RMTXEX_MSX_COLOR;
-        moduleLimit = RAM_MAX_ADDRESS + 1;
-    }
-    if (blocks.empty() || (patch16 && mem[color - 1] != 0xA0)) { // LDY #colour
+    auto loaded = [&](MemoryAddress a) {
+        for (const auto& block : blocks)
+            if (a >= block.first && a <= block.second) return true;
+        return false;
+    };
+    if (!loaded(variant.song) || !loaded(variant.info + 3 * (RMTXEX_INFO_MAX + 1) - 1) || (patch16 && !loaded(RMTXEX_V6_MONO_TABLES))) {
         CString message;
-        message.Format("The RMT player '%s' is not the one this program expects.", (LPCTSTR)fileName);
+        message.Format("The RMT player '%s' is not the one this program expects.", variant.fileName);
         SendErrorMessage("Export aborted", message);
         return false;
     }
-    if (moduleEnd > moduleLimit) {
+
+    // The module, right after the program
+    CSong& song = songExport.GetSong();
+    TExportDescription module{};
+    int moduleEnd = song.MakeModule(module.mem, variant.module, SongIOType::XEX_RMTPLAYER, module.instrumentSavedFlags, module.trackSavedFlags);
+    if (moduleEnd < 0) {
+        return false;
+    }
+    if (moduleEnd > RMTXEX_MODULE_LIMIT) {
         CString message;
         message.Format("Error, the module ($%04X - $%04X) is too big for the RMT player!\n\n"
                        "The player has room for a module of %d bytes ($%04X - $%04X).\n"
                        "The XEX export with the LZSS driver may fit it.",
-                       exportDesc->targetAddrOfModule, moduleEnd - 1, moduleLimit - exportDesc->targetAddrOfModule,
-                       exportDesc->targetAddrOfModule, moduleLimit - 1);
+                       variant.module, moduleEnd - 1, RMTXEX_MODULE_LIMIT - variant.module, variant.module, RMTXEX_MODULE_LIMIT - 1);
         SendErrorMessage("Buffer Overflow", message);
         return false;
     }
 
-    // The text of the dialog (5 lines of 40 characters) and the rasterbar colour (0 = black, no rasterbar)
-    memcpy(mem + text, xexFile.atariText, CXEXFile::ATARI_TEXT_SIZE);
-    mem[color] = xexFile.displayRasterbar ? (byte)xexFile.rasterbarColor : 0;
+    // rmt_song, rmt_song_end, rmt_song_ntsc (rmtxex.s) and the info lines (rmtplay.c), ASCII, zero terminated
+    mem[variant.song + 0] = variant.module & 0xFF;
+    mem[variant.song + 1] = variant.module >> 8;
+    mem[variant.song + 2] = moduleEnd & 0xFF;
+    mem[variant.song + 3] = moduleEnd >> 8;
+    mem[variant.song + 4] = xexFile.isNTSC ? 1 : 0;
+    const CString* info[3] = { &xexFile.name, &xexFile.author, &xexFile.date };
+    for (int i = 0; i < 3; i++) {
+        byte* line = mem + variant.info + i * (RMTXEX_INFO_MAX + 1);
+        memset(line, 0, RMTXEX_INFO_MAX + 1);
+        for (int j = 0; j < info[i]->GetLength() && j < RMTXEX_INFO_MAX; j++) {
+            unsigned char c = (unsigned char)info[i]->GetAt(j);
+            line[j] = (c >= 32 && c < 127) ? c : '?';
+        }
+    }
     if (patch16) {
         // The frequency tables of the tuning, as the tracker driver plays them
-        memcpy(mem + 0xB000, g_Atari.GetMemoryAt(0xB000), 0x600);
-    } else {
-        // The line pairs between the player calls, for a PAL or an NTSC song (156 = twice 78: once per frame)
-        static const byte spacingPAL[4] = { 156, 78, 52, 39 };
-        static const byte spacingNTSC[4] = { 131, 66, 44, 33 };
-        mem[RMTXEX_MSX_VCADDITION] = (xexFile.isNTSC ? spacingNTSC : spacingPAL)[xexFile.instrspeed - 1];
+        memcpy(mem + RMTXEX_V6_MONO_TABLES, g_Atari.GetMemoryAt(0xB000), 0x600);
     }
 
-    // The player, its text (in a block of its own for RMT 1.28), the module and the run address
+    // The program, the player, then the module
     bool header = true;
     for (const auto& block : blocks) {
         CAtariIO::SaveBinaryBlock(ou, mem, block.first, block.second, header);
         header = false;
     }
-    if (!patch16) {
-        CAtariIO::SaveBinaryBlock(ou, mem, RMTXEX_MSX_VIDEO, RMTXEX_MSX_VCADDITION, false);
-    }
-    CAtariIO::SaveBinaryBlock(ou, exportDesc->mem, exportDesc->targetAddrOfModule, moduleEnd - 1, false);
-    if (!patch16) {
-        mem[0x2E0] = RMTXEX_MSX_START & 0xFF;
-        mem[0x2E1] = RMTXEX_MSX_START >> 8;
-        CAtariIO::SaveBinaryBlock(ou, mem, 0x2E0, 0x2E1, false);
-    }
+    CAtariIO::SaveBinaryBlock(ou, module.mem, variant.module, moduleEnd - 1, false);
     return true;
 }
 
@@ -630,20 +696,15 @@ bool CSongExporter::BuildLzssSubtunes(CSongExport& songExport, const int* subtun
 }
 
 // The XEX dialog process was split to a different function for clarity, same will be done for SAP later...
-bool CSongExporter::ShowXEXExportDialog(const CSong& song, CXEXFile& xexFile, bool rmtPlayer)
+bool CSongExporter::ShowXEXExportDialog(const CSong& song, CXEXFile& xexFile)
 {
     xexFile.InitFromSong(song);
 
     CExpMSXDlg dlg;
     CString str;
     dlg.m_txt = DefaultXexText(xexFile);
-    dlg.m_rmtPlayer = rmtPlayer;
 
-    if (rmtPlayer) {
-        str.Format("The RMT player adjusts the playback speed to %s Hz on both PAL and NTSC systems.", (xexFile.isNTSC ? "60" : "50"));
-    } else {
-        str.Format("Playback speed will be adjusted to %s Hz on both PAL and NTSC systems.", (xexFile.isNTSC ? "60" : "50"));
-    }
+    str.Format("Playback speed will be adjusted to %s Hz on both PAL and NTSC systems.", (xexFile.isNTSC ? "60" : "50"));
     dlg.m_speedinfo = str;
 
     if (dlg.DoModal() != IDOK) {

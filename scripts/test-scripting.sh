@@ -35,7 +35,7 @@ check() { # name expected-files...
 check delta delta.rmt delta.txt delta.rmw d1.rmt d1.asm d1.sapr d1.lzss d1.sap d1.xex d1_rmt.xex d1_player.asm d1.wav d2.sap d2.xex d2_rmt.xex d3.sapr d3_rmt.xex d4_rmt.xex
 check midi midi.rmt midi.txt midi.rmw
 check dump actions.md notekeys.md
-check stereo stereo.rmt stereo.txt stereo.rmw s1.rmt s1.asm s1.sapr s1.lzss s1_player.asm s1.wav s1_rmt.xex s2.rmt s2.asm s2_player.asm short.sap short2.sap short.xex short.wav short.sapr
+check stereo stereo.rmt stereo.txt stereo.rmw s1.rmt s1.asm s1.sapr s1.lzss s1_player.asm s1.wav s1_rmt.xex s2_rmt.xex s2.rmt s2.asm s2_player.asm short.sap short2.sap short.xex short.wav short.sapr
 
 # the SAP type B files: the blocks must hold the player (an earlier export left the driver out)
 if command -v python3 >/dev/null; then
@@ -44,12 +44,14 @@ if command -v python3 >/dev/null; then
     done
     scripts/check-sap.py "$WORK/stereo-a/short.sap" 1 || fail=1
     scripts/check-sap.py "$WORK/stereo-a/short2.sap" 2 || fail=1
-    # the XEX with the RMT player: the module, the run address, the player of the driver and the text
-    scripts/check-xex-rmt.py "$WORK/delta-a/d1_rmt.xex" 4 "DELTA" || fail=1
-    scripts/check-xex-rmt.py "$WORK/delta-a/d2_rmt.xex" 4 "ONE" || fail=1
+    # the XEX with the RMT player: the player of the driver, the module after it, the run address and the NAME line
+    # (default: the song name up to its first ", "; Delta.rmt has no name: the file it was saved as, delta.rmt)
+    scripts/check-xex-rmt.py "$WORK/delta-a/d1_rmt.xex" 4 "delta" || fail=1
+    scripts/check-xex-rmt.py "$WORK/delta-a/d2_rmt.xex" 4 "Name Two" || fail=1
     scripts/check-xex-rmt.py "$WORK/delta-a/d3_rmt.xex" 4 "NTSC" || fail=1
     scripts/check-xex-rmt.py "$WORK/delta-a/d4_rmt.xex" 4 "RMT 1.28" || fail=1
     scripts/check-xex-rmt.py "$WORK/stereo-a/s1_rmt.xex" 8 "STEREO" || fail=1
+    scripts/check-xex-rmt.py "$WORK/stereo-a/s2_rmt.xex" 8 "STEREO 1.28" || fail=1
     # the WAV lasts as long as the SAP-R stream (the stereo song is at instrument speed 4)
     scripts/check-wav.py "$WORK/delta-a/d1.sapr" "$WORK/delta-a/d1.wav" || fail=1
     scripts/check-wav.py "$WORK/stereo-a/s1.sapr" "$WORK/stereo-a/s1.wav" || fail=1
