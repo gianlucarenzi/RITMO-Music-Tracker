@@ -11,6 +11,7 @@
 #include "PokeyStream.h"
 
 #include "SongTypes.h"
+#include "TrackerDriverVersion.h"
 
 class CASMFileExporter;
 class CPokeyController;
@@ -29,6 +30,11 @@ public:
     void SetTracks(const int tracksNum);
     BOOL IsNTSC() const;
     void SetNTSC(const BOOL ntsc);
+    // The tracker driver the song plays with (as in RMT 1.36, plan 41): the default of the Module Properties, or
+    // for this song only the one chosen when it was opened (the Autofilter question). A plain accessor: loading
+    // the driver is the caller's (CAtariTrackerDriver::LoadRMTRoutines, UseVersion), with its report.
+    TrackerDriverVersion GetTrackerDriverVersion() const { return m_trackerDriverVersion; }
+    void SetTrackerDriverVersion(TrackerDriverVersion version) { m_trackerDriverVersion = version; }
 
     void ReInitSound();
 
@@ -378,6 +384,7 @@ private:
     EditArea m_infoact; // Which part of the info area is active for editing: 0 = name,
     char m_songname[SONG_NAME_MAX_LEN + 1];
     BOOL m_ntsc;
+    TrackerDriverVersion m_trackerDriverVersion = PATCH16;
     int m_songnamecur;
 
     TBookmark m_bookmark;

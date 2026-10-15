@@ -232,8 +232,8 @@ BOOL CSong::FileOpen(const char* filename, BOOL warnOfUnsavedChanges)
 
     // The Patch16 driver plays the Autofilter differently from RMT 1.28 (the ch3 offset starts at 0, not 1, and
     // does not accumulate): an older song with it sounds wrong. The file does not say which driver it was made
-    // with, so ask; the choice is for this song only, ClearSong() goes back to the driver of the Options dialog.
-    if (g_trackerDriverVersion == PATCH16 && g_Instruments.UsesAutofilter()) {
+    // with, so ask; the choice is this song's driver only, ClearSong() goes back to the default one.
+    if (m_trackerDriverVersion == PATCH16 && g_Instruments.UsesAutofilter()) {
         int r = MessageBox(g_hwnd,
                            "This song uses the Autofilter (FILTER in an instrument envelope).\n\n"
                            "The Patch16 tracker driver plays the Autofilter differently from RMT 1.28:\n"
@@ -241,7 +241,10 @@ BOOL CSong::FileOpen(const char* filename, BOOL warnOfUnsavedChanges)
                            "Play this song with the RMT 1.28 Unpatched driver?\n"
                            "(For this song only: the driver in the Options stays Patch16.)",
                            "Tracker driver", MB_YESNO | MB_ICONQUESTION);
-        if (r == IDYES) g_AtariTrackerDriver->UseVersion(UNPATCHED, IsNTSC());
+        if (r == IDYES) {
+            m_trackerDriverVersion = UNPATCHED;
+            g_AtariTrackerDriver->UseVersion(UNPATCHED, IsNTSC());
+        }
     }
     return TRUE;
 }

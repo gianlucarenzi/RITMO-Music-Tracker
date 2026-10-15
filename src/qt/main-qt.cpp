@@ -160,7 +160,7 @@ int main(int argc, char** argv)
     g_Atari.Init(g_Song.IsNTSC());
 
     g_AtariTrackerDriver = new CAtariTrackerDriver(g_Atari);
-    g_AtariTrackerDriver->LoadRMTRoutines(g_trackerDriverVersion);
+    g_AtariTrackerDriver->LoadRMTRoutines(g_defaultTrackerDriverVersion);
     g_AtariTrackerDriver->Init();
 
     g_Song.ClearSong(8);
@@ -259,7 +259,7 @@ int main(int argc, char** argv)
     window.Start(SongFromCommandLine(argc, argv));
     // the driver of the configuration (loaded by Start) is missing: say so, rather than play another one without a word
     if (!g_AtariTrackerDriver->AreRoutinesLoaded())
-        MessageBox(g_hwnd, CRmtAtariBinaries::GetMissingTrackerDriverMessage(g_trackerDriverVersion), "RITMO", MB_ICONEXCLAMATION);
+        MessageBox(g_hwnd, CRmtAtariBinaries::GetMissingTrackerDriverMessage(g_Song.GetTrackerDriverVersion()), "RITMO", MB_ICONEXCLAMATION);
     if (scaleOverride) window.OverrideScaling(scaleOverride); // this session only
     // a first start: the window of the interface size that the first start chose
     if (!windowRestored && !scaleOverride && g_scaling_percentage > 100) DefaultWindow(window, g_scaling_percentage);

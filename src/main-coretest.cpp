@@ -66,7 +66,7 @@ static int Screenshot(const char* out, int w, int h, const char* song)
     // CRmtApp::InitInstance(): tracker driver, empty song
     g_Atari.Init(g_Song.IsNTSC());
     g_AtariTrackerDriver = new CAtariTrackerDriver(g_Atari);
-    g_AtariTrackerDriver->LoadRMTRoutines(g_trackerDriverVersion);
+    g_AtariTrackerDriver->LoadRMTRoutines(g_defaultTrackerDriverVersion);
     g_AtariTrackerDriver->Init();
     g_Song.ClearSong(8);
 
@@ -111,10 +111,10 @@ static int Screenshot(const char* out, int w, int h, const char* song)
 static int PlaySong(const char* song, int frames, const char* regsOut, const char* wavOut)
 {
     // RMT_DRIVER=1..7: the tracker driver of the Options dialog (TrackerDriverVersion)
-    if (const char* d = std::getenv("RMT_DRIVER")) g_trackerDriverVersion = (TrackerDriverVersion)std::atoi(d);
+    if (const char* d = std::getenv("RMT_DRIVER")) g_defaultTrackerDriverVersion = (TrackerDriverVersion)std::atoi(d);
     g_Atari.Init(g_Song.IsNTSC());
     g_AtariTrackerDriver = new CAtariTrackerDriver(g_Atari);
-    g_AtariTrackerDriver->LoadRMTRoutines(g_trackerDriverVersion);
+    g_AtariTrackerDriver->LoadRMTRoutines(g_defaultTrackerDriverVersion);
     g_AtariTrackerDriver->Init();
     g_Song.ClearSong(8);
     if (!g_Song.FileOpen(song, FALSE)) {

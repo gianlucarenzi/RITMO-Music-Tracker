@@ -118,7 +118,9 @@ struct TViewState {
 
 extern TViewState g_view;
 
-extern TrackerDriverVersion g_trackerDriverVersion;
+// The driver version of the Module Properties: the one new and opened songs start with (CSong::ClearSong), kept in
+// ritmo.ini as TRACKERDRIVERVERSION; the version of the song being edited is CSong::GetTrackerDriverVersion()
+extern TrackerDriverVersion g_defaultTrackerDriverVersion;
 extern bool g_scriptRun; // ritmo /SCRIPT:<file>: the configuration is read, never written
 extern int g_timerGlobalCount; // Initialised once, ticking forever
 extern long g_playtime;        //1 yes, 0 no

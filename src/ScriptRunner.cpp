@@ -40,7 +40,7 @@ extern CXPokey g_Pokey;
 extern CRmtMidi g_Midi;
 extern CAtari g_Atari;
 extern CAtariTrackerDriver* g_AtariTrackerDriver;
-extern TrackerDriverVersion g_trackerDriverVersion;
+extern TrackerDriverVersion g_defaultTrackerDriverVersion;
 extern CString g_lastLoadPath_Songs;
 
 extern WORD g_rmtstripped_adr_module;
@@ -97,9 +97,9 @@ const std::vector<TExportFormat>& ExportFormats()
 }
 
 // CRmtAtariBinaries::GetMissingTrackerDriverMessage() on one line, for a CScriptError rather than a box
-std::string MissingTrackerDriverText()
+std::string MissingTrackerDriverText(TrackerDriverVersion version)
 {
-    CString filePath = CRmtAtariBinaries::GetTrackerDriverFilePath(g_trackerDriverVersion);
+    CString filePath = CRmtAtariBinaries::GetTrackerDriverFilePath(version);
     return "The player routines of the selected tracker driver were not loaded from '" + std::string((LPCTSTR)filePath) + "', so RITMO would export another driver's sound, or silence.";
 }
 
@@ -519,7 +519,7 @@ void CScriptRunner::Export(const TScriptCommand& command)
         throw CScriptError(command.line, "Unknown export format '" + command.GetArgument(0) + "'; one of " + Join(formatNames, ", ") + ".");
     }
     // the export would otherwise run to the end and write the sound of another driver, or a quiet file
-    if (format->rendersSound && !g_AtariTrackerDriver->AreRoutinesLoaded()) throw CScriptError(command.line, MissingTrackerDriverText());
+    if (format->rendersSound && !g_AtariTrackerDriver->AreRoutinesLoaded()) throw CScriptError(command.line, MissingTrackerDriverText(m_song.GetTrackerDriverVersion()));
     for (const auto& option : command.options) {
         bool known = false;
         for (const std::string& allowed : format->options) {
@@ -728,13 +728,14 @@ void CScriptRunner::Set(const TScriptCommand& command)
             m_song.SetNTSC(ntsc);
         }
     } else if (name == "driver") {
-        // CRmtView::OnToolsOptions()'s driver-version branch
+        // the Module Properties' driver: the default and the song's
         TrackerDriverVersion version = ParseDriverVersion(command, value);
-        if (g_trackerDriverVersion != version) {
-            g_trackerDriverVersion = version;
+        g_defaultTrackerDriverVersion = version;
+        if (m_song.GetTrackerDriverVersion() != version) {
+            m_song.SetTrackerDriverVersion(version);
             g_Atari.Init(m_song.IsNTSC());
-            g_AtariTrackerDriver->LoadRMTRoutines(g_trackerDriverVersion);
-            if (!g_AtariTrackerDriver->AreRoutinesLoaded()) throw CScriptError(command.line, MissingTrackerDriverText());
+            g_AtariTrackerDriver->LoadRMTRoutines(version);
+            if (!g_AtariTrackerDriver->AreRoutinesLoaded()) throw CScriptError(command.line, MissingTrackerDriverText(version));
         }
     } else if (name == "midi-touch-response") {
         // the Options dialog's MIDI settings (for the midi command: the same recording rules as a real device)

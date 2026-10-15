@@ -504,7 +504,7 @@ void CRmtView::ReadRMTConfig()
             continue;
         }
         if (NAME("TRACKERDRIVERVERSION")) {
-            g_trackerDriverVersion = (TrackerDriverVersion)atoi(value);
+            g_defaultTrackerDriverVersion = (TrackerDriverVersion)atoi(value);
             continue;
         }
 
@@ -638,7 +638,7 @@ void CRmtView::WriteRMTConfig()
     ou << "NTSC_SYSTEM = " << g_Song.IsNTSC() << std::endl;
     ou << "NOHWSOUNDBUFFER = " << g_nohwsoundbuffer << std::endl;
     ou << "AUDIO_BUFFER_MS = " << g_audioBufferMs << std::endl;
-    ou << "TRACKERDRIVERVERSION = " << g_trackerDriverVersion << std::endl;
+    ou << "TRACKERDRIVERVERSION = " << g_defaultTrackerDriverVersion << std::endl;
 
     ou << "\n# KEYBOARD\n"
        << std::endl;
@@ -699,7 +699,7 @@ void CRmtView::ResetRMTConfig()
     SetNTSC(false);                    // NTSC (60Hz)
     g_nohwsoundbuffer = 0;             // Don't use hardware soundbuffer
     g_audioBufferMs = RMT_DEFAULT_AUDIO_BUFFER_MS; // Audio callback size: 20 ms on Linux, 5 ms elsewhere
-    g_trackerDriverVersion = PATCH16;  // Tracker driver version
+    g_defaultTrackerDriverVersion = PATCH16;  // Tracker driver version
     g_displayflatnotes = 0;            // Display accidentals as Flats instead of Sharps
     g_usegermannotation = 0;           // Display H notes instead of B
 
@@ -870,7 +870,7 @@ void CRmtView::OnViewConfiguration()
     dlg.m_viewDebugDisplay = g_view.debugDisplay;
 
     // TODO: Module
-    dlg.m_trackerDriverVersion = g_trackerDriverVersion;
+    dlg.m_trackerDriverVersion = g_defaultTrackerDriverVersion;
 
     // KEYBOARD
     dlg.m_keyboard_layout = g_keyboard_layout;
@@ -906,17 +906,17 @@ void CRmtView::OnViewConfiguration()
             SetNTSC(dlg.m_ntsc);
         }
 
-        if (g_trackerDriverVersion != dlg.m_trackerDriverVersion) {
-            // Something here to reset the thing
-            g_trackerDriverVersion = dlg.m_trackerDriverVersion;
+        // the driver chosen is the default and the song's (also when the song plays another one, for itself only)
+        g_defaultTrackerDriverVersion = dlg.m_trackerDriverVersion;
+        if (g_Song.GetTrackerDriverVersion() != dlg.m_trackerDriverVersion) {
+            g_Song.SetTrackerDriverVersion(dlg.m_trackerDriverVersion);
             g_Atari.Init(g_Song.IsNTSC()); // TODO: This is done serveral times. We need something like "beginUpdate"
-            g_AtariTrackerDriver->LoadRMTRoutines(g_trackerDriverVersion);
+            g_AtariTrackerDriver->LoadRMTRoutines(g_Song.GetTrackerDriverVersion());
             if (!g_AtariTrackerDriver->AreRoutinesLoaded()) {
                 // a version whose file is missing: say so rather than play another driver without a word
-                MessageBox(CRmtAtariBinaries::GetMissingTrackerDriverMessage(g_trackerDriverVersion), "RITMO", MB_ICONEXCLAMATION);
+                MessageBox(CRmtAtariBinaries::GetMissingTrackerDriverMessage(g_Song.GetTrackerDriverVersion()), "RITMO", MB_ICONEXCLAMATION);
             }
         }
-        g_trackerDriverVersion = dlg.m_trackerDriverVersion;
 
         g_view.smoothScrolling = dlg.m_doSmoothScrolling;
         g_view.debugDisplay = dlg.m_viewDebugDisplay;
@@ -1065,8 +1065,9 @@ void CRmtView::OnInitialUpdate()
     // The start loaded the default driver and generated the frequency tables from the default tuning before the
     // configuration was read: the driver and the tuning of the configuration now, else an empty song would play with
     // the default ones until a song is opened or created
+    g_Song.SetTrackerDriverVersion(g_defaultTrackerDriverVersion);
     g_Atari.Init(g_Song.IsNTSC());
-    g_AtariTrackerDriver->LoadRMTRoutines(g_trackerDriverVersion);
+    g_AtariTrackerDriver->LoadRMTRoutines(g_Song.GetTrackerDriverVersion());
     g_AtariTrackerDriver->Init();
 
     //view elements
