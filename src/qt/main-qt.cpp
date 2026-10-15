@@ -9,6 +9,7 @@
 #include "RmtQtSettings.h"
 #include "Song.h"
 #include "Atari.h"
+#include "AtariBinaries.h"
 #include "AtariTrackerDriver.h"
 #include "Tuning.h"
 #include "RmtMidi.h"
@@ -255,6 +256,9 @@ int main(int argc, char** argv)
     }
 
     window.Start(SongFromCommandLine(argc, argv));
+    // the driver of the configuration (loaded by Start) is missing: say so, rather than play another one without a word
+    if (!g_AtariTrackerDriver->AreRoutinesLoaded())
+        MessageBox(g_hwnd, CRmtAtariBinaries::GetMissingTrackerDriverMessage(g_trackerDriverVersion), "RITMO", MB_ICONEXCLAMATION);
     if (scaleOverride) window.OverrideScaling(scaleOverride); // this session only
     // a first start: the window of the interface size that the first start chose
     if (!windowRestored && !scaleOverride && g_scaling_percentage > 100) DefaultWindow(window, g_scaling_percentage);

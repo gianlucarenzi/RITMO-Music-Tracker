@@ -1055,6 +1055,13 @@ void CRmtView::OnInitialUpdate()
     //tuning
     ReadTuningConfig();
 
+    // The start loaded the default driver and generated the frequency tables from the default tuning before the
+    // configuration was read: the driver and the tuning of the configuration now, else an empty song would play with
+    // the default ones until a song is opened or created
+    g_Atari.Init(g_Song.IsNTSC());
+    g_AtariTrackerDriver->LoadRMTRoutines(g_trackerDriverVersion);
+    g_AtariTrackerDriver->Init();
+
     //view elements
     ChangeViewElements(0); //without write!
 
