@@ -781,32 +781,32 @@ void CRmtView::ReadTuningConfig()
 
         // TUNING
         if (NAME("TUNING")) {
-            g_tuning.basetuning = atof(value);
+            g_Song.GetTuning().basetuning = atof(value);
             continue;
         }
         if (NAME("BASENOTE")) {
-            g_tuning.basenote = atoi(value);
+            g_Song.GetTuning().basenote = atoi(value);
             continue;
         }
         if (NAME("TEMPERAMENT")) {
-            g_tuning.temperament = atoi(value);
+            g_Song.GetTuning().temperament = atoi(value);
             continue;
         }
 
         // RATIOS
-        if (ReadFraction(name, value, value2, "UNISON", g_tuningRatios.UNISON)) { continue; }
-        if (ReadFraction(name, value, value2, "MIN_2ND", g_tuningRatios.MIN_2ND)) { continue; }
-        if (ReadFraction(name, value, value2, "MAJ_2ND", g_tuningRatios.MAJ_2ND)) { continue; }
-        if (ReadFraction(name, value, value2, "MIN_3RD", g_tuningRatios.MIN_3RD)) { continue; }
-        if (ReadFraction(name, value, value2, "MAJ_3RD", g_tuningRatios.MAJ_3RD)) { continue; }
-        if (ReadFraction(name, value, value2, "PERF_4TH", g_tuningRatios.PERF_4TH)) { continue; }
-        if (ReadFraction(name, value, value2, "TRITONE", g_tuningRatios.TRITONE)) { continue; }
-        if (ReadFraction(name, value, value2, "PERF_5TH", g_tuningRatios.PERF_5TH)) { continue; }
-        if (ReadFraction(name, value, value2, "MIN_6TH", g_tuningRatios.MIN_6TH)) { continue; }
-        if (ReadFraction(name, value, value2, "MAJ_6TH", g_tuningRatios.MAJ_6TH)) { continue; }
-        if (ReadFraction(name, value, value2, "MIN_7TH", g_tuningRatios.MIN_7TH)) { continue; }
-        if (ReadFraction(name, value, value2, "MAJ_7TH", g_tuningRatios.MAJ_7TH)) { continue; }
-        if (ReadFraction(name, value, value2, "OCTAVE", g_tuningRatios.OCTAVE)) { continue; }
+        if (ReadFraction(name, value, value2, "UNISON", g_Song.GetTuningRatios().UNISON)) { continue; }
+        if (ReadFraction(name, value, value2, "MIN_2ND", g_Song.GetTuningRatios().MIN_2ND)) { continue; }
+        if (ReadFraction(name, value, value2, "MAJ_2ND", g_Song.GetTuningRatios().MAJ_2ND)) { continue; }
+        if (ReadFraction(name, value, value2, "MIN_3RD", g_Song.GetTuningRatios().MIN_3RD)) { continue; }
+        if (ReadFraction(name, value, value2, "MAJ_3RD", g_Song.GetTuningRatios().MAJ_3RD)) { continue; }
+        if (ReadFraction(name, value, value2, "PERF_4TH", g_Song.GetTuningRatios().PERF_4TH)) { continue; }
+        if (ReadFraction(name, value, value2, "TRITONE", g_Song.GetTuningRatios().TRITONE)) { continue; }
+        if (ReadFraction(name, value, value2, "PERF_5TH", g_Song.GetTuningRatios().PERF_5TH)) { continue; }
+        if (ReadFraction(name, value, value2, "MIN_6TH", g_Song.GetTuningRatios().MIN_6TH)) { continue; }
+        if (ReadFraction(name, value, value2, "MAJ_6TH", g_Song.GetTuningRatios().MAJ_6TH)) { continue; }
+        if (ReadFraction(name, value, value2, "MIN_7TH", g_Song.GetTuningRatios().MIN_7TH)) { continue; }
+        if (ReadFraction(name, value, value2, "MAJ_7TH", g_Song.GetTuningRatios().MAJ_7TH)) { continue; }
+        if (ReadFraction(name, value, value2, "OCTAVE", g_Song.GetTuningRatios().OCTAVE)) { continue; }
     }
 }
 
@@ -828,25 +828,25 @@ void CRmtView::WriteTuningConfig()
 
     os << "\n# TUNING\n"
        << std::endl;
-    os << "TUNING = " << g_tuning.basetuning << std::endl;
-    os << "BASENOTE = " << g_tuning.basenote << std::endl;
-    os << "TEMPERAMENT = " << g_tuning.temperament << std::endl;
+    os << "TUNING = " << g_Song.GetTuning().basetuning << std::endl;
+    os << "BASENOTE = " << g_Song.GetTuning().basenote << std::endl;
+    os << "TEMPERAMENT = " << g_Song.GetTuning().temperament << std::endl;
 
     os << "\n# RATIOS\n"
        << std::endl;
-    WriteFraction(os, "UNISON", g_tuningRatios.UNISON);
-    WriteFraction(os, "MIN_2ND", g_tuningRatios.MIN_2ND);
-    WriteFraction(os, "MAJ_2ND", g_tuningRatios.MAJ_2ND);
-    WriteFraction(os, "MIN_3RD", g_tuningRatios.MIN_3RD);
-    WriteFraction(os, "MAJ_3RD", g_tuningRatios.MAJ_3RD);
-    WriteFraction(os, "PERF_4TH", g_tuningRatios.PERF_4TH);
-    WriteFraction(os, "TRITONE", g_tuningRatios.TRITONE);
-    WriteFraction(os, "PERF_5TH", g_tuningRatios.PERF_5TH);
-    WriteFraction(os, "MIN_6TH", g_tuningRatios.MIN_6TH);
-    WriteFraction(os, "MAJ_6TH", g_tuningRatios.MAJ_6TH);
-    WriteFraction(os, "MIN_7TH", g_tuningRatios.MIN_7TH);
-    WriteFraction(os, "MAJ_7TH", g_tuningRatios.MAJ_7TH);
-    WriteFraction(os, "OCTAVE", g_tuningRatios.OCTAVE);
+    WriteFraction(os, "UNISON", g_Song.GetTuningRatios().UNISON);
+    WriteFraction(os, "MIN_2ND", g_Song.GetTuningRatios().MIN_2ND);
+    WriteFraction(os, "MAJ_2ND", g_Song.GetTuningRatios().MAJ_2ND);
+    WriteFraction(os, "MIN_3RD", g_Song.GetTuningRatios().MIN_3RD);
+    WriteFraction(os, "MAJ_3RD", g_Song.GetTuningRatios().MAJ_3RD);
+    WriteFraction(os, "PERF_4TH", g_Song.GetTuningRatios().PERF_4TH);
+    WriteFraction(os, "TRITONE", g_Song.GetTuningRatios().TRITONE);
+    WriteFraction(os, "PERF_5TH", g_Song.GetTuningRatios().PERF_5TH);
+    WriteFraction(os, "MIN_6TH", g_Song.GetTuningRatios().MIN_6TH);
+    WriteFraction(os, "MAJ_6TH", g_Song.GetTuningRatios().MAJ_6TH);
+    WriteFraction(os, "MIN_7TH", g_Song.GetTuningRatios().MIN_7TH);
+    WriteFraction(os, "MAJ_7TH", g_Song.GetTuningRatios().MAJ_7TH);
+    WriteFraction(os, "OCTAVE", g_Song.GetTuningRatios().OCTAVE);
 
     if (!RmtSaveConfigText(TUNING_FILENAME, os.str()))
         MessageBox("Could not create: '" + RmtConfigTextLocation(TUNING_FILENAME) + "'\n\nThe Tuning parameters won't be saved.\n", "RITMO", MB_ICONEXCLAMATION);
@@ -931,8 +931,8 @@ void CRmtView::OnViewConfiguration()
 void CRmtView::OnViewTuning()
 {
     TuningDialog dlg;
-    dlg.m_tuningSettings = g_tuning;
-    dlg.m_tuningRatios = g_tuningRatios;
+    dlg.m_tuningSettings = g_Song.GetTuning();
+    dlg.m_tuningRatios = g_Song.GetTuningRatios();
 
     dlg.DoModal();
 }
@@ -1528,7 +1528,7 @@ const char FlaToCha[] = { 0x67, 0x68, 0x69, 109, 0x64, 0x65, 0x66, 107, 0x61, 0x
 void CRmtView::SetNTSC(const bool ntsc)
 {
     // TODO  code... well 3 times..
-    g_tuning.basetuning = (ntsc) ? (g_tuning.basetuning * CAtari::FREQ_17_NTSC) / CAtari::FREQ_17_PAL : (g_tuning.basetuning * CAtari::FREQ_17_PAL) / CAtari::FREQ_17_NTSC;
+    g_Song.GetTuning().basetuning = (ntsc) ? (g_Song.GetTuning().basetuning * CAtari::FREQ_17_NTSC) / CAtari::FREQ_17_PAL : (g_Song.GetTuning().basetuning * CAtari::FREQ_17_PAL) / CAtari::FREQ_17_NTSC;
     g_Song.SetNTSC(ntsc);
 }
 void CRmtView::ToggleNTSC()

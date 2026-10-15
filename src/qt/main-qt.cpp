@@ -32,8 +32,6 @@
 
 extern CSong g_Song;
 extern CAtari g_Atari;
-extern TTuningSettings g_tuning;
-extern TTuningRatios g_tuningRatios;
 extern CRmtMidi g_Midi;
 
 // rmt /SCRIPT:<file> (also -script:<file> and --script=<file>): runs an RMT script (doc/rmt_scripting.md) and exits
@@ -155,8 +153,8 @@ int main(int argc, char** argv)
 
     // The 6502 and the POKEY are the built-in emulations (emu/): there are no libraries to load.
     g_Atari.Init();
-    g_tuning.Initialize(g_Song.IsNTSC());
-    g_tuningRatios.Initialize();
+    g_Song.GetTuning().Initialize(g_Song.IsNTSC());
+    g_Song.GetTuningRatios().Initialize();
     g_Atari.Init(g_Song.IsNTSC());
 
     g_AtariTrackerDriver = new CAtariTrackerDriver(g_Atari);

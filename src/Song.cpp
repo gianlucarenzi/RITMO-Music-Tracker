@@ -310,8 +310,8 @@ void CSong::MarkTF_NOEMPTY(BYTE* arrayTRACKSNUM) const
 void CSong::ResetTuningVariables()
 {
     // Reset all tuning variables
-    g_tuning.Initialize(IsNTSC());
-    g_tuningRatios.Initialize();
+    m_tuning.Initialize(IsNTSC());
+    m_tuningRatios.Initialize();
 }
 
 

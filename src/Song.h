@@ -12,6 +12,7 @@
 
 #include "SongTypes.h"
 #include "TrackerDriverVersion.h"
+#include "TuningTypes.h"
 
 class CASMFileExporter;
 class CPokeyController;
@@ -35,6 +36,13 @@ public:
     // the driver is the caller's (CAtariTrackerDriver::LoadRMTRoutines, UseVersion), with its report.
     TrackerDriverVersion GetTrackerDriverVersion() const { return m_trackerDriverVersion; }
     void SetTrackerDriverVersion(TrackerDriverVersion version) { m_trackerDriverVersion = version; }
+    // The tuning settings of the song (as in RMT 1.36, plan 44 S1): the base tuning, the base note, the temperament
+    // and the interval ratios that CTuning::InitTuning() makes the frequency tables of. Kept in tuning.ini, not in
+    // the module, like the region and the driver version.
+    TTuningSettings& GetTuning() { return m_tuning; }
+    const TTuningSettings& GetTuning() const { return m_tuning; }
+    TTuningRatios& GetTuningRatios() { return m_tuningRatios; }
+    const TTuningRatios& GetTuningRatios() const { return m_tuningRatios; }
 
     void ReInitSound();
 
@@ -385,6 +393,8 @@ private:
     char m_songname[SONG_NAME_MAX_LEN + 1];
     BOOL m_ntsc;
     TrackerDriverVersion m_trackerDriverVersion = PATCH16;
+    TTuningSettings m_tuning{};
+    TTuningRatios m_tuningRatios{};
     int m_songnamecur;
 
     TBookmark m_bookmark;

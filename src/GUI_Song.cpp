@@ -596,8 +596,8 @@ void CSong::DrawAnalyzer()
                 } else
                     TextMiniXY("POKEY REGISTERS", ANALYZER3_X, ANALYZER3_Y, TextMiniColor::GRAY);
 
-                double tuning = g_tuning.basetuning; //defined in Tuning.cpp through initialisation using input parameter
-                int basenote = g_tuning.basenote;
+                double tuning = GetTuning().basetuning; //defined in Tuning.cpp through initialisation using input parameter
+                int basenote = GetTuning().basenote;
                 int reverse_basenote = (24 - basenote) % 12; //since things are wack I had to do this
                 //int FREQ_17 = (g_ntsc) ? FREQ_17_NTSC : FREQ_17_PAL;	//useful for debugging I guess
                 auto cycles = CAtari::GetFrameCycleCount(IsNTSC());

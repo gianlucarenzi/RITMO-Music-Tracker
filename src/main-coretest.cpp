@@ -30,8 +30,6 @@
 extern CSong g_Song;
 extern CXPokey g_Pokey;
 extern CAtari g_Atari;
-extern TTuningSettings g_tuning;
-extern TTuningRatios g_tuningRatios;
 extern CRmtMidi g_Midi;
 
 // --screenshot: draw the main screen like CRmtView::DrawAll() into the
@@ -282,8 +280,8 @@ int main(int argc, char** argv)
     // The non-GUI part of the start-up: the 6502 emulation (the built-in one,
     // emu/Cpu6502.cpp) and the tuning tables.
     g_Atari.Init();
-    g_tuning.Initialize(g_Song.IsNTSC());
-    g_tuningRatios.Initialize();
+    g_Song.GetTuning().Initialize(g_Song.IsNTSC());
+    g_Song.GetTuningRatios().Initialize();
 
     if (argc >= 5 && !std::strcmp(argv[1], "--play"))
         return PlaySong(argv[2], std::atoi(argv[3]), argv[4], argc >= 6 ? argv[5] : nullptr);
@@ -292,7 +290,7 @@ int main(int argc, char** argv)
         return Screenshot(argv[2], 1280, 800, argc >= 4 ? argv[3] : nullptr);
 
     std::printf("Song name: '%s'\n", g_Song.GetName().GetString());
-    std::printf("g_Atari / g_tuning / g_tuningRatios initialised OK.\n");
+    std::printf("g_Atari and the tuning of g_Song initialised OK.\n");
     std::printf("RmtCoreTest finished successfully.\n");
     return 0;
 }

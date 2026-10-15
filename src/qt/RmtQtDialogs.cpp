@@ -848,8 +848,8 @@ static INT_PTR RunModuleProperties(QWidget* parent, CModulePropertiesDialog* dlg
     QObject::connect(driver, QOverload<int>::of(&QComboBox::currentIndexChanged), &dialog, updateTuning);
     QObject::connect(tuning, &QPushButton::clicked, &dialog, [&dialog] {
         TuningDialog tuningDlg; // as CRmtView::OnViewTuning(): it applies its values itself
-        tuningDlg.m_tuningSettings = g_tuning;
-        tuningDlg.m_tuningRatios = g_tuningRatios;
+        tuningDlg.m_tuningSettings = g_Song.GetTuning();
+        tuningDlg.m_tuningRatios = g_Song.GetTuningRatios();
         RunTuning(&dialog, &tuningDlg);
     });
     tuning->setToolTip("The tuning reaches only the RMT 1.34 Patch16 driver: the others play the tables of their player");
@@ -1957,8 +1957,8 @@ static INT_PTR RunTuning(QWidget* parent, TuningDialog* dlg)
     dialog.setWindowTitle("Tuning configuration");
     auto* layout = new QVBoxLayout(&dialog);
 
-    const TTuningSettings settingsBackup = g_tuning;
-    const TTuningRatios ratiosBackup = g_tuningRatios;
+    const TTuningSettings settingsBackup = g_Song.GetTuning();
+    const TTuningRatios ratiosBackup = g_Song.GetTuningRatios();
 
     auto* general = new QGroupBox("General");
     auto* generalLayout = new QGridLayout(general);
@@ -2064,15 +2064,15 @@ static INT_PTR RunTuning(QWidget* parent, TuningDialog* dlg)
             list[i]->numerator = IntValue(numerator[i]);
             list[i]->denominator = IntValue(denominator[i]);
         }
-        g_tuning = dlg->m_tuningSettings;
-        g_tuningRatios = dlg->m_tuningRatios;
+        g_Song.GetTuning() = dlg->m_tuningSettings;
+        g_Song.GetTuningRatios() = dlg->m_tuningRatios;
         g_Tuning.InitTuning();
         return true;
     };
     // OnClickedIdreset(): the values the dialog was opened with, also shown
     auto reset = [&] {
-        g_tuning = settingsBackup;
-        g_tuningRatios = ratiosBackup;
+        g_Song.GetTuning() = settingsBackup;
+        g_Song.GetTuningRatios() = ratiosBackup;
         g_Tuning.InitTuning();
         show(settingsBackup, ratiosBackup);
     };
