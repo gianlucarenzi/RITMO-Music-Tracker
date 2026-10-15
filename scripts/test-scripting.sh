@@ -76,6 +76,16 @@ else
     echo "FAIL XEX with the RMT player and the Patch8 driver: exit code $code"; tail -3 "$WORK/nodriver.log"; fail=1
 fi
 
+# a WAV export with a driver of the v1 family leaves the driver as it was: the frequency export after it reads the
+# same tables (the WAV export used to write into the Patch16 driver's variables, across the v1 driver's tables)
+printf 'set output %s\nopen "%s/test-resources/songs/Delta.rmt"\nset driver unpatched\nexport asm before.asm type=song notes=freq\nexport wav v1.wav\nexport asm after.asm type=song notes=freq\n' "$WORK/v1wav" "$PWD" >"$WORK/v1wav.rmtscript"
+"$RMT" "/SCRIPT:$WORK/v1wav.rmtscript" >"$WORK/v1wav.log" 2>&1; code=$?
+if [ $code -eq 0 ] && cmp -s "$WORK/v1wav/before.asm" "$WORK/v1wav/after.asm"; then
+    echo "ok   WAV export with the Unpatched driver: the driver's tables intact"
+else
+    echo "FAIL WAV export with the Unpatched driver: exit code $code"; tail -3 "$WORK/v1wav.log"; fail=1
+fi
+
 # the failure paths: a syntax error is exit code 2, a failing command 1
 printf 'open "unterminated\n' >"$WORK/syntax.rmtscript"
 "$RMT" "/SCRIPT:$WORK/syntax.rmtscript" >/dev/null 2>&1; code=$?

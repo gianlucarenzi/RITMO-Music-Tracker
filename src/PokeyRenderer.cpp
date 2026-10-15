@@ -318,26 +318,7 @@ int CXPokey::RenderPartV2(int renderpartsize, BYTE* buffer)
     return rendered;
 }
 
-// One chunk (one VBI of sound) in instrspeed calls of the driver, each from the registers the tracker driver sets
-void CXPokey::RenderSoundV2(int instrspeed, BYTE* buffer, int& length)
-{
-    int rendersize = GetChunkSize();
-    int renderoffset = 0;
-
-    for (; instrspeed > 0; instrspeed--) {
-        g_AtariTrackerDriver->SetPokey();
-        CopyAtariMemoryToPokey();
-        int renderpartsize = (rendersize / instrspeed) & 0xfffe;
-        int rendered = RenderPartV2(renderpartsize, buffer + renderoffset);
-        rendersize -= rendered;
-        renderoffset += rendered;
-    }
-
-    // Copy the actually generated sample data to buffer
-    length = renderoffset;
-}
-
-// One call of the driver: 1/instrspeed of a chunk, from the registers the tracker driver holds. The WAV export
+// One call of the driver: 1/instrspeed of a chunk, from the POKEY registers in the Atari memory. The WAV export
 // renders each frame of a register stream with it - a stream holds one frame per call of the driver, so a
 // song at instrument speed 4 has four frames per VBI.
 void CXPokey::RenderSoundV2Call(int instrspeed, BYTE* buffer, int& length)
@@ -345,7 +326,8 @@ void CXPokey::RenderSoundV2Call(int instrspeed, BYTE* buffer, int& length)
     if (instrspeed < 1) {
         instrspeed = 1;
     }
-    g_AtariTrackerDriver->SetPokey();
+    // from the $D200/$D210 registers its one caller (CWaveFileExporter::ExportWAV) fills per frame: running the
+    // loaded driver's SetPokey first was wrong with any driver but Patch 16 (plan 46)
     CopyAtariMemoryToPokey();
     // 1/instrspeed of a chunk, a whole number of samples: the rest is carried to the next call, so the calls add up
     // to the chunks exactly (a byte lost per call would make a long WAV a fraction of a percent short)

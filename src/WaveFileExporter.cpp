@@ -50,24 +50,20 @@ bool CWaveFileExporter::ExportWAV(CSongExport& songExport, std::ofstream& ou, CX
     pokey.ResetRenderCalls();
     pokey.ResetPokeys(); // the timer may have run the emulation since the last export
     while (frames < pokeyStream.GetFirstCountPoint()) {
-        // Copy the SAP-R bytes to memory for this frame
+        // Copy the SAP-R bytes of this frame straight to the POKEY registers at $D200/$D210, where
+        // CopyAtariMemoryToPokey() reads them. They went into the Patch 16 driver's variables before, and the loaded
+        // driver's SetPokey carried them there: with a v1-family driver that overwrote the player (TRACKN_AUDC is
+        // $3180-$3187, across its tabbeganddistor at $3182) and rendered the driver's own variables rather than the
+        // stream (ported from RMT 1.36, plan 46, 5694184). A frame is AUDF1, AUDC1 ... AUDF4, AUDC4, AUDCTL of a
+        // POKEY; in stereo the 2nd POKEY ($D210, tracks 5-8) comes first, then the 1st ($D200).
         streambuffer = pokeyStream.GetStreamBuffer() + frames * frameSize;
-
-        // A frame is AUDF1, AUDC1 ... AUDF4, AUDC4, AUDCTL of a POKEY; in stereo
-        // the 2nd POKEY ($D210, tracks 5-8) comes first, then the 1st ($D200)
-        const byte* pokey1 = streambuffer + (frameSize == 18 ? 9 : 0);
-        for (int i = 0; i < 4; i++) {
-            memory[RMTPLAYR_TRACKN_AUDF + i] = pokey1[i * 2];
-            memory[RMTPLAYR_TRACKN_AUDC + i] = pokey1[i * 2 + 1];
-        }
-        memory[RMTPLAYR_V_AUDCTL] = pokey1[8];
         if (frameSize == 18) {
-            const byte* pokey2 = streambuffer;
-            for (int i = 0; i < 4; i++) {
-                memory[RMTPLAYR_TRACKN_AUDF + 4 + i] = pokey2[i * 2];
-                memory[RMTPLAYR_TRACKN_AUDC + 4 + i] = pokey2[i * 2 + 1];
+            for (int i = 0; i < 9; i++) {
+                memory[0xd200 + i] = streambuffer[0x09 + i];
+                memory[0xd210 + i] = streambuffer[0x00 + i];
             }
-            memory[RMTPLAYR_V_AUDCTL2] = pokey2[8];
+        } else {
+            for (int i = 0; i < 9; i++) memory[0xd200 + i] = streambuffer[i];
         }
 
         // Fill the POKEY buffer with the sound of this frame: one call of the driver, 1/instrument speed of a VBI
