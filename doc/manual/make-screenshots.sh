@@ -6,6 +6,9 @@
 #   doc/manual/make-screenshots.sh [path/to/ritmo]      (default: build-qt/out/ritmo)
 #   ONLY='dialog-*' doc/manual/make-screenshots.sh      only the images whose name matches
 #
+# atari-rmtplay.png, RITMO PLAYER on the Atari, is taken from atari800 in a window: it needs a display, xdotool and
+# ImageMagick, and is skipped without them.
+#
 # The font of the menus and of the dialogs is fixed (RMT_QT_FONT): offscreen Qt takes the one of the
 # desktop, or its own small default, and the images would change from a computer to another.
 set -eu
@@ -98,6 +101,35 @@ for fmt in "stripped-rmt:1" "simple-asm:2" "sapr:3" "sap:5" "xex:6" "xex-rmt:7" 
     dialog "dialog-export-$name" "$SONG" "$(id ID_FILE_EXPORT_AS)" RMT_QT_FILEDIALOG="$EXPORTS/gemx-$name.$ext@$idx"
     n=$((n + 1))
 done
+
+# RITMO PLAYER on the Atari: the stereo reference song exported as an XEX with the RMT player, run by atari800 (in
+# a window, with its built-in ROMs and none of the user's settings) and saved with its screenshot key (F10, sent by
+# xdotool) once it has played for a while, then doubled to the size of a window. Needs a display: skipped without
+# atari800, xdotool or ImageMagick.
+if want atari-rmtplay; then
+    if command -v atari800 >/dev/null && command -v xdotool >/dev/null && command -v convert >/dev/null && [ -n "${DISPLAY:-}" ]; then
+        printf 'export xex-rmt %s name="Stereo reference song" author="KEYs, eight channels, instrument speed 4" date="2026"\n' \
+            "$WORK/stereo.xex" >"$WORK/xex.rmtscript"
+        printf 'open %s/test-resources/songs/Stereo.rmt\n' "$REPO" | cat - "$WORK/xex.rmtscript" >"$WORK/stereo.rmtscript"
+        "$RMT" "/SCRIPT:$WORK/stereo.rmtscript" >/dev/null 2>&1
+        : >"$WORK/atari800.cfg"
+        (cd "$WORK" && exec atari800 -config "$WORK/atari800.cfg" -no-autosave-config -windowed -nosound -xl -pal -stereo \
+            -screenshots "$WORK/atari###.png" -run "$WORK/stereo.xex") >/dev/null 2>&1 &
+        atari=$!
+        sleep 13 # the start of the emulator, then about nine seconds of the song
+        window=$(xdotool search --pid "$atari" 2>/dev/null | tail -1 || true)
+        [ -n "$window" ] && xdotool key --window "$window" F10
+        sleep 1
+        kill "$atari" 2>/dev/null || true
+        if [ -e "$WORK/atari000.png" ]; then
+            convert "$WORK/atari000.png" -scale 200% "$OUT/atari-rmtplay.png"
+        else
+            echo "atari-rmtplay: atari800 saved no screenshot" >&2
+        fi
+    else
+        echo "atari-rmtplay: skipped (it needs atari800, xdotool, ImageMagick and a display)"
+    fi
+fi
 
 # the dialogs that open after another one (the second image of the dialog hook)
 for f in "$OUT"/dialog-*-2.png; do [ -e "$f" ] && echo "second image: $f"; done || true
