@@ -18,6 +18,59 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.6: the fixes of RMT 1.36 by Peter Dell (JAC!) (https://github.com/peterdell/RASTER-Music-Tracker, branch dev, up to
+  2026-10-15), ported to RITMO: thanks again to JAC!, whose work this fork stands on, and who in turn took four fixes
+  from the trail of RITMO into RMT 1.36 (the SAP type B player blocks, the WAV at instrument speed 2-4, the AUDCTL of the
+  second POKEY, the channels after an export). Each of the entries below that says "RMT 1.36" names the plan or the
+  commit it comes from; the Java port of RMT 1.36 and its printing removal (RITMO prints with Qt) are not ported.
+- 2.6: the frequency tables are generated again after every load of a driver (RMT 1.36, plan 37 T2): a driver chosen in
+  the Options or with the script command `set driver` was loaded after the tables, so its own static copy replaced the
+  tables of the tuning until a song was opened or created, and the XEX export carried them.
+- 2.6: the ASM export with the notes as frequencies (`notes=freq`) reads the tables of the Patch16 player (RMT 1.36, plan
+  38): it read them at the offsets of RMT 1.28, inside the Poly5 page, so every note had a wrong value (on Delta 1011 of
+  the 5451 bytes change). Distortion 6 (always 16 bit) is written `XXX`.
+- 2.6: the note input of MIDI channel 16 (the MIDI CH15 mode) plays the right pitch (RMT 1.36, plan 39): it read the
+  tables a page too low (the RMT 1.34 layout). `CFrequencyTables` reads the pages and the AUDC bits from the dispatch
+  table of the driver in memory, for `GetFrequency` and the MIDI input; `RmtCoreTest --midi16` checks every distortion
+  and clock against the tables of the player (8 of 10 notes were wrong), and the Linux test workflow runs it.
+- 2.6: the drivers of the RMT 1.28 family (Unpatched, Patch3, Patch6, Patch8, Prince of Persia) have their frequency
+  tables too (RMT 1.36, plan 40): `$3200` plus the offset of their `tabbeganddistor` (`$3182`), from `legacy_obx.h`, so
+  the ASM export with frequencies and the MIDI input work with every driver; the ASM export refuses to write a file of
+  `XXX` when the driver has no tables. Beyond RMT 1.36: the MIDI input and the explorer knobs wrote the notes to the
+  track variables of Patch16 (`$3178`/`$3180`), which with those drivers are their `v_aspeed` and their
+  `tabbeganddistor`: they now write those of the driver loaded (`$3160`/`$3168`), and `--midi16` checks it.
+- 2.6: the WAV export writes the POKEY registers of the stream at `$D200`/`$D210` (RMT 1.36, plan 46): it wrote them into
+  the variables of the Patch16 driver and ran the `SetPokey` of the loaded one, so with a driver of the RMT 1.28 family the
+  driver was damaged (the next ASM export with frequencies was refused) and the WAV was silence. The WAVs with Patch16 are
+  byte for byte the same.
+- 2.6: a driver file that cannot be loaded is reported (RMT 1.36, 19691e2): RITMO went on playing and exporting with the
+  driver loaded before, or in silence. The Module Properties, `set driver` and the exports that play the song (SAP-R,
+  LZSS, SAP, XEX, WAV) say which file is missing. Found on the way: the start loaded the driver and generated the tables
+  before reading the configuration, so an empty song played with Patch16 and the default tuning whatever the
+  configuration said; it now uses those of the configuration.
+- 2.6: the table page of the Patch16 player (`asm/Patch-16/rmtdata.a65`) holds the tables of the default tuning (RMT 1.36,
+  plan 37 T7): it held an older calculation and an empty Distortion 4 page, so a song assembled with the player outside the
+  tracker had silent notes and notes a step out of tune. The driver assembled with ca65 is byte for byte the MADS build of
+  RMT 1.36; the exports of RITMO do not change (the tracker generates the tables after the load).
+- 2.6: the messages of a script go to stdout (RMT 1.36, 19691e2): on Windows, when the output goes to `<script>.log`, the
+  errors on stderr were lost.
+- 2.6: a script run never writes the configuration, not even the defaults on a machine that has none (RMT 1.36, plan 47);
+  `RMT_CONFIG_DIR=<folder>` reads (and in the window saves) `ritmo.ini` and `tuning.ini` of that folder as text instead of
+  the settings of the user, on every system.
+- 2.6: the driver version and the tuning belong to the song (RMT 1.36, plans 41 and 44): the default driver is kept in
+  `ritmo.ini` and every new or opened song starts with it, while a song opened with the Unpatched driver at the Autofilter
+  question plays with it for itself only. File > Properties... (ALT+ENTER) is the Module Properties dialog: what the
+  module holds, then the NTSC system speed, the RMT driver version and the Tuning... button (enabled for Patch16 only, the
+  only driver the tuning reaches: RMT 1.36, 33b7add). The two settings left the Options dialog.
+- 2.6: "subsong" where a subsong is meant and "module" where the file is meant, in the SAP and relocatable ASM export
+  dialogs and in the documents (RMT 1.36, d75db79).
+- 2.6: `src/tracker_obx.h` is generated again from the Patch16 player (RMT 1.36, plan 42): 34 of its names were gone from
+  the source. `asm/ca65` makes both headers without MADS (`make headers`, `obxheader.py`, from the debug file of ld65) and
+  `make check` compares them, with the drivers, with those of `src/`; the Linux test workflow runs it. The unused tuning
+  block of the unfinished RMF format is gone from `Song.cpp` (RMT 1.36, 7b2d763).
+- 2.6: `rmt/ritmo.ini` and `tuning.ini` are the defaults of RITMO 2.6 (the debug line was on); a configuration without
+  `SCALEPERCENTAGE` gets the interface size from the size of the screen. `make-screenshots.sh` takes the screenshot of
+  RITMO PLAYER on the Atari too (atari800, in a window).
 - 2.6: RITMO PLAYER (the XEX with the RMT player) keeps up with the frame at instrument speed 4: with 8 tracks the
   player takes up to half a frame and the screen of the visualizer moved only about 30 times a second (a pass of the
   main loop in one frame 55% of the time). The bars now write only the rows between the old and the new top (all 8

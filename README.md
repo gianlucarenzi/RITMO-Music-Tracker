@@ -98,40 +98,31 @@ different from the Windows version you know?
 
 ### Download
 
-[**RITMO 2.5**](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/tag/v2.5)
+[**RITMO 2.6**](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/tag/v2.6)
 ([all releases](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases)):
 
 | System | Package | How to start it |
 |--------|---------|-----------------|
-| Linux x86_64 (Debian 11, Ubuntu 20.04 and newer) | [`Ritmo-Linux-x86_64.AppImage`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-Linux-x86_64.AppImage) | `chmod +x Ritmo-Linux-x86_64.AppImage` and run it (needs `libfuse2`; without it: `--appimage-extract-and-run`) |
-| Windows 64 bit, installer | [`Ritmo-Windows-x64-Setup.exe`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-Windows-x64-Setup.exe) | run it (Start menu entry, optional desktop icon and `.rmt` file type; not signed: Windows may ask to confirm) |
-| Windows 64 bit, ZIP | [`Ritmo-Windows-x64.zip`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-Windows-x64.zip) | unzip it anywhere and run `Ritmo.exe` |
-| macOS 12 or later, Apple Silicon | [`Ritmo-macOS-arm64.dmg`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-macOS-arm64.dmg) | drag `Ritmo.app` to Applications; the first time open it with right click, then Open (not notarized) |
-| macOS 12 or later, Intel | [`Ritmo-macOS-x86_64.dmg`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-macOS-x86_64.dmg) | as above (also runs on Apple Silicon through Rosetta 2) |
-| Manual | [`Ritmo-User-Manual.pdf`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-User-Manual.pdf) | the user manual (it is also [in the repository](doc/manual/ritmo-manual.pdf)) |
+| Linux x86_64 (Debian 11, Ubuntu 20.04 and newer) | [`Ritmo-2.6-x86_64.AppImage`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-2.6-x86_64.AppImage) | `chmod +x Ritmo-2.6-x86_64.AppImage` and run it (needs `libfuse2`; without it: `--appimage-extract-and-run`) |
+| Windows 64 bit, installer | [`Ritmo-Windows-x64-Setup-2.6.exe`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-Windows-x64-Setup-2.6.exe) | run it (Start menu entry, optional desktop icon and `.rmt` file type; not signed: Windows may ask to confirm) |
+| Windows 64 bit, ZIP | [`Ritmo-Windows-x64-2.6.zip`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-Windows-x64-2.6.zip) | unzip it anywhere and run `Ritmo.exe` |
+| macOS 12 or later, Apple Silicon | [`Ritmo-macOS-arm64-2.6.dmg`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-macOS-arm64-2.6.dmg) | drag `Ritmo.app` to Applications; the first time open it with right click, then Open (not notarized) |
+| macOS 12 or later, Intel | [`Ritmo-macOS-x86_64-2.6.dmg`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-macOS-x86_64-2.6.dmg) | as above (also runs on Apple Silicon through Rosetta 2) |
+| Manual | [`Ritmo-User-Manual-2.6.pdf`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-User-Manual-2.6.pdf) | the user manual (it is also [in the repository](doc/manual/ritmo-manual.pdf)) |
 
-The 2.5 release also has the packages for more Linux architectures:
-
-| System | Package | How to start it |
-|--------|---------|-----------------|
-| Linux aarch64: Raspberry Pi 3/4/5 with a 64 bit system (Raspberry Pi OS 13 trixie, Debian 13, Ubuntu 24.04 and newer) | [`Ritmo-Linux-aarch64.AppImage`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-Linux-aarch64.AppImage) | as the x86_64 AppImage |
-| Linux riscv64 (Debian 13 and newer) | [`ritmo_2.5_riscv64.deb`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/ritmo_2.5_riscv64.deb) or [`Ritmo-Linux-riscv64.tar.gz`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-Linux-riscv64.tar.gz) | see [below](#linux-riscv64-ppc64-and-ppc64le-powerpc-64-bit) |
-| Linux ppc64: PowerPC 64 bit big endian (Debian ports, sid) | [`ritmo_2.5_ppc64.deb`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/ritmo_2.5_ppc64.deb) or [`Ritmo-Linux-ppc64.tar.gz`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.5/Ritmo-Linux-ppc64.tar.gz) | see [below](#linux-riscv64-ppc64-and-ppc64le-powerpc-64-bit) |
-
-From 2.6 the names of the packages carry the version, so that several versions
-can be kept side by side: `Ritmo-2.6-x86_64.AppImage` (the AppImage has no
-`Linux` in its name, and updates itself with AppImageUpdate),
-`Ritmo-Windows-x64-Setup-2.6.exe`, `Ritmo-macOS-arm64-2.6.dmg`... (`2.6-rc3` and
-so on for the test builds).
-
-From 2.6 the [releases](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases)
-also have AppImages for these architectures, and PowerPC little endian joins them:
+The names of the packages carry the version, so that several versions can be
+kept side by side (`2.6-rc3` and so on for the test builds); the AppImages have
+no `Linux` in their name and update themselves with AppImageUpdate. The release
+also has the packages for more Linux architectures:
 
 | System | AppImage | Also as |
 |--------|----------|---------|
-| Linux riscv64 (Debian 13 and newer) | `Ritmo-2.6-riscv64.AppImage` | `.deb`, `.tar.gz` |
-| Linux ppc64: PowerPC 64 bit big endian (Debian ports, sid) | `Ritmo-2.6-ppc64.AppImage` | `.deb`, `.tar.gz` |
-| Linux ppc64le: PowerPC 64 bit little endian, POWER8 and newer (Debian 13 and newer) | `Ritmo-2.6-ppc64le.AppImage` | `ritmo_2.6_ppc64el.deb`, `Ritmo-Linux-ppc64el-2.6.tar.gz` |
+| Linux aarch64: Raspberry Pi 3/4/5 with a 64 bit system (Raspberry Pi OS 13 trixie, Debian 13, Ubuntu 24.04 and newer) | [`Ritmo-2.6-aarch64.AppImage`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-2.6-aarch64.AppImage) | |
+| Linux riscv64 (Debian 13 and newer) | [`Ritmo-2.6-riscv64.AppImage`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-2.6-riscv64.AppImage) | [`ritmo_2.6_riscv64.deb`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/ritmo_2.6_riscv64.deb), [`Ritmo-Linux-riscv64-2.6.tar.gz`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-Linux-riscv64-2.6.tar.gz) |
+| Linux ppc64: PowerPC 64 bit big endian (Debian ports, sid) | [`Ritmo-2.6-ppc64.AppImage`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-2.6-ppc64.AppImage) | [`ritmo_2.6_ppc64.deb`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/ritmo_2.6_ppc64.deb), [`Ritmo-Linux-ppc64-2.6.tar.gz`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-Linux-ppc64-2.6.tar.gz) |
+| Linux ppc64le: PowerPC 64 bit little endian, POWER8 and newer (Debian 13 and newer) | [`Ritmo-2.6-ppc64le.AppImage`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-2.6-ppc64le.AppImage) | [`ritmo_2.6_ppc64el.deb`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/ritmo_2.6_ppc64el.deb), [`Ritmo-Linux-ppc64el-2.6.tar.gz`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.6/Ritmo-Linux-ppc64el-2.6.tar.gz) |
+
+See [below](#linux-riscv64-ppc64-and-ppc64le-powerpc-64-bit) for the `.deb` and the `.tar.gz`.
 
 There is no official appimagetool for these architectures yet: they are made
 with its ports to riscv64, ppc64 and ppc64le
