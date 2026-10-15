@@ -104,6 +104,7 @@ else()
         C6502.cpp
         Clipboard.cpp
         Fraction.cpp
+        FrequencyTables.cpp
         Instruments.cpp
         IOHelpers.cpp
         IO_Importer.cpp
@@ -563,6 +564,7 @@ if(RMT_CORE_TEST)
         C6502.cpp
         Clipboard.cpp
         Fraction.cpp
+        FrequencyTables.cpp
         Instruments.cpp
         IOHelpers.cpp
         IO_Importer.cpp

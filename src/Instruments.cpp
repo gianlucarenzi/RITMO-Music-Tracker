@@ -1,6 +1,7 @@
 #include "PlatformTypes.h"
 
 #include "AtariTrackerDriver.h"
+#include "FrequencyTables.h"
 #include "Instruments.h"
 #include "Notes.h"
 #include "Global.h"
@@ -266,34 +267,19 @@ int CInstruments::GetFrequency(int instr, int note)
     // The note must be within valid boundaries
     if (note < 0 || note >= CNotes::NOTESNUM) return -1;
 
-    // The offsets +64/+128/+192 were the RMT 1.28 layout (one page at $31c0); Patch 16 has a 256-byte page per
-    // distortion at $B000, so they all read inside the Poly5 page. The player picks the table in two steps
-    // (rmtplayr.a65: TABLES_MSB, then store_tables_lsb): the distortion selects the page, the channel's clock the
-    // 64-byte slice in it (64 kHz, 1.79 MHz, 16-bit), and the two 15 kHz tables sit apart. Only the distortion and
-    // the instrument's own 15 kHz bit can be answered here: 1.79 MHz and the 16-bit joins belong to the channel, so
-    // the 64 kHz table is the answer for every other case (ported from RMT 1.36, plan 38, 0462ce6)
+    // The offsets +64/+128/+192 were the RMT 1.28 layout (one page at $31c0) and read inside the Poly5 page of
+    // Patch 16 (plan 38); which table the player reads is CFrequencyTables' job now, including the page out of the
+    // driver's own dispatch table. Only the distortion and the instrument's own 15 kHz bit can be answered here:
+    // 1.79 MHz and the 16-bit joins belong to the channel, so the 64 kHz table is the answer for every other case
     const int distortion = tt->envelope[0][ENV_DISTORTION];
 
     // Distortion 6 is BASS16: the player forces 16-bit mode on the channel, no single AUDF byte describes it
     if (distortion == 0x06) return -1;
 
-    // check_15khz: distortion C and E take the buzzy table, the others the pure one
-    if (tt->parameters[PAR_AUDCTL_15KHZ])
-        return g_Atari.GetByteAt((distortion >= 0x0C ? RMTPLAYR_FRQTABBUZZY_15KHZ : RMTPLAYR_FRQTABPURE_15KHZ) + note);
-
-    switch (distortion) {
-        case 0x02:
-            return g_Atari.GetByteAt(RMTPLAYR_FRQTABPOLY5_64KHZ + note);
-        case 0x04:
-            return g_Atari.GetByteAt(RMTPLAYR_FRQTABDIST4_64KHZ + note);
-        case 0x0C:
-            return g_Atari.GetByteAt(RMTPLAYR_FRQTABBUZZY_64KHZ + note);
-        case 0x0E:
-            return g_Atari.GetByteAt(RMTPLAYR_FRQTABGRITTY_64KHZ + note);
-        default:
-            // Distortions 0, 8 and A play from the pure page
-            return g_Atari.GetByteAt(RMTPLAYR_FRQTABPURE_64KHZ + note);
-    }
+    const auto mode = tt->parameters[PAR_AUDCTL_15KHZ] ? CFrequencyTables::Mode::Clock15kHz : CFrequencyTables::Mode::Clock64kHz;
+    const MemoryAddress table = CFrequencyTables::GetTableAddress(g_Atari.GetConstMemoryAt(0), distortion, mode);
+    if (!table) return -1; // no Patch 16 driver loaded, so no table to read
+    return g_Atari.GetByteAt(table + note);
 }
 
 /// <summary>
