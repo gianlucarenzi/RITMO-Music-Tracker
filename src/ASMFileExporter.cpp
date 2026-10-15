@@ -3,12 +3,18 @@
 #include "ASMFileExporter.h"
 #include "exportdlgs.h"
 #include "ASMFileBuilder.h"
+#include "Atari.h"
+#include "AtariTrackerDriver.h"
+#include "FrequencyTables.h"
+#include "GuiHelpers.h"
 
 
 extern BOOL g_rmtstripped_sfx; //sfx offshoot RMT stripped file
 extern BOOL g_rmtstripped_gvf; //gvs GlobalVolumeFade for feat
 extern BOOL g_rmtstripped_nos; //nos NoStartingSongline for feat
 extern CInstruments g_Instruments;
+extern CAtari g_Atari;
+extern CAtariTrackerDriver* g_AtariTrackerDriver;
 
 CString g_PrefixForAllAsmLabels; //label prefix for export ASM simple notation
 
@@ -49,6 +55,16 @@ bool CASMFileExporter::ExportAsAsm(const CSong& song, std::ofstream& ou, TExport
 /// </summary>
 bool CASMFileExporter::ExportAsAsmApply(const CSong& song, std::ofstream& ou, int exportType, int notesIndexOrFreq, int durationsType)
 {
+    if (notesIndexOrFreq == 2 /* frequencies */ &&
+        !CFrequencyTables::HasDispatchTable(g_Atari.GetConstMemoryAt(0), g_AtariTrackerDriver->GetLoadedVersion())) {
+        // Every value comes out of the loaded player's own frequency tables: without them the export would be a file
+        // of XXX, which looks like a tracker bug rather than a missing driver (ported from RMT 1.36, plan 40 L4)
+        SendErrorMessage("Export as ASM",
+                         "The player routines for the selected tracker driver are not loaded, so there are no frequency tables to "
+                         "read.\n\nExport the notes as indices instead, or restore the driver file and reopen the module.");
+        return false;
+    }
+
     CString s, snot;
     int maxova = 16; // maximal amount of data per line
 

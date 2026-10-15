@@ -14,8 +14,24 @@ extern CXPokey g_Pokey;
 extern CRmtMidi g_Midi;
 extern CAtariTrackerDriver* g_AtariTrackerDriver;
 
+// Where the loaded driver keeps the AUDF and AUDC of its tracks, which its SetPokey writes to POKEY: the v1 family
+// (asm/Legacy/rmt.a65) has them below the player at addresses fixed by an org, Patch 16 elsewhere. Writing the
+// Patch 16 addresses with a v1-family driver loaded would overwrite its v_aspeed and its tabbeganddistor table.
+static void GetTrackRegisters(MemoryAddress& audf, MemoryAddress& audc)
+{
+    if (g_AtariTrackerDriver->GetLoadedVersion() == TrackerDriverVersion::PATCH16) {
+        audf = RMTPLAYR_TRACKN_AUDF;
+        audc = RMTPLAYR_TRACKN_AUDC;
+    } else {
+        audf = RMT_ATA_TRACKN_AUDF;
+        audc = RMT_ATA_TRACKN_AUDC;
+    }
+}
+
 void CSong::MidiEvent(DWORD dwParam, bool hasFocus)
 {
+    MemoryAddress trackAudf, trackAudc;
+    GetTrackRegisters(trackAudf, trackAudc);
     auto memory = g_AtariTrackerDriver->GetAtari()->GetMemoryAt(0);
     unsigned char chn, cmd, pr1, pr2;
     unsigned char* mv = (unsigned char*)&dwParam;
@@ -155,8 +171,8 @@ void CSong::MidiEvent(DWORD dwParam, bool hasFocus)
                         case 71: //Knob C1, AUDF0/AUDF2 upper 4 bits
                             //memory[0xD200] &= 0x0F;
                             //memory[0xD200] |= pr2 << 4;
-                            memory[RMTPLAYR_TRACKN_AUDF + o] &= 0x0F;
-                            memory[RMTPLAYR_TRACKN_AUDF + o] |= pr2 << 4;
+                            memory[trackAudf + o] &= 0x0F;
+                            memory[trackAudf + o] |= pr2 << 4;
 
                             //g_pokey.MemToPokey(g_tracks4_8);
                             break;
@@ -164,50 +180,50 @@ void CSong::MidiEvent(DWORD dwParam, bool hasFocus)
                         case 72: //Knob C2, AUDF1/AUDF3 upper 4 bits
                             //memory[0xD202] &= 0x0F;
                             //memory[0xD202] |= pr2 << 4;
-                            memory[RMTPLAYR_TRACKN_AUDF + 1 + o] &= 0x0F;
-                            memory[RMTPLAYR_TRACKN_AUDF + 1 + o] |= pr2 << 4;
+                            memory[trackAudf + 1 + o] &= 0x0F;
+                            memory[trackAudf + 1 + o] |= pr2 << 4;
                             break;
 
                         case 73: //Knob C3, AUDC0/AUDC2 volume
                             //memory[0xD201] &= 0xF0;
                             //memory[0xD201] |= pr2;
-                            memory[RMTPLAYR_TRACKN_AUDC + o] &= 0xF0;
-                            memory[RMTPLAYR_TRACKN_AUDC + o] |= pr2;
+                            memory[trackAudc + o] &= 0xF0;
+                            memory[trackAudc + o] |= pr2;
                             break;
 
                         case 74: //Knob C4, AUDC1/AUDC3 volume
                             //memory[0xD203] &= 0xF0;
                             //memory[0xD203] |= pr2;
-                            memory[RMTPLAYR_TRACKN_AUDC + 1 + o] &= 0xF0;
-                            memory[RMTPLAYR_TRACKN_AUDC + 1 + o] |= pr2;
+                            memory[trackAudc + 1 + o] &= 0xF0;
+                            memory[trackAudc + 1 + o] |= pr2;
                             break;
 
                         case 75: //Knob C5, AUDF0/AUDF2 lower 4 bits
                             //memory[0xD200] &= 0xF0;
                             //memory[0xD200] |= pr2;
-                            memory[RMTPLAYR_TRACKN_AUDF + o] &= 0xF0;
-                            memory[RMTPLAYR_TRACKN_AUDF + o] |= pr2;
+                            memory[trackAudf + o] &= 0xF0;
+                            memory[trackAudf + o] |= pr2;
                             break;
 
                         case 76: //Knob C6, AUDF1/AUDF3 lower 4 bits
                             //memory[0xD202] &= 0xF0;
                             //memory[0xD202] |= pr2;
-                            memory[RMTPLAYR_TRACKN_AUDF + 1 + o] &= 0xF0;
-                            memory[RMTPLAYR_TRACKN_AUDF + 1 + o] |= pr2;
+                            memory[trackAudf + 1 + o] &= 0xF0;
+                            memory[trackAudf + 1 + o] |= pr2;
                             break;
 
                         case 77: //Knob C7, AUDC0/AUDC2 distortion
                             //memory[0xD201] &= 0x0F;
                             //memory[0xD201] |= (pr2 * 2) << 4;
-                            memory[RMTPLAYR_TRACKN_AUDC + o] &= 0x0F;
-                            memory[RMTPLAYR_TRACKN_AUDC + o] |= (pr2 * 2) << 4;
+                            memory[trackAudc + o] &= 0x0F;
+                            memory[trackAudc + o] |= (pr2 * 2) << 4;
                             break;
 
                         case 78: //Knob C8, AUDC1/AUDC3 distortion
                             //memory[0xD203] &= 0x0F;
                             //memory[0xD203] |= (pr2 * 2) << 4;
-                            memory[RMTPLAYR_TRACKN_AUDC + 1 + o] &= 0x0F;
-                            memory[RMTPLAYR_TRACKN_AUDC + 1 + o] |= (pr2 * 2) << 4;
+                            memory[trackAudc + 1 + o] &= 0x0F;
+                            memory[trackAudc + 1 + o] |= (pr2 * 2) << 4;
                             break;
                     }
 
@@ -443,16 +459,17 @@ void CSong::MidiEvent(DWORD dwParam, bool hasFocus)
             }
 
             const auto mode = CFrequencyTables::GetModeForChannel(midi_audctl & 0xFF, track);
-            const MemoryAddress table = CFrequencyTables::GetTableAddress(memory, midi_distortion, mode);
-            const int distortionAudc = CFrequencyTables::GetDistortionAudc(memory, midi_distortion);
-            if (!table || distortionAudc < 0) return; //no Patch 16 driver loaded, so there is nothing to play from
+            const TrackerDriverVersion version = g_AtariTrackerDriver->GetLoadedVersion();
+            const MemoryAddress table = CFrequencyTables::GetTableAddress(memory, version, midi_distortion, mode);
+            const int distortionAudc = CFrequencyTables::GetDistortionAudc(memory, version, midi_distortion);
+            if (!table || distortionAudc < 0) return; //no driver loaded whose tables this layout can find
 
             midi_audc |= (char)distortionAudc; //the Distortion bits the player would write
             if (mode == CFrequencyTables::Mode::Join16Bit) {
                 //The joined pair's table holds little-endian words, and `track` is its high byte - so the low byte
-                //belongs to the channel below
+                //belongs to the channel below. Only the Patch 16 layout answers at all in this mode.
                 midi_audf = memory[table + note * 2 + 1];
-                memory[RMTPLAYR_TRACKN_AUDF + track - 1] = memory[table + note * 2];
+                memory[trackAudf + track - 1] = memory[table + note * 2];
             } else {
                 midi_audf = memory[table + note];
             }
@@ -460,8 +477,8 @@ void CSong::MidiEvent(DWORD dwParam, bool hasFocus)
             midi_audc |= g_Midi.m_NoteVolumeOnChannel[track]; //also merge the volume into it
 
             //DIRECT MEMORY WRITE
-            memory[RMTPLAYR_TRACKN_AUDF + track] = midi_audf; //AUDF address + offset used by SetPokey
-            memory[RMTPLAYR_TRACKN_AUDC + track] = midi_audc; //AUDC address + offset used by SetPokey
+            memory[trackAudf + track] = midi_audf; //AUDF address + offset used by SetPokey
+            memory[trackAudc + track] = midi_audc; //AUDC address + offset used by SetPokey
 
             //
             //END OF HARDCODED TEST

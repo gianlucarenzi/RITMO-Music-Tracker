@@ -20,6 +20,7 @@
 #include "PokeyRenderer.h"
 #include "RmtMidi.h"
 #include "tracker_obx.h"
+#include "legacy_obx.h"
 #include "emu/PokeySound.h"
 
 #include <cstdio>
@@ -184,10 +185,49 @@ static int PlaySong(const char* song, int frames, const char* regsOut, const cha
 // writes AUDF and AUDC straight into the driver's variables for SetPokey.
 // For each distortion and clock (AUDCTL) a program change selects the
 // distortion and a note is played; the AUDF must be the byte of the table
-// the player itself reads (the addresses of tracker_obx.h, generated from
-// rmtplayr.a65) and the AUDC must carry the player's distortion bits. Until
-// RMT 1.36's fix (plan 39) every table but Poly5 and Distortion 4 was read
-// a page too low.
+// the player itself reads (the addresses of tracker_obx.h and legacy_obx.h,
+// generated from rmtplayr.a65 and rmt_ata.a65) and the AUDC must carry the
+// player's distortion bits. Until RMT 1.36's fixes (plans 39 and 40) every
+// Patch16 table but Poly5 and Distortion 4 was read a page too low, and the
+// v1-family drivers played nothing.
+struct TMidiNoteCase {
+    const char* clock;
+    int distortion, audctl, table, audc;
+};
+
+static int MidiChannel16Driver(TrackerDriverVersion version, const TMidiNoteCase* cases, int count, MemoryAddress trackAudf,
+                               MemoryAddress trackAudc, MemoryAddress audctl)
+{
+    g_AtariTrackerDriver->LoadRMTRoutines(version);
+    g_AtariTrackerDriver->Init();
+    auto midi = [](int status, int d1, int d2) { g_Song.MidiEvent((DWORD)(status | d1 << 8 | d2 << 16), true); };
+    byte* memory = g_Atari.GetMemoryAt(0);
+    byte driverBefore[0x80]; // the driver's own data just above its track variables (v1: tabbeganddistor at $3182)
+    std::memcpy(driverBefore, memory + 0x3180, sizeof(driverBefore));
+    const int note = 0x18;
+    int failed = 0;
+    for (int c = 0; c < count; c++) {
+        const TMidiNoteCase& t = cases[c];
+        for (int i = 0; i < 16; i++) g_Midi.m_LastNoteOnChannel[i] = -1; // every channel free: the note goes to channel 1
+        memory[audctl] = (byte)t.audctl;
+        memory[trackAudf] = memory[trackAudc] = 0x55; // a marker the note must overwrite
+        midi(0xCF, t.distortion / 2, 0);              // program change: the distortion
+        midi(0x9F, note, 0x7F);                       // note on
+        const int audf = memory[trackAudf], audc = memory[trackAudc];
+        // the Patch16 track variables reach $3187: with a v1-family driver they are its v_aspeed and its tabbeganddistor
+        const bool driverIntact = version == TrackerDriverVersion::PATCH16 || !std::memcmp(driverBefore, memory + 0x3180, sizeof(driverBefore));
+        midi(0x8F, note, 0); // note off: the channel is free again
+        const int wanted = memory[t.table + note];
+        const bool ok = audf == wanted && (audc & 0xF0) == t.audc && driverIntact;
+        if (!ok) failed++;
+        std::printf("%-4s driver %d distortion %X %-8s AUDF $%02X (table $%04X: $%02X), AUDC $%02X (distortion bits $%02X)%s\n",
+                    ok ? "ok" : "FAIL", (int)version, t.distortion, t.clock, audf, t.table + note, wanted, audc, t.audc,
+                    driverIntact ? "" : ", the driver's data at $3180-$31FF overwritten");
+        std::memcpy(memory + 0x3180, driverBefore, sizeof(driverBefore)); // the next note starts from the driver as loaded
+    }
+    return failed;
+}
+
 static int MidiChannel16()
 {
     g_Atari.Init(false);
@@ -197,11 +237,7 @@ static int MidiChannel16()
     g_Song.ClearSong(8);
     g_prove = EditMode::MIDI_CH15_MODE;
 
-    struct Case {
-        const char* clock;
-        int distortion, audctl, table, audc;
-    };
-    static const Case cases[] = {
+    static const TMidiNoteCase patch16[] = {
         { "64 kHz", 0x02, 0x00, RMTPLAYR_FRQTABPOLY5_64KHZ, 0x20 },
         { "64 kHz", 0x04, 0x00, RMTPLAYR_FRQTABDIST4_64KHZ, 0x40 },
         { "64 kHz", 0x08, 0x00, RMTPLAYR_FRQTABPURE_64KHZ, 0x80 },
@@ -213,25 +249,20 @@ static int MidiChannel16()
         { "1.79 MHz", 0x0A, 0x40, RMTPLAYR_FRQTABPURE_179MHZ, 0xA0 },
         { "1.79 MHz", 0x0C, 0x40, RMTPLAYR_FRQTABBUZZY_179MHZ, 0xC0 },
     };
-    auto midi = [](int status, int d1, int d2) { g_Song.MidiEvent((DWORD)(status | d1 << 8 | d2 << 16), true); };
-    byte* memory = g_Atari.GetMemoryAt(0);
-    const int note = 0x18;
-    int failed = 0;
-    for (const Case& c : cases) {
-        for (int i = 0; i < 16; i++) g_Midi.m_LastNoteOnChannel[i] = -1; // every channel free: the note goes to channel 1
-        memory[RMTPLAYR_V_AUDCTL] = (byte)c.audctl;
-        memory[RMTPLAYR_TRACKN_AUDF] = memory[RMTPLAYR_TRACKN_AUDC] = 0x55; // a marker the note must overwrite
-        midi(0xCF, c.distortion / 2, 0);                                   // program change: the distortion
-        midi(0x9F, note, 0x7F);                                            // note on
-        const int audf = memory[RMTPLAYR_TRACKN_AUDF], audc = memory[RMTPLAYR_TRACKN_AUDC];
-        midi(0x8F, note, 0); // note off: the channel is free again
-        const int wanted = memory[c.table + note];
-        const bool ok = audf == wanted && (audc & 0xF0) == c.audc;
-        if (!ok) failed++;
-        std::printf("%-4s distortion %X %-8s AUDF $%02X (table $%04X: $%02X), AUDC $%02X (distortion bits $%02X)\n",
-                    ok ? "ok" : "FAIL", c.distortion, c.clock, audf, c.table + note, wanted, audc, c.audc);
-    }
-    std::printf("MIDI channel 16: %d of %d notes wrong\n", failed, (int)(sizeof(cases) / sizeof(cases[0])));
+    // the unpatched driver (asm/Legacy/rmt.a65, tabbeganddistor): one table per distortion, whatever the clock
+    static const TMidiNoteCase unpatched[] = {
+        { "64 kHz", 0x02, 0x00, RMT_ATA_FRQTABPURE, 0x20 },
+        { "64 kHz", 0x0A, 0x00, RMT_ATA_FRQTABPURE, 0xA0 },
+        { "64 kHz", 0x0C, 0x00, RMT_ATA_FRQTABBASS1, 0xC0 },
+        { "64 kHz", 0x0E, 0x00, RMT_ATA_FRQTABBASS2, 0xC0 },
+        { "15 kHz", 0x0A, 0x01, RMT_ATA_FRQTABPURE, 0xA0 },
+    };
+    const int count = (int)(sizeof(patch16) / sizeof(patch16[0]) + sizeof(unpatched) / sizeof(unpatched[0]));
+    int failed = MidiChannel16Driver(TrackerDriverVersion::PATCH16, patch16, (int)(sizeof(patch16) / sizeof(patch16[0])),
+                                     RMTPLAYR_TRACKN_AUDF, RMTPLAYR_TRACKN_AUDC, RMTPLAYR_V_AUDCTL);
+    failed += MidiChannel16Driver(TrackerDriverVersion::UNPATCHED, unpatched, (int)(sizeof(unpatched) / sizeof(unpatched[0])),
+                                  RMT_ATA_TRACKN_AUDF, RMT_ATA_TRACKN_AUDC, RMTPLAYR_V_AUDCTL);
+    std::printf("MIDI channel 16: %d of %d checks wrong\n", failed, count);
     return failed ? 1 : 0;
 }
 

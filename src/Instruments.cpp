@@ -277,8 +277,10 @@ int CInstruments::GetFrequency(int instr, int note)
     if (distortion == 0x06) return -1;
 
     const auto mode = tt->parameters[PAR_AUDCTL_15KHZ] ? CFrequencyTables::Mode::Clock15kHz : CFrequencyTables::Mode::Clock64kHz;
-    const MemoryAddress table = CFrequencyTables::GetTableAddress(g_Atari.GetConstMemoryAt(0), distortion, mode);
-    if (!table) return -1; // no Patch 16 driver loaded, so no table to read
+    // the layout of the driver loaded in memory, which can differ from the one of the Options (see CSong::FileOpen)
+    const TrackerDriverVersion version = g_AtariTrackerDriver->GetLoadedVersion();
+    const MemoryAddress table = CFrequencyTables::GetTableAddress(g_Atari.GetConstMemoryAt(0), version, distortion, mode);
+    if (!table) return -1; // no driver loaded whose tables this layout can find
     return g_Atari.GetByteAt(table + note);
 }
 
