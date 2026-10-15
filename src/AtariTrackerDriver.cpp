@@ -26,12 +26,14 @@ int CAtariTrackerDriver::LoadRMTRoutines(const TrackerDriverVersion trackerDrive
     WORD min, max;
     WORD size;
     byte* bin;
+    m_routinesLoaded = false;
     if (!CRmtAtariBinaries::GetTrackerDriverBinary(trackerDriverVersion, bin, size)) {
         return 0;
     }
 
     m_loadedVersion = trackerDriverVersion;
     int bytesRead = CAtariIO::LoadDataAsBinaryFile(bin, size, m_atari->GetMemoryAt(0), min, max);
+    m_routinesLoaded = bytesRead > 0;
     if (bytesRead > 0) {
         // The driver binary ships a static copy of the frequency tables at RMT_FRQTABLES, which this load just wrote
         // over the generated ones (they differ in the bell 1.79 MHz and 15 kHz tables): generate them again, so the

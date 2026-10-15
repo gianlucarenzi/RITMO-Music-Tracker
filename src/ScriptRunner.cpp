@@ -4,6 +4,7 @@
 #include "ASMFileExporter.h"
 #include "AssemblerTypes.h"
 #include "Atari.h"
+#include "AtariBinaries.h"
 #include "AtariTrackerDriver.h"
 #include "Global.h"
 #include "GuiHelpers.h"
@@ -73,22 +74,33 @@ struct TExportFormat {
     const char* extension;
     SongIOType ioType;
     std::vector<std::string> options;
+    // Whether the format is made by playing the song on the emulated Atari, which needs the driver of the selected
+    // version: without it the POKEY stream these formats are built from is another driver's, or silence. The others
+    // write the song data itself.
+    bool rendersSound;
 };
 
 const std::vector<TExportFormat>& ExportFormats()
 {
     static const std::vector<TExportFormat> formats = {
-        { "stripped-rmt", ".rmt", SongIOType::RMTSTRIPPED, { "address", "sfx", "gvf", "nos", "asmformat" } },
-        { "asm", ".asm", SongIOType::ASM, { "type", "notes", "durations", "prefix" } },
-        { "sapr", ".sapr", SongIOType::SAPR, { "author", "name", "date", "subsongs" } },
-        { "lzss", ".lzss", SongIOType::LZSS, {} },
-        { "sap", ".sap", SongIOType::LZSS_SAP, { "author", "name", "date", "subsongs" } },
-        { "xex", ".xex", SongIOType::LZSS_XEX, { "text", "rasterbar", "shuffle", "region-auto", "color" } },
-        { "xex-rmt", ".xex", SongIOType::XEX_RMTPLAYER, { "name", "author", "date" } },
-        { "rmtplayer-asm", ".asm", SongIOType::ASM_RMTPLAYER, { "startlabel", "relocate", "instruments-label", "tracks-label", "songlines-label", "asmformat", "sfx", "gvf", "nos" } },
-        { "wav", ".wav", SongIOType::WAV, {} },
+        { "stripped-rmt", ".rmt", SongIOType::RMTSTRIPPED, { "address", "sfx", "gvf", "nos", "asmformat" }, false },
+        { "asm", ".asm", SongIOType::ASM, { "type", "notes", "durations", "prefix" }, false },
+        { "sapr", ".sapr", SongIOType::SAPR, { "author", "name", "date", "subsongs" }, true },
+        { "lzss", ".lzss", SongIOType::LZSS, {}, true },
+        { "sap", ".sap", SongIOType::LZSS_SAP, { "author", "name", "date", "subsongs" }, true },
+        { "xex", ".xex", SongIOType::LZSS_XEX, { "text", "rasterbar", "shuffle", "region-auto", "color" }, true },
+        { "xex-rmt", ".xex", SongIOType::XEX_RMTPLAYER, { "name", "author", "date" }, false },
+        { "rmtplayer-asm", ".asm", SongIOType::ASM_RMTPLAYER, { "startlabel", "relocate", "instruments-label", "tracks-label", "songlines-label", "asmformat", "sfx", "gvf", "nos" }, false },
+        { "wav", ".wav", SongIOType::WAV, {}, true },
     };
     return formats;
+}
+
+// CRmtAtariBinaries::GetMissingTrackerDriverMessage() on one line, for a CScriptError rather than a box
+std::string MissingTrackerDriverText()
+{
+    CString filePath = CRmtAtariBinaries::GetTrackerDriverFilePath(g_trackerDriverVersion);
+    return "The player routines of the selected tracker driver were not loaded from '" + std::string((LPCTSTR)filePath) + "', so RITMO would export another driver's sound, or silence.";
 }
 
 std::string Lower(std::string s)
@@ -500,6 +512,8 @@ void CScriptRunner::Export(const TScriptCommand& command)
     if (format == nullptr) {
         throw CScriptError(command.line, "Unknown export format '" + command.GetArgument(0) + "'; one of " + Join(formatNames, ", ") + ".");
     }
+    // the export would otherwise run to the end and write the sound of another driver, or a quiet file
+    if (format->rendersSound && !g_AtariTrackerDriver->AreRoutinesLoaded()) throw CScriptError(command.line, MissingTrackerDriverText());
     for (const auto& option : command.options) {
         bool known = false;
         for (const std::string& allowed : format->options) {
@@ -714,6 +728,7 @@ void CScriptRunner::Set(const TScriptCommand& command)
             g_trackerDriverVersion = version;
             g_Atari.Init(m_song.IsNTSC());
             g_AtariTrackerDriver->LoadRMTRoutines(g_trackerDriverVersion);
+            if (!g_AtariTrackerDriver->AreRoutinesLoaded()) throw CScriptError(command.line, MissingTrackerDriverText());
         }
     } else if (name == "midi-touch-response") {
         // the Options dialog's MIDI settings (for the midi command: the same recording rules as a real device)

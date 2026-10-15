@@ -55,8 +55,8 @@ bool CASMFileExporter::ExportAsAsm(const CSong& song, std::ofstream& ou, TExport
 /// </summary>
 bool CASMFileExporter::ExportAsAsmApply(const CSong& song, std::ofstream& ou, int exportType, int notesIndexOrFreq, int durationsType)
 {
-    if (notesIndexOrFreq == 2 /* frequencies */ &&
-        !CFrequencyTables::HasDispatchTable(g_Atari.GetConstMemoryAt(0), g_AtariTrackerDriver->GetLoadedVersion())) {
+    if (notesIndexOrFreq == 2 /* frequencies */ && (!g_AtariTrackerDriver->AreRoutinesLoaded() ||
+        !CFrequencyTables::HasDispatchTable(g_Atari.GetConstMemoryAt(0), g_AtariTrackerDriver->GetLoadedVersion()))) {
         // Every value comes out of the loaded player's own frequency tables: without them the export would be a file
         // of XXX, which looks like a tracker bug rather than a missing driver (ported from RMT 1.36, plan 40 L4)
         SendErrorMessage("Export as ASM",

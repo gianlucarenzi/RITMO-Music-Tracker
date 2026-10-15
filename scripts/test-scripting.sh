@@ -86,6 +86,17 @@ else
     echo "FAIL WAV export with the Unpatched driver: exit code $code"; tail -3 "$WORK/v1wav.log"; fail=1
 fi
 
+# a driver file that is missing: "set driver" fails with the file's name instead of exporting another driver's sound
+# (a copy of the program without rmt_driver_v1.obx)
+cp -rL "$(dirname "$RMT")" "$WORK/nodriverfile" && rm "$WORK/nodriverfile/resources/drivers/rmt_driver_v1.obx"
+printf 'set output %s\nopen "%s/test-resources/songs/Delta.rmt"\nset driver unpatched\nexport wav missing.wav\n' "$WORK/nodriverfile-out" "$PWD" >"$WORK/nodriverfile.rmtscript"
+"$WORK/nodriverfile/$(basename "$RMT")" "/SCRIPT:$WORK/nodriverfile.rmtscript" >"$WORK/nodriverfile.log" 2>&1; code=$?
+if [ $code -eq 1 ] && grep -q "rmt_driver_v1.obx" "$WORK/nodriverfile.log" && ! [ -e "$WORK/nodriverfile-out/missing.wav" ]; then
+    echo "ok   missing driver file: named, exit code 1, no WAV"
+else
+    echo "FAIL missing driver file: exit code $code"; tail -3 "$WORK/nodriverfile.log"; fail=1
+fi
+
 # the failure paths: a syntax error is exit code 2, a failing command 1
 printf 'open "unterminated\n' >"$WORK/syntax.rmtscript"
 "$RMT" "/SCRIPT:$WORK/syntax.rmtscript" >/dev/null 2>&1; code=$?

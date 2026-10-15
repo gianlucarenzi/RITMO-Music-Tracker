@@ -17,6 +17,7 @@
 #include "filenewdlg.h"
 #include "TuningDialog.h"
 #include "Atari.h"
+#include "AtariBinaries.h"
 #include "PokeyRenderer.h"
 #include "RmtMidi.h"
 #include "EffectsDlg.h"
@@ -903,6 +904,10 @@ void CRmtView::OnViewConfiguration()
             g_trackerDriverVersion = dlg.m_trackerDriverVersion;
             g_Atari.Init(g_Song.IsNTSC()); // TODO: This is done serveral times. We need something like "beginUpdate"
             g_AtariTrackerDriver->LoadRMTRoutines(g_trackerDriverVersion);
+            if (!g_AtariTrackerDriver->AreRoutinesLoaded()) {
+                // a version whose file is missing: say so rather than play another driver without a word
+                MessageBox(CRmtAtariBinaries::GetMissingTrackerDriverMessage(g_trackerDriverVersion), "RITMO", MB_ICONEXCLAMATION);
+            }
         }
         g_trackerDriverVersion = dlg.m_trackerDriverVersion;
 

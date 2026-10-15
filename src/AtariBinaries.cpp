@@ -38,6 +38,25 @@ CByteArray* LoadResourceByteArray(const std::filesystem::path& relativePath, con
 }
 
 
+CString CRmtAtariBinaries::GetTrackerDriverFilePath(TrackerDriverVersion trackerDriverVersion)
+{
+    CString fileName;
+    fileName.Format("rmt_driver_v%d.obx", (int)trackerDriverVersion);
+    // assembled with the separator operator: the path is shown to the user, and a literal forward slash would survive
+    // into the middle of an otherwise backslashed Windows path
+    return GetResourceFilePath(std::filesystem::path("resources") / "drivers", fileName);
+}
+
+CString CRmtAtariBinaries::GetMissingTrackerDriverMessage(TrackerDriverVersion trackerDriverVersion)
+{
+    CString message;
+    message.Format("Could not load the player routines of the selected tracker driver:\n'%s'\n\n"
+                   "Until that file is back, RITMO plays and exports with the driver loaded before, or in silence if there "
+                   "is none.\n",
+                   (LPCTSTR)GetTrackerDriverFilePath(trackerDriverVersion));
+    return message;
+}
+
 bool CRmtAtariBinaries::GetTrackerDriverBinary(TrackerDriverVersion trackerDriverVersion, byte*& binary, WORD& size)
 {
     binary = nullptr;
@@ -48,9 +67,7 @@ bool CRmtAtariBinaries::GetTrackerDriverBinary(TrackerDriverVersion trackerDrive
     if (byteArrayIt != m_trackerDriverVersionBinary.end()) {
         byteArray = (*byteArrayIt).second;
     } else {
-        CString fileName;
-        fileName.Format("rmt_driver_v%d.obx", (int)trackerDriverVersion);
-        byteArray = LoadResourceByteArray(std::filesystem::path("resources/drivers"), fileName);
+        byteArray = LoadByteArray(GetTrackerDriverFilePath(trackerDriverVersion));
         if (!byteArray) {
             return false;
         }
