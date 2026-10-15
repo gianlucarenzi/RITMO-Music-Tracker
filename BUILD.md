@@ -73,6 +73,12 @@ The first start with nothing saved takes over the `rmt.ini` / `tuning.ini`
 of an earlier version next to the program, if there are any, else it saves
 the defaults (without a "Could not find" message).
 
+`RMT_CONFIG_DIR=<folder>` replaces all of this, on every system: the
+configuration is `ritmo.ini` and `tuning.ini` in that folder, as text, read
+and (by the window, never by a script run) written there; nothing is taken
+over from the user's settings or from RMT. The window geometry stays in
+`QSettings`.
+
 ### Menu bar
 
 All 7 top-level menus from `Rmt.rc` (`IDR_MAINFRAME MENU`) are present:
@@ -222,7 +228,8 @@ the dialogs.
 / 32771, `ID_TRACK_LOAD` / `ID_TRACK_SAVE` = 32888 / 32889.
 
 Test runs change the configuration like the user does: give them their own
-with `XDG_CONFIG_HOME=/tmp/rmt-test` (Linux) to keep yours as it is.
+with `RMT_CONFIG_DIR=/tmp/rmt-test` (every system) or `XDG_CONFIG_HOME=/tmp/rmt-test`
+(Linux, the window geometry too) to keep yours as it is.
 
 MIDI input through the ALSA "Midi Through" port (client 14, module
 `snd-seq-dummy`) with `MIDI_IN=Midi Through:Midi Through Port-0` in the

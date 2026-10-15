@@ -123,14 +123,19 @@ ritmo /SCRIPT:Delta/build.rmtscript
 
 ## Environment variables
 
-Two variables let a build script run one and the same script file with
-different outputs, without editing it:
+These variables let a build script run one and the same script file with
+different outputs or settings, without editing it:
 
 | Variable | Programs | Meaning |
 |---|---|---|
 | `RMT_SCRIPT_OUTPUT=<folder>` | all | The output folder for every `save`/`export`; overrides the script's `set output`. |
 | `RMT_SCRIPT_LOG=<file>` | all | Writes the messages to this file instead of the console or `<script>.log`. |
 | `RMT_SCRIPT_SHOW_WINDOW=1` | all | Shows the window during the script run (normally it stays hidden), to watch what a script does. |
+| `RMT_CONFIG_DIR=<folder>` | all | Reads the configuration from `ritmo.ini` and `tuning.ini` in this folder (text files, as RMT wrote them) instead of the user's settings; a missing file means the defaults. The same in the window, which also saves them there. |
+
+A script run reads the configuration and never writes it, not even the
+defaults on a machine that has none yet: `set` changes the settings of the run
+only.
 
 ## Tests
 

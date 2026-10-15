@@ -97,6 +97,18 @@ else
     echo "FAIL missing driver file: exit code $code"; tail -3 "$WORK/nodriverfile.log"; fail=1
 fi
 
+# RMT_CONFIG_DIR: the configuration of that folder is read (an NTSC ritmo.ini makes an NTSC SAP-R) and not written
+mkdir -p "$WORK/configdir"
+printf 'NTSC_SYSTEM = 1\n' >"$WORK/configdir/ritmo.ini"
+printf 'set output %s\nopen "%s/test-resources/songs/Delta.rmt"\nexport sapr ntsc.sapr date="01/01/2026"\n' "$WORK/configdir-out" "$PWD" >"$WORK/configdir.rmtscript"
+RMT_CONFIG_DIR="$WORK/configdir" "$RMT" "/SCRIPT:$WORK/configdir.rmtscript" >"$WORK/configdir.log" 2>&1; code=$?
+if [ $code -eq 0 ] && head -c 200 "$WORK/configdir-out/ntsc.sapr" | grep -aq "^NTSC" && [ "$(ls "$WORK/configdir")" = "ritmo.ini" ] \
+    && [ "$(cat "$WORK/configdir/ritmo.ini")" = "NTSC_SYSTEM = 1" ]; then
+    echo "ok   RMT_CONFIG_DIR: its ritmo.ini read (NTSC SAP-R), nothing written"
+else
+    echo "FAIL RMT_CONFIG_DIR: exit code $code"; tail -3 "$WORK/configdir.log"; fail=1
+fi
+
 # the failure paths: a syntax error is exit code 2, a failing command 1
 printf 'open "unterminated\n' >"$WORK/syntax.rmtscript"
 "$RMT" "/SCRIPT:$WORK/syntax.rmtscript" >/dev/null 2>&1; code=$?

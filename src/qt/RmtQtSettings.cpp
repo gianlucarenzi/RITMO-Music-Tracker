@@ -73,8 +73,28 @@ static bool ReadFile(const char* fileName, std::string& text)
     return true;
 }
 
+// RMT_CONFIG_DIR=<folder>: the configuration is the files ritmo.ini and tuning.ini of that folder, as text, instead of
+// the settings of the user (QSettings), with nothing taken over from RMT or an earlier version: a run with its own
+// settings, isolated from the user's on every system (as in RMT 1.36, plan 47). The window geometry stays where it is.
+static std::filesystem::path ConfigDirFile(const char* fileName)
+{
+    const QString folder = qEnvironmentVariable("RMT_CONFIG_DIR");
+    if (folder.isEmpty()) return {};
+    return std::filesystem::path(folder.toLocal8Bit().constData()) / fileName;
+}
+
 bool RmtLoadConfigText(const char* fileName, std::string& text)
 {
+    const std::filesystem::path override = ConfigDirFile(fileName);
+    if (!override.empty()) {
+        std::ifstream in(override, std::ios::binary);
+        if (!in) return false; // the defaults (and, outside a script run, the file written with them)
+        std::ostringstream all;
+        all << in.rdbuf();
+        text = all.str();
+        return true;
+    }
+
     if (ReadGroup(Settings(), Group(fileName), text)) return true;
 
     // First start with RITMO: the settings of RMT, then the file of an earlier version
@@ -87,6 +107,13 @@ bool RmtLoadConfigText(const char* fileName, std::string& text)
 
 bool RmtSaveConfigText(const char* fileName, const std::string& text)
 {
+    const std::filesystem::path override = ConfigDirFile(fileName);
+    if (!override.empty()) {
+        std::ofstream out(override, std::ios::binary);
+        out << text;
+        return (bool)out;
+    }
+
     QSettings& settings = Settings();
     settings.remove(Group(fileName));
     settings.beginGroup(Group(fileName));
@@ -109,6 +136,8 @@ bool RmtSaveConfigText(const char* fileName, const std::string& text)
 
 CString RmtConfigTextLocation(const char* fileName)
 {
+    const std::filesystem::path override = ConfigDirFile(fileName);
+    if (!override.empty()) return CString(override.string().c_str());
     return CString((Settings().fileName() + " [" + Group(fileName) + "]").toLocal8Bit().constData());
 }
 
