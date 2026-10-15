@@ -5,6 +5,10 @@
 
 #include "Global.h"
 
+#include "Tuning.h"
+
+extern CTuning g_Tuning;
+
 
 CAtariTrackerDriver::CAtariTrackerDriver(CAtari& atari)
 {
@@ -27,7 +31,14 @@ int CAtariTrackerDriver::LoadRMTRoutines(const TrackerDriverVersion trackerDrive
     }
 
     m_loadedVersion = trackerDriverVersion;
-    return CAtariIO::LoadDataAsBinaryFile(bin, size, m_atari->GetMemoryAt(0), min, max);
+    int bytesRead = CAtariIO::LoadDataAsBinaryFile(bin, size, m_atari->GetMemoryAt(0), min, max);
+    if (bytesRead > 0) {
+        // The driver binary ships a static copy of the frequency tables at RMT_FRQTABLES, which this load just wrote
+        // over the generated ones (they differ in the bell 1.79 MHz and 15 kHz tables): generate them again, so the
+        // tuning settings always win, as RMT 1.34.00 did after every load (ported from RMT 1.36, plan 37 T2, dc3f0fd)
+        g_Tuning.InitTuning(m_atari->GetClockFrequency(), m_atari->GetMemoryAt(RMT_FRQTABLES));
+    }
+    return bytesRead;
 }
 
 // Switch to another driver version when it is not the loaded one: load it, then the frequency tables of the tuning
