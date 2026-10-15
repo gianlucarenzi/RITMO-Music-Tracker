@@ -433,6 +433,7 @@ void CRmtView::OnEndPrinting(CDC* /*pDC*/, CPrintInfo* /*pInfo*/)
 // (TUNING_FILENAME) is kept: "NAME = value" lines, in QSettings
 // (qt/RmtQtSettings.cpp).
 bool RmtLoadConfigText(const char* fileName, std::string& text); // false: nothing saved yet
+int RmtDefaultScalingPercentage(); // qt/RmtQtSettings.cpp
 bool RmtSaveConfigText(const char* fileName, const std::string& text);
 CString RmtConfigTextLocation(const char* fileName);
 
@@ -447,6 +448,9 @@ void CRmtView::ReadRMTConfig()
         ResetRMTConfig(); // In order to save the default configuration file
         return;
     }
+    // a configuration without SCALEPERCENTAGE (rmt/ritmo.ini, the rmt.ini of an older RMT) gets the interface size of
+    // a first start, from the size of the screen
+    g_scaling_percentage = RmtDefaultScalingPercentage();
     std::istringstream in(text);
 
     // Parse individual lines until the end of the file is reached
@@ -680,7 +684,6 @@ void CRmtView::WriteRMTConfig()
 // the system - German QWERTZ, French AZERTY, else QWERTY. The Qt frontend asks
 // Qt's input method (qt/RmtQtSettings.cpp).
 KeyboardLayout RmtDefaultKeyboardLayout(); // qt/RmtQtSettings.cpp
-int RmtDefaultScalingPercentage();         // qt/RmtQtSettings.cpp
 static KeyboardLayout DefaultKeyboardLayout()
 {
     return RmtDefaultKeyboardLayout();
