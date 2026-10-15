@@ -61,10 +61,10 @@ bool ScriptMessageBox(const char* text, const char* caption, unsigned type, int&
         return false; // the box is shown as always
     }
     if (question) {
-        fprintf(stderr, "%s (a script answers No)\n", line.c_str());
+        printf("%s (a script answers No)\n", line.c_str()); // stdout - see CScriptRunner::Err()
         answer = buttons == MB_OKCANCEL ? IDCANCEL : IDNO;
     } else {
-        fprintf(icon == MB_ICONINFORMATION ? stdout : stderr, "%s\n", line.c_str());
+        printf("%s\n", line.c_str()); // the problems too: stdout - see CScriptRunner::Err()
         answer = IDOK;
     }
     return true;

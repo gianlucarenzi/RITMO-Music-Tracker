@@ -28,9 +28,9 @@ tuning shapes the exports exactly as in the tracker; it is not written back.
   `Start-Process rmt.exe "/SCRIPT:build.rmtscript" -Wait`).
 - **macOS:** `Ritmo.app/Contents/MacOS/ritmo /SCRIPT:build.rmtscript`.
 
-Messages that would be boxes in the window are printed to the console:
-errors and warnings to stderr, information to stdout; a question is answered
-"No". On Windows, when there is no console (started from Explorer or a
+Messages that would be boxes in the window are printed to the console, all
+of them to stdout (on Windows a windowed program has no stderr that could
+reach the log file); a question is answered "No". On Windows, when there is no console (started from Explorer or a
 scheduler), they go to `<script>.log` next to the script.
 
 Exit codes of the command line:

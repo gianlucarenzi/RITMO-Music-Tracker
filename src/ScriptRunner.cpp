@@ -273,6 +273,8 @@ void RedirectScriptOutputToFile(const CString& logPath)
         return;
     }
     setvbuf(stdout, nullptr, _IONBF, 0);
+    // stderr follows where it can, although nothing of the script's own goes there any more (see
+    // CScriptRunner::Err()): the LZSS exporter prints its statistics to it
     dup2(fileno(stdout), fileno(stderr));
     setvbuf(stderr, nullptr, _IONBF, 0);
 }
@@ -311,7 +313,7 @@ int CScriptRunner::RunFile(const CString& scriptFilePath)
 {
     std::ifstream in(scriptFilePath, std::ios::binary);
     if (!in) {
-        fprintf(stderr, "The script file '%s' cannot be read.\n", (LPCTSTR)scriptFilePath);
+        printf("The script file '%s' cannot be read.\n", (LPCTSTR)scriptFilePath); // stdout - see Err()
         return EXIT_SCRIPT_INVALID;
     }
     std::stringstream buffer;
@@ -321,7 +323,7 @@ int CScriptRunner::RunFile(const CString& scriptFilePath)
         commands = CScriptParser::Parse(CScriptParser::SplitLines(buffer.str()));
     } catch (const CScriptError& e) {
         std::filesystem::path p((LPCTSTR)scriptFilePath);
-        fprintf(stderr, "%s: %s\n", p.filename().string().c_str(), e.GetLocatedMessage().c_str());
+        printf("%s: %s\n", p.filename().string().c_str(), e.GetLocatedMessage().c_str()); // stdout - see Err()
         return EXIT_SCRIPT_INVALID;
     }
     std::filesystem::path folder = std::filesystem::absolute(std::filesystem::path((LPCTSTR)scriptFilePath)).parent_path();
@@ -364,7 +366,11 @@ void CScriptRunner::Out(const std::string& line)
 
 void CScriptRunner::Err(const std::string& line)
 {
-    fprintf(stderr, "%s\n", line.c_str());
+    // stdout, not stderr: on Windows RITMO is a windowed program, which starts with no stderr stream, and when the
+    // output goes to <script>.log neither freopen() nor dup2() gives it one - every error line was lost there, and
+    // a failed command left nothing but the exit code (ported from RMT 1.36, 19691e2). The output of a script is
+    // one stream either way.
+    printf("%s\n", line.c_str());
     if (m_capture != nullptr) {
         *m_capture += line + "\n";
     }
