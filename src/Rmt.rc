@@ -1159,7 +1159,7 @@ BEGIN
         MENUITEM "Print Pre&view",                       ID_FILE_PRINT_PREVIEW
         MENUITEM "Prin&t Setup...",                      ID_FILE_PRINT_SETUP
         MENUITEM SEPARATOR
-        MENUITEM "Properties\tAlt+Enter",                ID_FILE_PROPERTIES
+        MENUITEM "Properties...\tAlt+Enter",             ID_FILE_PROPERTIES
         MENUITEM SEPARATOR
         MENUITEM "E&xit\tAlt+F4",                        ID_FILE_EXIT
     END
@@ -1574,7 +1574,7 @@ BEGIN
     ID_FILE_PRINT_SETUP     "Change the printer and printing options\nPrint Setup"
     ID_FILE_PRINT           "Print the active view"
     ID_FILE_PRINT_PREVIEW   "Preview the page"
-    ID_FILE_PROPERTIES      "Display the properties of the song"
+    ID_FILE_PROPERTIES      "Open the module properties: what the module holds, its video standard, tracker driver and tuning"
 END
 
 STRINGTABLE

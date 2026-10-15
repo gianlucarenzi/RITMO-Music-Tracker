@@ -797,6 +797,70 @@ static void RunConfigPaths(QWidget* parent)
     g_lastLoadPath_Songs = g_lastLoadPath_Instruments = g_lastLoadPath_Tracks = "";
 }
 
+static INT_PTR RunTuning(QWidget* parent, TuningDialog* dlg);
+
+// The names of the tracker drivers, index = TrackerDriverVersion
+static QStringList TrackerDriverNames()
+{
+    return { "No RMT Driver", "RMT 1.28 Unpatched by Raster", "RMT 1.28 Unpatched with Tuning",
+             "RMT 1.25 Patch3 Instrumentarium by Analmux", "RMT 1.27 Patch6 by Analmux", "RMT 1.28 Patch8 by Analmux",
+             "RMT 1.34 Patch16 by VinsCool", "RMT 1.28 Patch Prince of Persia by VinsCool" };
+}
+
+// IDD_MODULE_PROPERTIES - File > Properties (CModulePropertiesDialog, CRmtView::OnFileProperties): what the module
+// holds, then its own settings - the video standard, the tracker driver and the Tuning... button, which is enabled
+// only for the driver the tuning reaches (Patch16: the others play the tables inside their player, as in RMT 1.36)
+static INT_PTR RunModuleProperties(QWidget* parent, CModulePropertiesDialog* dlg)
+{
+    QDialog dialog(parent);
+    dialog.setWindowTitle("Module Properties");
+    auto* layout = new QVBoxLayout(&dialog);
+
+    auto* info = new QLabel(FromCString(dlg->m_info));
+    info->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    layout->addWidget(info);
+
+    auto* settings = new QGroupBox("Settings of the module");
+    auto* settingsLayout = new QVBoxLayout(settings);
+    auto* ntsc = new QCheckBox("NTSC system speed (60Hz)");
+    ntsc->setChecked(dlg->m_ntsc);
+    settingsLayout->addWidget(ntsc);
+    settingsLayout->addWidget(new QLabel("RMT Driver Version:"));
+    auto* driver = new QComboBox;
+    driver->addItems(TrackerDriverNames());
+    driver->setCurrentIndex(dlg->m_trackerDriverVersion);
+    auto* tuning = new QPushButton("Tuning...");
+    auto* driverRow = new QHBoxLayout;
+    driverRow->addWidget(driver, 1);
+    driverRow->addWidget(tuning);
+    settingsLayout->addLayout(driverRow);
+    if (dlg->m_trackerDriverVersion != dlg->m_defaultTrackerDriverVersion) {
+        auto* note = new QLabel(QString("This song plays with this driver for itself only; new and opened songs start with %1.")
+                                    .arg(TrackerDriverNames().value(dlg->m_defaultTrackerDriverVersion)));
+        note->setWordWrap(true);
+        settingsLayout->addWidget(note);
+    }
+    layout->addWidget(settings);
+
+    // the Tuning... button follows the driver chosen in the combo box, not the one the song had
+    auto updateTuning = [driver, tuning] { tuning->setEnabled(driver->currentIndex() == PATCH16); };
+    updateTuning();
+    QObject::connect(driver, QOverload<int>::of(&QComboBox::currentIndexChanged), &dialog, updateTuning);
+    QObject::connect(tuning, &QPushButton::clicked, &dialog, [&dialog] {
+        TuningDialog tuningDlg; // as CRmtView::OnViewTuning(): it applies its values itself
+        tuningDlg.m_tuningSettings = g_tuning;
+        tuningDlg.m_tuningRatios = g_tuningRatios;
+        RunTuning(&dialog, &tuningDlg);
+    });
+    tuning->setToolTip("The tuning reaches only the RMT 1.34 Patch16 driver: the others play the tables of their player");
+
+    auto* buttons = AddOkCancel(dialog, layout);
+    if (!ExecDialog(dialog, [buttons] { ClickOk(buttons); })) return IDCANCEL;
+    dlg->m_ntsc = ntsc->isChecked();
+    dlg->m_trackerDriverVersion = (TrackerDriverVersion)driver->currentIndex();
+    return IDOK;
+}
+
 static INT_PTR RunConfig(QWidget* parent, COptionsDialog* dlg)
 {
     QDialog dialog(parent);
@@ -844,7 +908,6 @@ static INT_PTR RunConfig(QWidget* parent, COptionsDialog* dlg)
     auto* flats = new QCheckBox("Display accidentals as Flats instead of Sharps");
     flats->setChecked(dlg->m_displayflatnotes);
     grid->addWidget(flats, 1, 0, 1, 2);
-    auto* ntsc = gridCheck(2, 0, "NTSC system speed (60Hz)", dlg->m_ntsc);
     // The size of the pieces the sound output takes (CompatAudio.cpp); "Don't use hardware soundbuffer"
     // of RMT is not shown, it only meant something to DirectSound
     auto* audioBuffer = new QComboBox;
@@ -867,17 +930,10 @@ static INT_PTR RunConfig(QWidget* parent, COptionsDialog* dlg)
     auto* audioBufferRow = new QHBoxLayout;
     audioBufferRow->addWidget(new QLabel("Audio buffer:"));
     audioBufferRow->addWidget(audioBuffer, 1);
-    grid->addLayout(audioBufferRow, 2, 1);
+    grid->addLayout(audioBufferRow, 2, 0, 1, 2);
     auto* smooth = gridCheck(3, 0, "Smooth scroll during playback", dlg->m_doSmoothScrolling);
     generalLayout->addLayout(grid);
     auto* debug = addCheck(generalLayout, "Debug display (enable only if you know what you are doing)", dlg->m_viewDebugDisplay);
-    generalLayout->addWidget(new QLabel("RMT Driver Version:"));
-    auto* driver = new QComboBox;
-    driver->addItems({ "No RMT Driver", "RMT 1.28 Unpatched by Raster", "RMT 1.28 Unpatched with Tuning",
-                       "RMT 1.25 Patch3 Instrumentarium by Analmux", "RMT 1.27 Patch6 by Analmux", "RMT 1.28 Patch8 by Analmux",
-                       "RMT 1.34 Patch16 by VinsCool", "RMT 1.28 Patch Prince of Persia by VinsCool" }); // index = TrackerDriverVersion
-    driver->setCurrentIndex(dlg->m_trackerDriverVersion);
-    generalLayout->addWidget(driver);
     layout->addWidget(general);
 
     // Keyboard
@@ -945,11 +1001,9 @@ static INT_PTR RunConfig(QWidget* parent, COptionsDialog* dlg)
     dlg->m_usegermannotation = german->isChecked();
     dlg->m_tracklinealtnumbering = altNumbering->isChecked();
     dlg->m_displayflatnotes = flats->isChecked();
-    dlg->m_ntsc = ntsc->isChecked();
     dlg->m_audioBufferMs = audioBuffer->currentData().toInt();
     dlg->m_doSmoothScrolling = smooth->isChecked();
     dlg->m_viewDebugDisplay = debug->isChecked();
-    dlg->m_trackerDriverVersion = (TrackerDriverVersion)driver->currentIndex();
     dlg->m_keyboard_layout = (KeyboardLayout)layoutCombo->currentData().toInt();
     dlg->m_keyboard_updowncontinue = upDown->isChecked();
     dlg->m_keyboard_rememberoctavesandvolumes = remember->isChecked();
@@ -2047,6 +2101,7 @@ INT_PTR RmtQtRunDialog(QWidget* parent, CDialog* dlg)
     switch (dlg->m_nIDTemplate) {
         case IDD_FILENEW: return RunFileNew(parent, static_cast<CFileNewDlg*>(dlg));
         case IDD_CONFIG: return RunConfig(parent, static_cast<COptionsDialog*>(dlg));
+        case IDD_MODULE_PROPERTIES: return RunModuleProperties(parent, static_cast<CModulePropertiesDialog*>(dlg));
         case IDD_IMPORTMOD: return RunImportMod(parent, static_cast<CImportModDlg*>(dlg));
         case IDD_EXPORT_STRIPPED_RMT: return RunExportStrippedRmt(parent, static_cast<CExportStrippedRMTDialog*>(dlg));
         case IDD_EXPMSX: return RunExportXex(parent, static_cast<CExpMSXDlg*>(dlg));

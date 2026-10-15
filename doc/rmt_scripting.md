@@ -70,8 +70,8 @@ Exit codes of the command line:
 | `export <format> <file> [name=value ...]` | Exports the module (as File > Export as). Formats and options below. |
 | `set overwrite yes\|no` | Whether later `save`/`export` commands may replace existing files. Default `no`. |
 | `set output <folder>` | Where later `save`/`export` commands write (relative to the script's folder; created when missing). Default: the script's folder. |
-| `set ntsc yes\|no` | The Options dialog's NTSC setting (the video standard: 60 or 50 frames per second, and the POKEY clock). |
-| `set driver <version>` | The Options dialog's tracker driver: `unpatched`, `unpatched-with-tuning`, `patch3`, `patch6`, `patch8`, `patch16` (the default), `patch-prince-of-persia`. |
+| `set ntsc yes\|no` | The NTSC setting of the module properties (the video standard: 60 or 50 frames per second, and the POKEY clock). |
+| `set driver <version>` | The tracker driver of the module properties (the song's and the default): `unpatched`, `unpatched-with-tuning`, `patch3`, `patch6`, `patch8`, `patch16` (the default), `patch-prince-of-persia`. |
 | `set midi-touch-response yes\|no` | The Options dialog's MIDI "Touch response" (the velocity becomes the volume). Default: `rmt.ini`'s. |
 | `set midi-volume-offset <0-15>` | The Options dialog's MIDI "Atari Volume Offset". Default: `rmt.ini`'s. |
 | `set midi-note-off yes\|no` | The Options dialog's MIDI "Record note off". Default: `rmt.ini`'s. |

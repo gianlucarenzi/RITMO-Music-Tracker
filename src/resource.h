@@ -51,6 +51,7 @@
 #define IDD_CHANGEMAXTRACKLEN           166
 #define IDD_TUNING                      167
 #define IDD_EXPORT_RMTPLAYER_ASM        168
+#define IDD_MODULE_PROPERTIES           169
 #define IDC_MAXTRACKLEN                 1002
 #define IDC_COMBOTYPE                   1003
 #define IDC_RMTVERSION                  1004

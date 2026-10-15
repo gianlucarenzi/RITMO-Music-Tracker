@@ -21,6 +21,20 @@ extern CString g_lastLoadPath_Tracks;
 /////////////////////////////////////////////////////////////////////////////
 // COptionsDialog dialog
 
+// CModulePropertiesDialog: File > Properties (Alt+Enter), the module's own settings (as in RMT 1.36, plan 44) - the
+// video standard, the tracker driver and the Tuning... button - below what the module holds (shown by the Qt
+// frontend, src/qt/RmtQtDialogs.cpp)
+class CModulePropertiesDialog : public CDialog {
+public:
+    CModulePropertiesDialog(CWnd* pParent = NULL);
+
+    enum { IDD = IDD_MODULE_PROPERTIES };
+    CString m_info;                                     // the file and what the module holds, read only
+    BOOL m_ntsc;                                        // NTSC (60 Hz), else PAL
+    TrackerDriverVersion m_trackerDriverVersion;        // the driver of the song
+    TrackerDriverVersion m_defaultTrackerDriverVersion; // the default, shown when the song plays another one
+};
+
 class COptionsDialog : public CDialog {
     // Construction
 public:
@@ -30,14 +44,11 @@ public:
     enum { IDD = IDD_CONFIG };
     CComboBox m_keyboard_c_layout;
     CComboBox m_midi_c_device;
-    CComboBox m_trackerDriver_c_Version;
     BOOL m_midi_TouchResponse;
     int m_midi_VolumeOffset;
     int m_trackLinePrimaryHighlight;
     int m_trackLineSecondaryHighlight;
     int m_scaling_percentage;
-    TrackerDriverVersion m_trackerDriverVersion;
-    BOOL m_ntsc;
     BOOL m_doSmoothScrolling;
     BOOL m_displayflatnotes;
     BOOL m_usegermannotation;

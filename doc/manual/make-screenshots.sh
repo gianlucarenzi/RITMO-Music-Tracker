@@ -49,8 +49,9 @@ dialog() {
     local name=$1 song=$2 cmd=$3
     shift 3
     want "$name" || return 0
+    case $song in /*) ;; ?*) song=$PWD/$song ;; esac # a song of the repository, or one with an absolute path
     (cd "$WORK" && env "$@" RMT_QT_GRAB="$WORK/window.png" RMT_QT_GRAB_MS=3000 RMT_QT_COMMANDS="$cmd" \
-        RMT_QT_DIALOG="$OUT/$name.png" "$RMT" ${song:+"$OLDPWD/$song"}) >/dev/null 2>&1 || true
+        RMT_QT_DIALOG="$OUT/$name.png" "$RMT" ${song:+"$song"}) >/dev/null 2>&1 || true
 }
 
 # the main window in its modes
@@ -71,6 +72,9 @@ shot window-menus "$SONG" 1500 RMT_QT_MENU_GRAB="$OUT/menu"
 # the dialogs
 dialog dialog-new "" "$(id ID_FILE_NEW)"
 dialog dialog-options "$SONG" "$(id ID_VIEW_CONFIGURATION)"
+# the module properties show the file: a copy in the folder with the fixed name, not the path of the repository
+cp "$SONG" "$EXPORTS/gemx.rmt"
+dialog dialog-module-properties "$EXPORTS/gemx.rmt" "$(id ID_FILE_PROPERTIES)"
 dialog dialog-tuning "$SONG" "$(id ID_VIEW_TUNING)"
 dialog dialog-block-effects "$SONG" "$(id ID_BLOCK_SELECTALL),$(id ID_BLOCK_EFFECT)"
 dialog dialog-columns "$SONG" "$(id ID_SONG_TRACKSORDERCHANGE)"

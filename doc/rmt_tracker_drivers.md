@@ -11,11 +11,11 @@ The original tracker driver version is the one by Raster in RMT 1.28. Many peopl
 Tracker driver versions are identified in different ways.
 For inclusion into RMT, the tracker driver versions are numbered starting from 1 (0 is no driver).
 The number is the one of `TRACKERDRIVERVERSION` in `rmt.ini`, of the constant in the source code (`TrackerDriverVersion.h`) and of the binary `resources/drivers/rmt_driver_v<code>.obx`.
-Additionally, they have a readable name for users (the "RMT Driver Version" list of the Options dialog) and a name for scripts (`set driver`, see [rmt_scripting.md](rmt_scripting.md)).
+Additionally, they have a readable name for users (the "RMT Driver Version" list of the module properties, File > Properties) and a name for scripts (`set driver`, see [rmt_scripting.md](rmt_scripting.md)).
 
 The level of a driver is the RMT version whose driver code it is: the original by Raster or a patch of it.
 
-| Code | Name in the Options dialog                    | Level (driver code)                  | Script name              | Constant name          | Author   |
+| Code | Name in the module properties                 | Level (driver code)                  | Script name              | Constant name          | Author   |
 |------|-----------------------------------------------|--------------------------------------|--------------------------|------------------------|----------|
 | 0    | No RMT Driver                                 | -                                    | -                        | NONE                   | -        |
 | 1    | RMT 1.28 Unpatched by Raster                  | RMT 1.28, original                   | `unpatched`              | UNPATCHED              | Raster   |
@@ -79,9 +79,9 @@ Unfortunately, this patch also introduced many compatibility issues with older m
 Despite that, this is probably the most "feature-rich" version of the RMT driver patches created so far.
 All that came at the cost of extra memory usage and heavier CPU load, so this is no longer an "optimal" driver.
 This is currently the default RMT driver version included and used by RMT 1.34 and later.
-The driver code is version Patch16-3.2 (`asm/Patch-16/rmtplayr.a65`), used by RMT since version 1.31; the name in the Options dialog says RMT 1.34, the version that made it the default.
+The driver code is version Patch16-3.2 (`asm/Patch-16/rmtplayr.a65`), used by RMT since version 1.31; the name in the module properties says RMT 1.34, the version that made it the default.
 
-The AUTOFILTER is one of these compatibility issues: Patch16 starts the frequency offset of channel 3 at 0 instead of 1 and does not accumulate the command 6, so the two channels of the filter stay in phase and an older song sounds quiet and an octave higher. A song file does not say which driver it was made with, so when the driver is Patch16 and a song that uses the AUTOFILTER is opened, RMT asks whether to play it with the RMT 1.28 Unpatched driver. The answer is for that song only: a new song or the next song opened uses the driver of the Options dialog again. A script (`rmt /SCRIPT:`) answers No; it chooses the driver with `set driver`.
+The AUTOFILTER is one of these compatibility issues: Patch16 starts the frequency offset of channel 3 at 0 instead of 1 and does not accumulate the command 6, so the two channels of the filter stay in phase and an older song sounds quiet and an octave higher. A song file does not say which driver it was made with, so when the driver is Patch16 and a song that uses the AUTOFILTER is opened, RMT asks whether to play it with the RMT 1.28 Unpatched driver. The answer is for that song only: a new song or the next song opened uses the default driver of the module properties again. A script (`rmt /SCRIPT:`) answers No; it chooses the driver with `set driver`.
 
 ## RMT 1.28 Patch Prince of Persia by VinsCool
 

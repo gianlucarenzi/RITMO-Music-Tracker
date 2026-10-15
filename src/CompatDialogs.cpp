@@ -236,7 +236,6 @@ COptionsDialog::COptionsDialog(CWnd* pParent) : CDialog(COptionsDialog::IDD, pPa
     m_trackLinePrimaryHighlight = 0;
     m_trackLineSecondaryHighlight = 0;
     m_scaling_percentage = 100;
-    m_ntsc = FALSE;
     m_doSmoothScrolling = TRUE;
     m_displayflatnotes = FALSE;
     m_usegermannotation = FALSE;
@@ -249,11 +248,17 @@ COptionsDialog::COptionsDialog(CWnd* pParent) : CDialog(COptionsDialog::IDD, pPa
     m_keyboard_escresetatarisound = FALSE;
     m_keyboard_askwhencontrol_s = FALSE;
     m_viewDebugDisplay = FALSE;
-    m_trackerDriverVersion = NONE;
     m_midi_device = -1;
     m_keyboard_layout = KeyboardLayout::QWERTY;
 }
 void COptionsDialog::DoDataExchange(CDataExchange*) {}
+
+CModulePropertiesDialog::CModulePropertiesDialog(CWnd* pParent) : CDialog(CModulePropertiesDialog::IDD, pParent)
+{
+    m_ntsc = FALSE;
+    m_trackerDriverVersion = PATCH16;
+    m_defaultTrackerDriverVersion = PATCH16;
+}
 BOOL COptionsDialog::OnInitDialog() { return TRUE; }
 void COptionsDialog::OnOK() {}
 void COptionsDialog::OnMidiTouchResponseClicked() {}

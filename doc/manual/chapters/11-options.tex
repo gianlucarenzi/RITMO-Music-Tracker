@@ -17,8 +17,6 @@ program closes, in the settings of the system (chapter~\ref{ch:install}).
   \item[Use German notation] The note \texttt{B} is written \texttt{H}, as in the German notation.
   \item[Alternative track line numbering] The line numbers follow the highlight step.
   \item[Display accidentals as flats instead of sharps] \texttt{D\#} is written as \texttt{Eb}.
-  \item[NTSC system speed (60 Hz)] The video system of the song: 60 frames a second instead of the 50 of PAL. The same switch is
-        \key{CONTROL+F12}.
   \item[Audio buffer] How much sound the output of the system takes at a time, from 5 to 40 milliseconds. A small buffer
         makes the sound follow the keys and the MIDI keyboard sooner; a larger one keeps the sound clean when the computer or
         the sound server is busy. The default is 20\,ms on Linux, where the sound servers (PipeWire, PulseAudio) work in
@@ -27,9 +25,10 @@ program closes, in the settings of the system (chapter~\ref{ch:install}).
         distorted, choose 30 or 40\,ms.
   \item[Smooth scroll during playback] The lines of the tracks scroll one pixel at a time while a song plays.
   \item[Debug display] A line of internal values in the status bar, off by default. Enable it only if you know what it shows.
-  \item[RMT Driver Version] The tracker driver, the player routine that makes the sound while you work (chapter~\ref{ch:drivers}). The
-        driver must be the one the song was made with; the default is \emph{RMT 1.34 Patch16 by VinsCool}.
 \end{description}
+
+The video standard and the tracker driver are not here: they belong to the module, and are set in its properties
+(section~\ref{sec:module-properties}).
 
 \subsection{Keyboard}
 
@@ -54,7 +53,26 @@ chapter~\ref{ch:midi}.
 The \menu{Paths\ldots} button opens a dialog with the default folders of the songs, the instruments and the tracks, each with a
 \menu{Browse} button. The dialogs to open and save start there.
 
-\section{The tuning}
+\section{The module properties}\label{sec:module-properties}
+
+\menu{File $\rightarrow$ Properties\ldots} (\key{ALT+ENTER}) opens the dialog of figure~\ref{fig:dialog-module-properties}: what the
+module holds (the file, the channels, the speeds, the instruments and tracks used, the size of the RMT module), then the settings that
+belong to the module rather than to the program. They are saved with the other settings when the program closes.
+
+\dialog{dialog-module-properties}{The \menu{Module Properties} dialog.}{9.5cm}
+
+\begin{description}[style=nextline,leftmargin=1.2cm]
+  \item[NTSC system speed (60 Hz)] The video system of the song: 60 frames a second instead of the 50 of PAL. The same switch is
+        \key{CONTROL+F12}.
+  \item[RMT Driver Version] The tracker driver, the player routine that makes the sound while you work (chapter~\ref{ch:drivers}). The
+        driver must be the one the song was made with; the default is \emph{RMT 1.34 Patch16 by VinsCool}. The driver chosen here is
+        also the one new and opened songs start with. A song that uses the Autofilter, opened with the RMT 1.28 Unpatched driver at
+        its question, plays with that driver for itself only: the dialog says so, and the default stays as it was.
+  \item[Tuning\ldots] The tuning of section~\ref{sec:tuning}. The button is enabled only for \emph{RMT 1.34 Patch16}, the only
+        driver whose frequency tables the tuning reaches: the others play the tables inside their player.
+\end{description}
+
+\section{The tuning}\label{sec:tuning}
 
 \menu{Tools $\rightarrow$ Tuning\ldots} (figure~\ref{fig:dialog-tuning}) is a calculator for the pitch of the notes. The POKEY makes its
 frequencies by dividing a clock, so not every pitch exists: the program computes the divisors that come nearest to the notes of

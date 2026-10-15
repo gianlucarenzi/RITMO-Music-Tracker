@@ -10,7 +10,7 @@
 | Menu File | Print... | `Ctrl+P` | Print the active view |
 | Menu File | Print Preview |  | Preview the page |
 | Menu File | Print Setup... |  | Change the printer and printing options |
-| Menu File | Properties | `Alt+Enter` | Display the properties of the song |
+| Menu File | Properties... | `Alt+Enter` | Open the module properties: what the module holds, its video standard, tracker driver and tuning |
 | Menu File | Exit | `Alt+F4` |  |
 | Menu Edit | Undo | `Ctrl+Z` | Undo the last action |
 | Menu Edit | Redo | `Ctrl+Y` | Redo the last action |

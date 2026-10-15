@@ -79,7 +79,7 @@ note.
 | `CONTROL+R` | Reload RMT module. |
 | `CONTROL+S` | Save RMT module. |
 | `CONTROL+SHIFT+S` | Save RMT module under a new name. |
-| `ALT+ENTER` | Open the song properties. |
+| `ALT+ENTER` | Open the module properties (video standard, tracker driver, tuning). |
 | `CONTROL+N` | Create new RMT module. |
 | `CONTROL+P` | Print. |
 | `CONTROL+Y` | Redo last change. |

@@ -863,14 +863,10 @@ void CRmtView::OnViewConfiguration()
     dlg.m_tracklinealtnumbering = g_tracklinealtnumbering;
     dlg.m_displayflatnotes = g_displayflatnotes;
     dlg.m_usegermannotation = g_usegermannotation;
-    dlg.m_ntsc = g_Song.IsNTSC();
     dlg.m_nohwsoundbuffer = g_nohwsoundbuffer;
     dlg.m_audioBufferMs = g_audioBufferMs;
     dlg.m_doSmoothScrolling = g_view.smoothScrolling;
     dlg.m_viewDebugDisplay = g_view.debugDisplay;
-
-    // TODO: Module
-    dlg.m_trackerDriverVersion = g_defaultTrackerDriverVersion;
 
     // KEYBOARD
     dlg.m_keyboard_layout = g_keyboard_layout;
@@ -900,22 +896,6 @@ void CRmtView::OnViewConfiguration()
         g_audioBufferMs = dlg.m_audioBufferMs;
         if (soundChanged) {
             g_Song.ReInitSound();
-        }
-
-        if (g_Song.IsNTSC() != dlg.m_ntsc) {
-            SetNTSC(dlg.m_ntsc);
-        }
-
-        // the driver chosen is the default and the song's (also when the song plays another one, for itself only)
-        g_defaultTrackerDriverVersion = dlg.m_trackerDriverVersion;
-        if (g_Song.GetTrackerDriverVersion() != dlg.m_trackerDriverVersion) {
-            g_Song.SetTrackerDriverVersion(dlg.m_trackerDriverVersion);
-            g_Atari.Init(g_Song.IsNTSC()); // TODO: This is done serveral times. We need something like "beginUpdate"
-            g_AtariTrackerDriver->LoadRMTRoutines(g_Song.GetTrackerDriverVersion());
-            if (!g_AtariTrackerDriver->AreRoutinesLoaded()) {
-                // a version whose file is missing: say so rather than play another driver without a word
-                MessageBox(CRmtAtariBinaries::GetMissingTrackerDriverMessage(g_Song.GetTrackerDriverVersion()), "RITMO", MB_ICONEXCLAMATION);
-            }
         }
 
         g_view.smoothScrolling = dlg.m_doSmoothScrolling;
@@ -2408,17 +2388,39 @@ void CRmtView::OnFileProperties()
     song.Format("%.*s", (int)SONG_NAME_MAX_LEN, info.songname);
     song.TrimRight();
     CString text;
-    text.Format("File: %s\nFormat: %s\n\nSong name: %s\nChannels: %d (%s)\nVideo standard: %s\nMusic speed: %d\nInstrument speed: %d\nMaximal length of tracks: %d\n\nInstruments used: %d\nTracks used: %d",
+    text.Format("File: %s\nFormat: %s\n\nSong name: %s\nChannels: %d (%s)\nMusic speed: %d\nInstrument speed: %d\nMaximal length of tracks: %d\n\nInstruments used: %d\nTracks used: %d",
                 filename.IsEmpty() ? "(not saved yet)" : (LPCTSTR)filename, format,
-                (LPCTSTR)song, g_Song.GetTracks(), g_Song.IsStereo() ? "stereo" : "mono",
-                g_Song.IsNTSC() ? "NTSC, 60 Hz" : "PAL, 50 Hz", info.mainspeed, info.instrspeed,
+                (LPCTSTR)song, g_Song.GetTracks(), g_Song.IsStereo() ? "stereo" : "mono", info.mainspeed, info.instrspeed,
                 g_Tracks.GetMaxTrackLength(), instruments, tracks);
     if (end >= 0) {
         CString size;
         size.Format("\nRMT module size: %d bytes ($%04X-$%04X)", end - module.targetAddrOfModule, module.targetAddrOfModule, end - 1);
         text += size;
     }
-    MessageBox(text, "Song properties", MB_ICONINFORMATION);
+
+    // Module Properties (as in RMT 1.36, plan 44): what the module holds, then its own settings, which left the
+    // Options dialog - the video standard, the tracker driver, the tuning (the Tuning... button)
+    CModulePropertiesDialog dlg;
+    dlg.m_info = text;
+    dlg.m_ntsc = g_Song.IsNTSC();
+    dlg.m_trackerDriverVersion = g_Song.GetTrackerDriverVersion();
+    dlg.m_defaultTrackerDriverVersion = g_defaultTrackerDriverVersion;
+    if (dlg.DoModal() != IDOK) return;
+
+    if (g_Song.IsNTSC() != dlg.m_ntsc) SetNTSC(dlg.m_ntsc);
+
+    // A driver changed here is the song's and the default; left as it was, a driver the song plays with for itself
+    // only (the Autofilter question) does not become the default
+    if (g_Song.GetTrackerDriverVersion() != dlg.m_trackerDriverVersion) {
+        g_defaultTrackerDriverVersion = dlg.m_trackerDriverVersion;
+        g_Song.SetTrackerDriverVersion(dlg.m_trackerDriverVersion);
+        g_Atari.Init(g_Song.IsNTSC());
+        g_AtariTrackerDriver->LoadRMTRoutines(g_Song.GetTrackerDriverVersion());
+        if (!g_AtariTrackerDriver->AreRoutinesLoaded()) {
+            // a version whose file is missing: say so rather than play another driver without a word
+            MessageBox(CRmtAtariBinaries::GetMissingTrackerDriverMessage(g_Song.GetTrackerDriverVersion()), "RITMO", MB_ICONEXCLAMATION);
+        }
+    }
 }
 
 void CRmtView::OnViewPokeyregs()
