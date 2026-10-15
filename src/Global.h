@@ -119,6 +119,7 @@ struct TViewState {
 extern TViewState g_view;
 
 extern TrackerDriverVersion g_trackerDriverVersion;
+extern bool g_scriptRun; // ritmo /SCRIPT:<file>: the configuration is read, never written
 extern int g_timerGlobalCount; // Initialised once, ticking forever
 extern long g_playtime;        //1 yes, 0 no
 

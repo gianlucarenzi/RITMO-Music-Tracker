@@ -89,6 +89,7 @@ int g_channelon[SONGTRACKS];
 int g_rmtinstr[SONGTRACKS];
 
 TrackerDriverVersion g_trackerDriverVersion = PATCH16;
+bool g_scriptRun = false;
 int g_timerGlobalCount = 0; // Initialised once, ticking forever
 long g_playtime = 0;        // Number of Atari frames played since the song started playing
 

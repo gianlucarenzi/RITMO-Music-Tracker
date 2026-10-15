@@ -105,4 +105,11 @@ printf 'open nothere.rmt\n' >"$WORK/missing.rmtscript"
 "$RMT" "/SCRIPT:$WORK/missing.rmtscript" >/dev/null 2>&1; code=$?
 [ $code -eq 1 ] && echo "ok   failing command: exit code 1" || { echo "FAIL failing command: exit code $code, expected 1"; fail=1; }
 
+# a script run reads the configuration and never writes it, not even the defaults on a machine that has none
+if [ -z "$(find "$XDG_CONFIG_HOME" -type f 2>/dev/null)" ]; then
+    echo "ok   no configuration written by the script runs"
+else
+    echo "FAIL the script runs wrote a configuration:"; find "$XDG_CONFIG_HOME" -type f; fail=1
+fi
+
 exit $fail

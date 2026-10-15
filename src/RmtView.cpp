@@ -612,6 +612,9 @@ void CRmtView::ReadRMTConfig()
 
 void CRmtView::WriteRMTConfig()
 {
+    // a script run is a job, not a session: it never changes the configuration, not even by saving the defaults on a
+    // machine that has none yet (as in RMT 1.36, plan 47)
+    if (g_scriptRun) return;
     std::ostringstream ou;
 
     ou << "# RITMO CONFIGURATION FILE" << std::endl;
@@ -811,6 +814,7 @@ void WriteFraction(std::ostream& os, const char* id, const CFraction& fraction)
 
 void CRmtView::WriteTuningConfig()
 {
+    if (g_scriptRun) return; // see WriteRMTConfig()
     std::ostringstream os;
 
     os << "# RITMO CONFIGURATION FILE" << std::endl;
