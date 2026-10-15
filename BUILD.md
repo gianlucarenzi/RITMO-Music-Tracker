@@ -269,6 +269,10 @@ every frame and the sound of the built-in POKEY (see
 the tracker driver (the numbers of `TrackerDriverVersion.h`, default 6 = Patch16);
 without a window a message box answers Yes, so a song with the AUTOFILTER plays
 with the Unpatched driver when the driver is Patch16.
+`RmtCoreTest --midi16` plays notes through the input of MIDI channel 16 (the
+MIDI CH15 mode) for every distortion at 64 kHz, 15 kHz and 1.79 MHz, and checks
+that the AUDF and AUDC written for the driver come from the table the Patch16
+player reads (exit code 1 when a note is wrong); the Linux test workflow runs it.
 
 ### How it works
 

@@ -18,6 +18,8 @@
 #include "resource.h"
 #include "AtariTrackerDriver.h"
 #include "PokeyRenderer.h"
+#include "RmtMidi.h"
+#include "tracker_obx.h"
 #include "emu/PokeySound.h"
 
 #include <cstdio>
@@ -29,6 +31,7 @@ extern CXPokey g_Pokey;
 extern CAtari g_Atari;
 extern TTuningSettings g_tuning;
 extern TTuningRatios g_tuningRatios;
+extern CRmtMidi g_Midi;
 
 // --screenshot: draw the main screen like CRmtView::DrawAll() into the
 // software CDC of CompatTypes.h and write it as a PPM image
@@ -177,6 +180,61 @@ static int PlaySong(const char* song, int frames, const char* regsOut, const cha
     return 0;
 }
 
+// --midi16: the note input of MIDI channel 16 (the MIDI CH15 mode), which
+// writes AUDF and AUDC straight into the driver's variables for SetPokey.
+// For each distortion and clock (AUDCTL) a program change selects the
+// distortion and a note is played; the AUDF must be the byte of the table
+// the player itself reads (the addresses of tracker_obx.h, generated from
+// rmtplayr.a65) and the AUDC must carry the player's distortion bits. Until
+// RMT 1.36's fix (plan 39) every table but Poly5 and Distortion 4 was read
+// a page too low.
+static int MidiChannel16()
+{
+    g_Atari.Init(false);
+    g_AtariTrackerDriver = new CAtariTrackerDriver(g_Atari);
+    g_AtariTrackerDriver->LoadRMTRoutines(TrackerDriverVersion::PATCH16);
+    g_AtariTrackerDriver->Init();
+    g_Song.ClearSong(8);
+    g_prove = EditMode::MIDI_CH15_MODE;
+
+    struct Case {
+        const char* clock;
+        int distortion, audctl, table, audc;
+    };
+    static const Case cases[] = {
+        { "64 kHz", 0x02, 0x00, RMTPLAYR_FRQTABPOLY5_64KHZ, 0x20 },
+        { "64 kHz", 0x04, 0x00, RMTPLAYR_FRQTABDIST4_64KHZ, 0x40 },
+        { "64 kHz", 0x08, 0x00, RMTPLAYR_FRQTABPURE_64KHZ, 0x80 },
+        { "64 kHz", 0x0A, 0x00, RMTPLAYR_FRQTABPURE_64KHZ, 0xA0 },
+        { "64 kHz", 0x0C, 0x00, RMTPLAYR_FRQTABBUZZY_64KHZ, 0xC0 },
+        { "64 kHz", 0x0E, 0x00, RMTPLAYR_FRQTABGRITTY_64KHZ, 0xC0 },
+        { "15 kHz", 0x0A, 0x01, RMTPLAYR_FRQTABPURE_15KHZ, 0xA0 },
+        { "15 kHz", 0x0C, 0x01, RMTPLAYR_FRQTABBUZZY_15KHZ, 0xC0 },
+        { "1.79 MHz", 0x0A, 0x40, RMTPLAYR_FRQTABPURE_179MHZ, 0xA0 },
+        { "1.79 MHz", 0x0C, 0x40, RMTPLAYR_FRQTABBUZZY_179MHZ, 0xC0 },
+    };
+    auto midi = [](int status, int d1, int d2) { g_Song.MidiEvent((DWORD)(status | d1 << 8 | d2 << 16), true); };
+    byte* memory = g_Atari.GetMemoryAt(0);
+    const int note = 0x18;
+    int failed = 0;
+    for (const Case& c : cases) {
+        for (int i = 0; i < 16; i++) g_Midi.m_LastNoteOnChannel[i] = -1; // every channel free: the note goes to channel 1
+        memory[RMTPLAYR_V_AUDCTL] = (byte)c.audctl;
+        memory[RMTPLAYR_TRACKN_AUDF] = memory[RMTPLAYR_TRACKN_AUDC] = 0x55; // a marker the note must overwrite
+        midi(0xCF, c.distortion / 2, 0);                                   // program change: the distortion
+        midi(0x9F, note, 0x7F);                                            // note on
+        const int audf = memory[RMTPLAYR_TRACKN_AUDF], audc = memory[RMTPLAYR_TRACKN_AUDC];
+        midi(0x8F, note, 0); // note off: the channel is free again
+        const int wanted = memory[c.table + note];
+        const bool ok = audf == wanted && (audc & 0xF0) == c.audc;
+        if (!ok) failed++;
+        std::printf("%-4s distortion %X %-8s AUDF $%02X (table $%04X: $%02X), AUDC $%02X (distortion bits $%02X)\n",
+                    ok ? "ok" : "FAIL", c.distortion, c.clock, audf, c.table + note, wanted, audc, c.audc);
+    }
+    std::printf("MIDI channel 16: %d of %d notes wrong\n", failed, (int)(sizeof(cases) / sizeof(cases[0])));
+    return failed ? 1 : 0;
+}
+
 int main(int argc, char** argv)
 {
     g_rmtAudioOutput = false; // deterministic: the sound buffer plays "instantly"
@@ -198,6 +256,7 @@ int main(int argc, char** argv)
 
     if (argc >= 5 && !std::strcmp(argv[1], "--play"))
         return PlaySong(argv[2], std::atoi(argv[3]), argv[4], argc >= 6 ? argv[5] : nullptr);
+    if (argc >= 2 && !std::strcmp(argv[1], "--midi16")) return MidiChannel16();
     if (argc >= 3 && !std::strcmp(argv[1], "--screenshot"))
         return Screenshot(argv[2], 1280, 800, argc >= 4 ? argv[3] : nullptr);
 

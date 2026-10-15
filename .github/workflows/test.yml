@@ -4,7 +4,8 @@ name: Test RITMO on Linux
 # need no display (Qt draws offscreen): the menu test of the frontend (every menu
 # item and toolbar button is triggered and has a handler) and the scripting tests
 # (scripts/test-scripting.sh: the reference scripts run twice and compared, the
-# exit codes, the structure of the SAP type B files).
+# exit codes, the structure of the SAP type B files). The engine without Qt
+# (RmtCoreTest) checks the note input of MIDI channel 16.
 
 on:
   push:
@@ -40,6 +41,12 @@ jobs:
 
       - name: Scripting tests
         run: scripts/test-scripting.sh build-qt/out/ritmo
+
+      - name: MIDI channel 16 test of the engine
+        run: |
+          cmake -B build-core -DCMAKE_BUILD_TYPE=Release -DRMT_BUILD_CORE_ONLY=ON -DRMT_CORE_TEST=ON
+          cmake --build build-core -j"$(nproc)" --target RmtCoreTest
+          build-core/out/RmtCoreTest --midi16
 
       - name: Keep the outputs of a failed run
         if: failure()
