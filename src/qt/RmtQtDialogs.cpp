@@ -627,7 +627,7 @@ static INT_PTR RunExportRelocatableAsm(QWidget* parent, CExportRelocatableAsmFor
     dialog.setWindowTitle("Export ASM for RmtPlayer.asm");
     auto* layout = new QVBoxLayout(&dialog);
 
-    layout->addWidget(new QLabel("The RMT song will be exported as byte definitions with specific labels.\n"
+    layout->addWidget(new QLabel("The RMT module will be exported as byte definitions with specific labels.\n"
                                  "The code is fully relocatable and can be split over various locations in memory!"));
 
     // CExportRelocatableAsmForRmtPlayer::OnInitDialog(): default labels
@@ -638,7 +638,7 @@ static INT_PTR RunExportRelocatableAsm(QWidget* parent, CExportRelocatableAsmFor
 
     auto* grid = new QGridLayout;
     auto* songLabel = UpperCaseEdit(FromCString(dlg->m_strAsmLabelForStartOfSong));
-    grid->addWidget(new QLabel("ASM Label for start of song data:"), 0, 0, 1, 2);
+    grid->addWidget(new QLabel("ASM Label for start of module data:"), 0, 0, 1, 2);
     grid->addWidget(songLabel, 0, 2);
     auto addRelocation = [&](int row, const char* check, const char* label, const CString& value, BOOL on) {
         auto* box = new QCheckBox(check);
@@ -743,7 +743,7 @@ static INT_PTR RunExportSap(QWidget* parent, CSAPFileExportDialog* dlg)
     auto* author = addField("AUTHOR", dlg->m_author);
     auto* date = addField("DATE", dlg->m_date);
     date->setMaximumWidth(dlg->m_noSubsongs ? 400 : 120);
-    auto* subsongs = addField("Subsongs (hexadecimal song line number for each subsong, first is default song):", dlg->m_subsongs);
+    auto* subsongs = addField("Subsongs (hexadecimal song line number for each subsong, first is the default subsong):", dlg->m_subsongs);
     text->setVisible(!dlg->m_noSubsongs);
     subsongs->setVisible(!dlg->m_noSubsongs);
 
