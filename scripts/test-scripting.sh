@@ -97,6 +97,19 @@ else
     echo "FAIL missing driver file: exit code $code"; tail -3 "$WORK/nodriverfile.log"; fail=1
 fi
 
+# issue #5: "stripped-rmt" with sfx=yes keeps the instruments of an SFX-only module (no tracks): at its own
+# address $6800 the export is the module byte for byte, relocated it keeps its length; sfx=no strips it to 30 bytes
+SFX=test-resources/songs/issue_5_stripped_sfx_export/testsfx.rmt
+printf 'set output %s\nopen "%s/%s"\nexport stripped-rmt same.rmt address=$6800 sfx=yes\nexport stripped-rmt moved.rmt address=$6400 sfx=yes\nexport stripped-rmt nosfx.rmt address=$6400 sfx=no\n' \
+    "$WORK/sfx" "$PWD" "$SFX" >"$WORK/sfx.rmtscript"
+"$RMT" "/SCRIPT:$WORK/sfx.rmtscript" >"$WORK/sfx.log" 2>&1; code=$?
+if [ $code -eq 0 ] && cmp -s "$SFX" "$WORK/sfx/same.rmt" && [ "$(stat -c %s "$WORK/sfx/moved.rmt")" -eq "$(stat -c %s "$SFX")" ] \
+    && [ "$(od -An -tx1 -j2 -N2 "$WORK/sfx/moved.rmt" | tr -d ' ')" = "0064" ] && [ "$(stat -c %s "$WORK/sfx/nosfx.rmt")" -eq 30 ]; then
+    echo "ok   stripped RMT of an SFX-only module: sfx=yes keeps the instruments, sfx=no strips them"
+else
+    echo "FAIL stripped RMT of an SFX-only module: exit code $code"; tail -3 "$WORK/sfx.log"; ls -l "$WORK/sfx" 2>/dev/null; fail=1
+fi
+
 # RMT_CONFIG_DIR: the configuration of that folder is read (an NTSC ritmo.ini makes an NTSC SAP-R) and not written
 mkdir -p "$WORK/configdir"
 printf 'NTSC_SYSTEM = 1\n' >"$WORK/configdir/ritmo.ini"

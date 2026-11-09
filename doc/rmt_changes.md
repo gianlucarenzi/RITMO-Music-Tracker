@@ -18,6 +18,14 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.7: the work of Peter Dell (JAC!) on RMT 1.36 after 2026-10-15 (https://github.com/peterdell/RASTER-Music-Tracker,
+  branch dev, up to 2026-10-29, d5cef17), ported to RITMO: thanks again to JAC! Each of the entries below that says
+  "RMT 1.36" names the plan or the commit it comes from; what concerns only the Java port is not ported.
+- 2.7: "Export As RMT Stripped Song File" with "SFX Support" keeps every instrument again (RMT 1.36, a1e35ae, RMT issue
+  #5): since RMT 1.34 the two cases were swapped, so it stripped the instruments no track uses, which are exactly those
+  of the sound effects, and an SFX-only module (instruments, no tracks) was exported as a 30-byte header; without SFX
+  support the unused instruments are still stripped. `scripts/test-scripting.sh` checks it with the module of the issue
+  (`test-resources/songs/issue_5_stripped_sfx_export`).
 - 2.6: the fixes of RMT 1.36 by Peter Dell (JAC!) (https://github.com/peterdell/RASTER-Music-Tracker, branch dev, up to
   2026-10-15), ported to RITMO: thanks again to JAC!, whose work this fork stands on, and who in turn took four fixes
   from the trail of RITMO into RMT 1.36 (the SAP type B player blocks, the WAV at instrument speed 2-4, the AUDCTL of the
