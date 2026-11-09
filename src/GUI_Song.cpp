@@ -2228,7 +2228,7 @@ BOOL CSong::ProveKey(int vk, int shift, int control)
     int note, i;
     note = NoteKey(vk);
 
-    if (g_prove == EditMode::POKEY_EXPLORER_MODE) //POKEY EXPLORER MODE: FULL CONTROL OVER THE POKEY (IGNORE RMT ROUTINES EXCEPT SETPOKEY)
+    if (g_prove == EditMode::POKEY_EXPLORER_MODE) //POKEY EXPLORER MODE: FULL CONTROL OVER THE POKEY (IGNORE RMT ROUTINES EXCEPT RMT_SET_POKEY)
     {
         return m_PokeyController->OnKeyDown(vk, shift, control);
     }

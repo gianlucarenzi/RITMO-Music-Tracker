@@ -4,6 +4,11 @@ Current asm sources are split between 2 versions: Legacy and Patch-16
 The players of the "XEX Atari executable + RMT player" export of RITMO (RITMO PLAYER: the RMT player of a driver with
 the visualizer of RMTPLAY of VERA_ATARI_PBI) are built in rmtplay/ with cc65 (see rmtplay/README.md).
 
+From RMT 1.36 (plans 51 and 58, up to 2026-10-29): `Unpatched/` is the unpatched RMT 1.28 player of `Legacy/` with
+Raster's ~800 working comments translated into English (the living, readable source; `Legacy/` stays byte-pristine, see
+`Legacy/README.md`), and `Patch-16/` carries those comments, Raster's label names again (`Patch-16/README.md` maps the
+names Vin gave them) and one comment style. Both assemble to the same bytes as before.
+
 The same sources for ca65 (cc65), to build the drivers and players without MADS, are in ca65/ (see ca65/README.md):
 generated from these by scripts/mads2ca65.py, "make check" there verifies that the drivers come out byte for byte
 as rmt_driver_v1.obx and rmt_driver_v6.obx.

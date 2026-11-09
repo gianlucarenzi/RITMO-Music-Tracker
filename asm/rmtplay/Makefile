@@ -19,9 +19,9 @@ XEX     = $(foreach v,$(VARIANTS),$(BUILD)/rmtplay_$(v).xex)
 SOURCES = rmtplay.c rmtxex.s rmtdli.s rmtplay.cfg
 RESOURCES = ../../rmt/resources/players
 
-# the symbols of the players (the names differ between RMT 1.28 and Patch16) -> player_*.inc
+# the symbols of the players -> player_*.inc (Patch16 has the names of RMT 1.28 again since RMT 1.36, 45a98aa)
 V1SYMS  = RASTERMUSICTRACKER p_song v_abeat v_maxtracklen v_speed trackn_audf trackn_audc v_audctl
-V6SYMS  = RASTERMUSICTRACKER ptrSongLines smc_abeat smc_maxtracklen smc_speed trackn_audf trackn_audc v_audctl TABLES
+V6SYMS  = RASTERMUSICTRACKER p_song v_abeat v_maxtracklen v_speed trackn_audf trackn_audc v_audctl TABLES
 V6OPTS  = -D FEAT_IS_TRACKER=0 -D FEAT_IS_SIMPLEP=1 -D EXPORTXEX=0 -D EXPORTSAP=0 -D TABLES=\$$3A00
 
 stereo  = $(if $(findstring stereo,$(1)),1,0)

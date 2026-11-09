@@ -3,7 +3,7 @@
 
     scripts/mads2ca65.py [asm-folder [output-folder]]   (default: asm asm/ca65)
 
-Every *.a65 / *.asm file of the asm folder (Legacy, Legacy/rmf, Patch-16) is
+Every *.a65 / *.asm file of the asm folder (Legacy, Legacy/rmf, Patch-16, Unpatched) is
 written as <name>.s in the same place under the output folder. The output is
 meant for ca65 -i (identifiers not case sensitive, as in MADS) with
 asm/ca65/mads.inc, which provides ORG, OPT_H, RUN and INI: the segments of the
@@ -39,6 +39,9 @@ CONFIG_SYMBOLS = {"STEREOMODE", "EXPORTXEX", "EXPORTSAP", "REGIONPLAYBACK", "STA
                   "TABLES"}
 
 REPEAT_COUNTER = "I"
+
+# not assembled: Patch-16/rmtformat.a65 describes the .rmt format in pseudo-assembly (RMT 1.36 named it .a65)
+NOT_SOURCES = {"rmtformat.a65"}
 
 
 def split_comment(line):
@@ -404,7 +407,7 @@ def main():
         if os.path.abspath(root).startswith(os.path.abspath(dst)):
             continue
         for name in sorted(files):
-            if re.search(r"\.(a65|asm)$", name, re.I):
+            if re.search(r"\.(a65|asm)$", name, re.I) and name.lower() not in NOT_SOURCES:
                 conv.convert_file(os.path.join(root, name))
                 count += 1
     print("mads2ca65: %d files -> %s" % (count, dst))

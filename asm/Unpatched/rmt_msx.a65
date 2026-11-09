@@ -1,0 +1,169 @@
+;
+;	RMT_MSX
+;
+RASTERMUSICTRACKER	equ $3400
+video equ $3f00
+video4th equ video+3*40
+video5th equ video+4*40
+color equ video+200
+vcaddition equ video+201		; RMTracker prepares this hardcoded
+MODUL equ $4000
+;
+VCOUNT	equ $d40b				; Vertical screen lines counter address
+NTSC	equ 53268          		; PAL=0/NTSC=$e
+;
+	org $3e00
+start
+;
+	ldx #0
+	stx 559
+;	stx 54272	;not needed, good grief (!)
+;
+	jsr Pau
+;
+;	ldx #0
+							; x=0 from earlier
+	stx 712
+	stx 710
+	ldx #12
+	stx 709
+;
+	mwx #dl 560
+;
+	ldx #<MODUL
+	ldy #>MODUL
+	lda #0					; Song line 0-255
+	jsr RASTERMUSICTRACKER	; Returns in A how many times to call per 1 vbi (1,2,3,4)
+;	tay
+;	lda tabpp-1,y
+;	pha
+;	rol @
+;	rol @				;rolls the top bit around to the bottom
+;	and #$01
+;	sta xwaimultip			;0 or 1
+;	pla
+;	and #$7f			;without the top bit
+;	sta acpapx2+1		;sync counter spacing
+	ldx #0
+	lda vcaddition			; RMTracker already prepares this hardcoded
+;	cmp #133
+;	bcc via1	;<133 => branch
+	bpl via1				; <128 => branch
+							; e.g. for 156
+	inx						; x=1
+	lsr @					; A=78
+via1
+	stx xwaimultip			; 0 or 1
+	sta acpapx2+1			; Sync counter spacing
+	ldx #16+0
+	stx acpapx1+1			; Sync counter init
+;
+	ldx #34
+	stx 559
+
+	ldx #100
+uvop
+	jsr Pau
+	dex
+	bne uvop
+;
+	ldx #156		; For a PAL computer
+	lda NTSC
+	and #$0e
+	beq ispal
+	ldx #132		; Deliberately 1 more for divisibility by 2,3,4 ; correctly it should be 131 ;for an NTSC computer
+ispal
+	stx xscreenlines1
+	stx xscreenlines2
+;
+	sei				; Disable IRQ
+	ldx #0
+	stx 54286		; Disable NMI  (turns the OS VBI off!)
+;
+					; ldx #255
+; Not needed, the upper one is watched (VBI is off)
+;	dex ;x=255
+;	stx 764
+;
+lop
+	ldx #$00		; Self-mod. param
+xwaimultip equ *-1
+loopmulti
+acpapx1	lda #$ff	; Self-modified param.
+	clc
+acpapx2	adc #$ff	; Self-modified param.
+;	bcs lop3	;>255 (overflowed) (at most 78 is added, so it cannot overflow)
+xscreenlines1 equ *+1
+	cmp #$ff		; 156 or 132 (instead of 131)	;self-modified param.
+	bcc lop4
+lop3
+xscreenlines2 equ *+1
+	sbc #$ff	; 156 or 132 (instead of 131)	;self-modified param.
+lop4
+	sta acpapx1+1
+	ldy color	; Prepares it in Y
+waipap
+	cmp VCOUNT
+	bne waipap
+	dex
+	bpl loopmulti
+;
+	sty $d01a	; Y was prepared a bit above
+	sty $d018
+;
+	jsr RASTERMUSICTRACKER+3
+				; Returned the actual instrspeed in A
+;
+	ldx #0		; Black
+	stx $d01a
+	stx $d018
+; VBI is off; 	sta 77					;Attract (needs zeroing even with CRITIC set)
+;
+	ldx #<video4th
+	lda $d20f					; SKCTL
+	and #$08					; Shift pressed?
+	bne noshift					; 1 => not pressed => branch
+; Shift is pressed
+	ldx #<video5th
+noshift
+	stx dlx						; Overwrites the video db for the 4th line
+;
+	lda $d209					; Must use the upper one, IRQ is off (formerly 764)
+	cmp #28						; ESC?
+	bne lop
+;
+escape
+	jsr RASTERMUSICTRACKER+9	; SILENCE
+	ldx #64
+	stx 54286					; Enable NMI (OS VBI!)
+	cli
+	ldx #0
+	stx 559
+	dex			; #255
+	stx 764
+	jsr Pau
+	jmp (10)	; DOS
+;
+; tabpp	dta 156,78,52,39	;song meant for PAL
+;		dta 131,66,44,33	;song meant for NTSC
+; Line counter spacing table for instrument speed from 1 to 4
+;
+; The value shifting the VCOUNT synchronization value is prepared directly by RMTracker!
+;
+; tabpp  dta $80+78,$00+78,$00+52,$00+39		;$00+ once, $80+ twice
+;
+;
+Pau	lda 20
+pa2	cmp 20
+	beq pa2
+	rts
+;
+dl
+	dta 112,112,112
+	dta 112,112,112,112,112,112,112,112,112,112
+	dta 64+2,a(video)
+	dta 2,2
+	dta 64+2
+dlx dta a(video4th)
+	dta 65,a(dl)
+;

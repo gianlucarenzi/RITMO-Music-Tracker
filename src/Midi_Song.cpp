@@ -14,7 +14,7 @@ extern CXPokey g_Pokey;
 extern CRmtMidi g_Midi;
 extern CAtariTrackerDriver* g_AtariTrackerDriver;
 
-// Where the loaded driver keeps the AUDF and AUDC of its tracks, which its SetPokey writes to POKEY: the v1 family
+// Where the loaded driver keeps the AUDF and AUDC of its tracks, which its rmt_set_pokey writes to POKEY: the v1 family
 // (asm/Legacy/rmt.a65) has them below the player at addresses fixed by an org, Patch 16 elsewhere. Writing the
 // Patch 16 addresses with a v1-family driver loaded would overwrite its v_aspeed and its tabbeganddistor table.
 static void GetTrackRegisters(MemoryAddress& audf, MemoryAddress& audc)
@@ -477,8 +477,8 @@ void CSong::MidiEvent(DWORD dwParam, bool hasFocus)
             midi_audc |= g_Midi.m_NoteVolumeOnChannel[track]; //also merge the volume into it
 
             //DIRECT MEMORY WRITE
-            memory[trackAudf + track] = midi_audf; //AUDF address + offset used by SetPokey
-            memory[trackAudc + track] = midi_audc; //AUDC address + offset used by SetPokey
+            memory[trackAudf + track] = midi_audf; //AUDF address + offset used by rmt_set_pokey
+            memory[trackAudc + track] = midi_audc; //AUDC address + offset used by rmt_set_pokey
 
             //
             //END OF HARDCODED TEST

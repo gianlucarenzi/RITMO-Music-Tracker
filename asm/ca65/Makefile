@@ -15,8 +15,9 @@ DRIVERS = ../../rmt/resources/drivers
 SRC     = ../../src
 HEADERS = $(BUILD)/tracker_obx.h $(BUILD)/legacy_obx.h
 
-# Patch16 RMT driver (tracker.obx = rmt_driver_v6.obx): asm/Patch-16/rmtplayr.a65 with rmt_feat.a65 as it is
-# RMT 1.28 driver (rmt_ata.sys = rmt_driver_v1.obx): asm/Legacy/rmt_ata.a65
+# Patch16 RMT driver (tracker.obx = rmt_driver_v6.obx): asm/Patch-16/rmtplayr.a65 with rmt_feat.a65 as it is and the
+# target selectors on the command line (RMT 1.36, 5ae914a)
+# RMT 1.28 driver (rmt_ata.sys = rmt_driver_v1.obx): asm/Legacy/rmt_ata.a65, and asm/Unpatched/rmt_ata.a65 for make check
 # RMT 1.28 SAP players for 4 and 8 tracks, XEX export routine: asm/Legacy/rmt_sap4/8.a65, rmt_msx.a65
 # RMF player with its test song: asm/Legacy/rmf/rmf_play.a65
 TARGETS = $(BUILD)/rmt_driver_v6.obx $(BUILD)/rmt_driver_v1.obx \
@@ -29,6 +30,7 @@ PLAYERS = $(BUILD)/rmtplayer.xex $(BUILD)/rmtplayer.sap $(BUILD)/rmtvis.xex
 
 PATCH16 = $(wildcard Patch-16/*.s)
 LEGACY  = $(wildcard Legacy/*.s)
+UNPATCHED = $(wildcard Unpatched/*.s)
 RMF     = $(wildcard Legacy/rmf/*.s)
 COMMON  = mads.inc obx.cfg obx.sh
 
@@ -41,10 +43,14 @@ $(BUILD):
 
 # the drivers also write the ld65 debug file (-g does not change the binary), the symbols of the C headers
 $(BUILD)/rmt_driver_v6.obx: $(PATCH16) $(COMMON) | $(BUILD)
-	OBX_DBG=$(BUILD)/rmt_driver_v6.dbg $(OBX) $@ Patch-16/rmtplayr.s
+	OBX_DBG=$(BUILD)/rmt_driver_v6.dbg $(OBX) $@ Patch-16/rmtplayr.s -D FEAT_IS_TRACKER=1 -D FEAT_IS_SIMPLEP=0
 
 $(BUILD)/rmt_driver_v1.obx: $(LEGACY) $(COMMON) | $(BUILD)
 	OBX_DBG=$(BUILD)/rmt_driver_v1.dbg $(OBX) $@ Legacy/rmt_ata.s
+
+# the same driver from asm/Unpatched, Raster's player with his comments in English (RMT 1.36, plan 51)
+$(BUILD)/unpatched_driver_v1.obx: $(UNPATCHED) $(COMMON) | $(BUILD)
+	$(OBX) $@ Unpatched/rmt_ata.s
 
 # the C headers the tracker addresses the variables of the drivers through: what MADS writes with -hc for
 # asm/Patch-16/rmtplayr.a65 (prefix RMTPLAYR) and asm/Legacy/rmt_ata.a65 (prefix RMT_ATA)
@@ -76,10 +82,11 @@ $(BUILD)/rmtvis.xex: $(PATCH16) $(COMMON) | $(BUILD)
 	$(OBX) $@ Patch-16/rmtvis.s -D FEAT_IS_TRACKER=0 -D FEAT_IS_SIMPLEP=1
 
 # the headers of src/ are compared without the alignment clang-format gives them
-check: $(BUILD)/rmt_driver_v6.obx $(BUILD)/rmt_driver_v1.obx $(HEADERS)
+check: $(BUILD)/rmt_driver_v6.obx $(BUILD)/rmt_driver_v1.obx $(BUILD)/unpatched_driver_v1.obx $(HEADERS)
 	cmp $(BUILD)/rmt_driver_v6.obx $(DRIVERS)/rmt_driver_v6.obx
 	cmp $(BUILD)/rmt_driver_v1.obx $(DRIVERS)/rmt_driver_v1.obx
-	@echo "check: the drivers are identical to rmt_driver_v6.obx and rmt_driver_v1.obx"
+	cmp $(BUILD)/unpatched_driver_v1.obx $(DRIVERS)/rmt_driver_v1.obx
+	@echo "check: the drivers are identical to rmt_driver_v6.obx and rmt_driver_v1.obx (from Legacy and Unpatched)"
 	@for h in $(notdir $(HEADERS)); do \
 	    awk '{ $$1 = $$1 } 1' $(SRC)/$$h | cmp -s - $(BUILD)/$$h || \
 	        { echo "check: src/$$h is not what the driver source gives (make install-headers)" >&2; exit 1; }; \

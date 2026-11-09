@@ -67,7 +67,7 @@ bool CWaveFileExporter::ExportWAV(CSongExport& songExport, std::ofstream& ou, CX
     while (frames < pokeyStream.GetFirstCountPoint()) {
         // Copy the SAP-R bytes of this frame straight to the POKEY registers at $D200/$D210, where
         // CopyAtariMemoryToPokey() reads them. They went into the Patch 16 driver's variables before, and the loaded
-        // driver's SetPokey carried them there: with a v1-family driver that overwrote the player (TRACKN_AUDC is
+        // driver's rmt_set_pokey carried them there: with a v1-family driver that overwrote the player (TRACKN_AUDC is
         // $3180-$3187, across its tabbeganddistor at $3182) and rendered the driver's own variables rather than the
         // stream (ported from RMT 1.36, plan 46, 5694184). A frame is AUDF1, AUDC1 ... AUDF4, AUDC4, AUDCTL of a
         // POKEY; in stereo the 2nd POKEY ($D210, tracks 5-8) comes first, then the 1st ($D200).

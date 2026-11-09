@@ -57,6 +57,19 @@ Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
   temperament in every key; `scripts/test-scripting.sh` checks an older `tuning.ini` against its conversion and a
   retired preset. `rmt/tuning.ini` is written again with the defaults; `doc/rmt_tracker_drivers.md` has a section on
   the tuning of the Patch16 driver.
+- 2.7: the player sources of RMT 1.36 (plans 51 and 58: 27ca1c8 to 8e59a0b, 4a2e5ec, 964ab60, 724fcf9), byte for byte the
+  same drivers and players: `asm/Unpatched` is Raster's RMT 1.28 player with his ~800 working comments translated into
+  English, `asm/Patch-16` carries them, has Raster's label names again (`p_song`, `v_abeat`, `rmt_set_pokey`,
+  `trackn_audctl_global`, `frqtab_hi_tab` + `distortion_tab`...; `asm/Patch-16/README.md` maps Vin's names), one
+  comment style, no `FEAT_TABLE_MANUAL` and no `backup_code.a65`; `TABLES` is defined in `rmtdata.a65`;
+  `rmtformat.txt` is `rmtformat.a65` and `sap.asm` is `sap.a65`. The target selectors `FEAT_IS_TRACKER` and
+  `FEAT_IS_SIMPLEP` are on the command line, not in `rmt_feat.a65` (5ae914a): `asm/ca65/Makefile` and `build.cmd` pass
+  them. RITMO keeps its `music.rmt` (Raster's tune, mono, NTSC) and the settings of the Simple RMT Player for it.
+  `scripts/mads2ca65.py` translates `asm/Unpatched` too (not `rmtformat.a65`, which is pseudo-assembly); `make check`
+  of `asm/ca65` also assembles `Unpatched/rmt_ata.s` and compares it with `rmt_driver_v1.obx`; the four players of
+  RITMO PLAYER (`asm/rmtplay`) read the new names and come out identical. `src/tracker_obx.h` is generated again
+  (`RMTPLAYR_FRQTAB_HI_TAB`, `RMTPLAYR_DISTORTION_TAB`, `RMT_SET_POKEY`...). The xasm compatibility check and the
+  vendored xasm of upstream are not ported: RITMO assembles with ca65.
 - 2.6: the fixes of RMT 1.36 by Peter Dell (JAC!) (https://github.com/peterdell/RASTER-Music-Tracker, branch dev, up to
   2026-10-15), ported to RITMO: thanks again to JAC!, whose work this fork stands on, and who in turn took four fixes
   from the trail of RITMO into RMT 1.36 (the SAP type B player blocks, the WAV at instrument speed 2-4, the AUDCTL of the

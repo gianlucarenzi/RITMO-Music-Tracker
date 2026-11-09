@@ -315,7 +315,7 @@ static int TuningTest()
 }
 
 // --midi16: the note input of MIDI channel 16 (the MIDI CH15 mode), which
-// writes AUDF and AUDC straight into the driver's variables for SetPokey.
+// writes AUDF and AUDC straight into the driver's variables for rmt_set_pokey.
 // For each distortion and clock (AUDCTL) a program change selects the
 // distortion and a note is played; the AUDF must be the byte of the table
 // the player itself reads (the addresses of tracker_obx.h and legacy_obx.h,

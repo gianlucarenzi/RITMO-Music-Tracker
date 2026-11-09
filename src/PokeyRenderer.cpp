@@ -327,7 +327,7 @@ void CXPokey::RenderSoundV2Call(int instrspeed, BYTE* buffer, int& length)
         instrspeed = 1;
     }
     // from the $D200/$D210 registers its one caller (CWaveFileExporter::ExportWAV) fills per frame: running the
-    // loaded driver's SetPokey first was wrong with any driver but Patch 16 (plan 46)
+    // loaded driver's rmt_set_pokey first was wrong with any driver but Patch 16 (plan 46)
     CopyAtariMemoryToPokey();
     // 1/instrspeed of a chunk, a whole number of samples: the rest is carried to the next call, so the calls add up
     // to the chunks exactly (a byte lost per call would make a long WAV a fraction of a percent short)

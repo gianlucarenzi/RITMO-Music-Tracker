@@ -18,7 +18,7 @@ It needs `ca65` and `ld65` (cc65 2.19 or later), `make`, `awk` and a POSIX shell
 
 | File | |
 |------|-|
-| `Legacy/*.s`, `Legacy/rmf/*.s`, `Patch-16/*.s` | the sources, one for each `*.a65` / `*.asm` of `asm/` |
+| `Legacy/*.s`, `Legacy/rmf/*.s`, `Patch-16/*.s`, `Unpatched/*.s` | the sources, one for each `*.a65` / `*.asm` of `asm/` (but `Patch-16/rmtformat.a65`, the .rmt format in pseudo-assembly) |
 | `mads.inc` | `ORG`, `OPT_H`, `RUN`, `INI`: the Atari binary file as MADS writes it |
 | `obx.sh` | `obx.sh out.obx source.s [ca65 options]`: assembles one source into an Atari binary file; with `OBX_SYMBOLS="name ..."` it also prints `OBX_SYMBOL name XXXX` for each symbol |
 | `obx.cfg` | the ld65 configuration of `obx.sh` |
@@ -34,8 +34,9 @@ says which source it comes from. The binary files the sources include (`ins`: `f
 
 | Target | Source | Check |
 |--------|--------|-------|
-| `build/rmt_driver_v6.obx` | `Patch-16/rmtplayr.s` (RMT 1.34 Patch16, `rmt_feat` as it is: `FEAT_IS_TRACKER`) | identical to `rmt/resources/drivers/rmt_driver_v6.obx` |
+| `build/rmt_driver_v6.obx` | `Patch-16/rmtplayr.s` (RMT 1.34 Patch16, `rmt_feat` as it is, `-D FEAT_IS_TRACKER=1 -D FEAT_IS_SIMPLEP=0`: the target selectors are on the command line since RMT 1.36) | identical to `rmt/resources/drivers/rmt_driver_v6.obx` |
 | `build/rmt_driver_v1.obx` | `Legacy/rmt_ata.s` (RMT 1.28) | identical to `rmt/resources/drivers/rmt_driver_v1.obx` |
+| `build/unpatched_driver_v1.obx` (`make check`) | `Unpatched/rmt_ata.s` (the same player with Raster's comments in English, RMT 1.36 plan 51) | identical to `rmt/resources/drivers/rmt_driver_v1.obx` |
 | `build/tracker_obx.h`, `legacy_obx.h` | the symbols of the two drivers above (`OBX_DBG`), prefix `RMTPLAYR` and `RMT_ATA` | `make check`: the same `#define`s as `src/tracker_obx.h` and `src/legacy_obx.h`, through which the tracker reads and writes the variables of the drivers; MADS writes the same files with `-hc` |
 | `build/rmt_sap4.obx`, `rmt_sap8.obx` | `Legacy/rmt_sap4.s`, `rmt_sap8.s` (SAP players of RMT 1.28, 4 and 8 tracks) | the sources check (`ert`) that the player ends at the address of the original ($394E, $3A5A) |
 | `build/rmt_msx.obx` | `Legacy/rmt_msx.s` (XEX player routine of RMT 1.28) | assembled, no reference |

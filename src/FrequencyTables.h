@@ -12,7 +12,7 @@
 // There are two layouts, because there are two generations of driver, and the driver version decides which one is
 // read:
 //
-// PATCH16 (asm/Patch-16/rmtplayr.a65) chooses in two steps: its TABLES_MSB dispatch table maps the distortion to one
+// PATCH16 (asm/Patch-16/rmtplayr.a65) chooses in two steps: its frqtab_hi_tab + distortion_tab dispatch table (TABLES_MSB + DISTORTIONS until RMT 1.36, 494ba93) maps the distortion to one
 // of the five 256-byte pages at $B000, then store_tables_lsb picks a 64-byte slice by the channel's clock - 64 kHz
 // at +$00, 1.79 MHz at +$40, 16-bit at +$80 - while check_15khz takes the two 15 kHz tables from PAGE_EXTRA_0.
 //
