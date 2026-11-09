@@ -36,6 +36,7 @@ void PokeyChip::Reset()
     std::memset(m_audf, 0, sizeof(m_audf));
     std::memset(m_audc, 0, sizeof(m_audc));
     m_audctl = 0;
+    m_skctl = 0x03; // serial and timers out of their init state
     for (int& c : m_counter) c = 1;
     std::memset(m_out, 0, sizeof(m_out));
     m_hp[0] = m_hp[1] = 0;
@@ -52,6 +53,8 @@ void PokeyChip::Write(int reg, uint8_t value)
             m_audf[reg >> 1] = value;
     } else if (reg == 8) {
         m_audctl = value;
+    } else if (reg == 0x0F) {
+        m_skctl = value;
     }
 }
 
@@ -90,13 +93,19 @@ void PokeyChip::ClockPair(int lo, int tick, uint8_t fast, uint8_t join)
         }
         return;
     }
+    // Two-tone mode (SKCTL bit 3, pair 1/2 only): channel 2 restarts the
+    // divider of channel 1, and channel 1 that of channel 2 unless the break
+    // is forced (bit 7). RMT's Two-Tone filter is SKCTL = $8B, as in ASAP.
+    const bool twoTone = lo == 0 && (m_skctl & 0x08);
     if (clkLo && --m_counter[lo] <= 0) {
         m_counter[lo] = m_audf[lo] + ((m_audctl & fast) ? 4 : 1);
         Pulse(lo);
+        if (twoTone && !(m_skctl & 0x80)) m_counter[hi] = m_audf[hi] + 1;
     }
     if (tick && --m_counter[hi] <= 0) {
         m_counter[hi] = m_audf[hi] + 1;
         Pulse(hi);
+        if (twoTone) m_counter[lo] = m_audf[lo] + ((m_audctl & fast) ? 4 : 1);
     }
 }
 

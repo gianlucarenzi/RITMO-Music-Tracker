@@ -340,9 +340,9 @@ void CXPokey::RenderSoundV2Call(int instrspeed, BYTE* buffer, int& length)
 
 
 /// <summary>
-/// Transfer 9/18 Pokey registers values into the sound driver.
-/// Mono: D200-D208
-/// Stereo: D200-D208 and D210-D218
+/// Transfer 10/20 Pokey registers values into the sound driver.
+/// Mono: D200-D208, D20F
+/// Stereo: D200-D208, D20F and D210-D218, D21F
 /// </summary>
 void CXPokey::CopyAtariMemoryToPokey()
 {
@@ -363,5 +363,14 @@ void CXPokey::CopyAtariMemoryToPokey()
     m_pokey.PutByte(0x08, g_AtariTrackerDriver->GetAtari()->GetByteAt(0xd208));
     if (stereo) {
         m_pokey.PutByte(0x18, g_AtariTrackerDriver->GetAtari()->GetByteAt(0xd218));
+    }
+
+    // SKCTL, of each POKEY: the Two-Tone filter (the driver holds $8B there
+    // while the envelope's $7FE/$7FD command or the Pokey menu has it on). It
+    // was never copied, so live playback had the filter off while every export
+    // carried it (RMT issue #30; the SAP-R convention is AUDC1 bit 4).
+    m_pokey.PutByte(0x0F, g_AtariTrackerDriver->GetAtari()->GetByteAt(0xd20f));
+    if (stereo) {
+        m_pokey.PutByte(0x1F, g_AtariTrackerDriver->GetAtari()->GetByteAt(0xd21f));
     }
 }

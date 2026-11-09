@@ -9,6 +9,21 @@
 
 extern CAtariTrackerDriver* g_AtariTrackerDriver;
 
+// One POKEY's nine stream bytes into its registers ($D200 or $D210), translating the SAP-R Two-Tone convention
+// exactly as the SAP/XEX exports' LZSS player does (its CheckForTwoToneBit): AUDC1 bit 4 below $F0 means "SKCTL $8B
+// this frame" (CPokeyStream::Record set it while the driver's SKCTL read $8B) and is cleared before the write -
+// passed through raw, the POKEY reads the bit as volume-only and the filter is lost. $F0 and above is genuine
+// volume-only and stays untouched. CopyAtariMemoryToPokey() then carries SKCTL ($D20F/$D21F) to the POKEY
+// (ported from RMT 1.36, plan 50 T3, 50181b5; RMT issue #30).
+static void PokeChip(byte* pokey, const BYTE* stream)
+{
+    const int audc1 = stream[1];
+    const bool twoTone = audc1 < 0xF0 && (audc1 & 0x10);
+    for (int i = 0; i < 9; i++) pokey[i] = stream[i];
+    if (twoTone) pokey[1] &= ~0x10;
+    pokey[0x0F] = twoTone ? 0x8B : 0x03; // SKCTL
+}
+
 bool CWaveFileExporter::ExportWAV(CSongExport& songExport, std::ofstream& ou, CXPokey& pokey, byte* memory)
 {
     CWaveFile wavefile{};
@@ -58,12 +73,10 @@ bool CWaveFileExporter::ExportWAV(CSongExport& songExport, std::ofstream& ou, CX
         // POKEY; in stereo the 2nd POKEY ($D210, tracks 5-8) comes first, then the 1st ($D200).
         streambuffer = pokeyStream.GetStreamBuffer() + frames * frameSize;
         if (frameSize == 18) {
-            for (int i = 0; i < 9; i++) {
-                memory[0xd200 + i] = streambuffer[0x09 + i];
-                memory[0xd210 + i] = streambuffer[0x00 + i];
-            }
+            PokeChip(memory + 0xd200, streambuffer + 0x09);
+            PokeChip(memory + 0xd210, streambuffer + 0x00);
         } else {
-            for (int i = 0; i < 9; i++) memory[0xd200 + i] = streambuffer[i];
+            PokeChip(memory + 0xd200, streambuffer);
         }
 
         // Fill the POKEY buffer with the sound of this frame: one call of the driver, 1/instrument speed of a VBI

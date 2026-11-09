@@ -144,6 +144,7 @@ static int PlaySong(const char* song, int frames, const char* regsOut, const cha
         std::fprintf(regs, "\n");
         if (wav) {
             for (int i = 0; i < 9; i++) pokey.PutByte(i, g_Atari.GetByteAt(0xd200 + i));
+            pokey.PutByte(0x0F, g_Atari.GetByteAt(0xd20f)); // SKCTL: the Two-Tone filter
             uint8_t buf[8192];
             int n = pokey.Generate(cyclesPerFrame, buf, 16);
             pcm.insert(pcm.end(), buf, buf + n);
@@ -177,6 +178,54 @@ static int PlaySong(const char* song, int frames, const char* regsOut, const cha
     }
     std::printf("Played %d frames of %s\n", frames, song);
     return 0;
+}
+
+// --twotone: the Two-Tone filter (SKCTL = $8B, the envelope's $7FE/$7FD
+// command) must reach the sound. The song (Makary's example of RMT issue #30)
+// is played by the tracker driver; the frames where it holds $8B in SKCTL are
+// rendered twice by the built-in POKEY, with that SKCTL and with $03 (filter
+// off): the samples must differ. Before, neither the live playback nor the
+// POKEY emulation knew SKCTL, and the filter was silent.
+static int TwoTone(const char* song)
+{
+    g_Atari.Init(g_Song.IsNTSC());
+    g_AtariTrackerDriver = new CAtariTrackerDriver(g_Atari);
+    g_AtariTrackerDriver->LoadRMTRoutines(TrackerDriverVersion::PATCH16);
+    g_AtariTrackerDriver->Init();
+    g_Song.ClearSong(8);
+    if (!g_Song.FileOpen(song, FALSE)) {
+        std::fprintf(stderr, "cannot open %s\n", song);
+        return 1;
+    }
+    g_Pokey.InitSound(g_Song.IsNTSC(), g_Song.IsStereo());
+    g_Song.Play(PLAY_SONG, FALSE, 0);
+    g_Song.StopTimer();
+
+    rmt_emu::PokeySound on, off;
+    on.Initialize(false);
+    off.Initialize(false);
+    on.SetMainClock(g_Atari.GetClockFrequency());
+    off.SetMainClock(g_Atari.GetClockFrequency());
+    const int cyclesPerFrame = g_Atari.GetFrameCycleCount();
+    int twoToneFrames = 0, differentFrames = 0;
+    for (int f = 0; f < 50 * 20; f++) { // 20 s
+        g_Song.TimerRoutine();
+        const int skctl = g_Atari.GetByteAt(0xd20f);
+        for (int i = 0; i < 9; i++) {
+            on.PutByte(i, g_Atari.GetByteAt(0xd200 + i));
+            off.PutByte(i, g_Atari.GetByteAt(0xd200 + i));
+        }
+        on.PutByte(0x0F, skctl);
+        off.PutByte(0x0F, 0x03);
+        uint8_t a[8192], b[8192];
+        const int na = on.Generate(cyclesPerFrame, a, 16), nb = off.Generate(cyclesPerFrame, b, 16);
+        if (skctl == 0x8B) {
+            twoToneFrames++;
+            if (na != nb || std::memcmp(a, b, na)) differentFrames++;
+        }
+    }
+    std::printf("Two-Tone: %d frames with SKCTL $8B, %d of them sound different\n", twoToneFrames, differentFrames);
+    return twoToneFrames > 0 && differentFrames > 0 ? 0 : 1;
 }
 
 // --midi16: the note input of MIDI channel 16 (the MIDI CH15 mode), which
@@ -286,6 +335,7 @@ int main(int argc, char** argv)
     if (argc >= 5 && !std::strcmp(argv[1], "--play"))
         return PlaySong(argv[2], std::atoi(argv[3]), argv[4], argc >= 6 ? argv[5] : nullptr);
     if (argc >= 2 && !std::strcmp(argv[1], "--midi16")) return MidiChannel16();
+    if (argc >= 3 && !std::strcmp(argv[1], "--twotone")) return TwoTone(argv[2]);
     if (argc >= 3 && !std::strcmp(argv[1], "--screenshot"))
         return Screenshot(argv[2], 1280, 800, argc >= 4 ? argv[3] : nullptr);
 

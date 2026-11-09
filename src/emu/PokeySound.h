@@ -10,7 +10,7 @@
 //
 // The chip model is cycle based: 64 kHz / 15 kHz base clock, 1.79 MHz channels
 // 1 and 3, 16 bit channel pairs, high-pass filters, poly4/poly5/poly9/poly17,
-// the distortions of AUDC and volume-only mode. It is the POKEY emulation of
+// the distortions of AUDC, volume-only mode and the two-tone mode of SKCTL. It is the POKEY emulation of
 // AT2019/ATARI-Driver/RmtSkeleton/tools/rmtplay (checked against atari800).
 
 #pragma once
@@ -23,12 +23,12 @@ class PokeyChip {
 public:
     PokeyChip() { Reset(); }
     void Reset();
-    void Write(int reg, uint8_t value); // 0..0x0F
+    void Write(int reg, uint8_t value); // 0..8 (AUDF/AUDC/AUDCTL), 0x0F (SKCTL: two-tone)
     int Cycle();                        // one machine cycle, returns the output level 0..60
     uint8_t Random() const;             // RANDOM ($D20A)
 
 private:
-    uint8_t m_audf[4], m_audc[4], m_audctl;
+    uint8_t m_audf[4], m_audc[4], m_audctl, m_skctl;
     int m_counter[4];
     uint8_t m_out[4], m_hp[2];
     unsigned m_poly4, m_poly5, m_poly9, m_poly17;
