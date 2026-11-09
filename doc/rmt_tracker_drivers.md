@@ -83,6 +83,35 @@ The driver code is version Patch16-3.2 (`asm/Patch-16/rmtplayr.a65`), used by RM
 
 The AUTOFILTER is one of these compatibility issues: Patch16 starts the frequency offset of channel 3 at 0 instead of 1 and does not accumulate the command 6, so the two channels of the filter stay in phase and an older song sounds quiet and an octave higher. A song file does not say which driver it was made with, so when the driver is Patch16 and a song that uses the AUTOFILTER is opened, RMT asks whether to play it with the RMT 1.28 Unpatched driver. The answer is for that song only: a new song or the next song opened uses the default driver of the module properties again. A script (`rmt /SCRIPT:`) answers No; it chooses the driver with `set driver`.
 
+### Tuning
+
+Selecting this driver enables the tuning settings (File > Properties... >
+Tuning...); all other drivers play their own built-in frequency tables, so
+the button is disabled for them. The settings belong to the song, but are kept
+in `tuning.ini` (the settings of the user, see BUILD.md), not in the module.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| A4 Frequency | 440.83751645933 Hz for PAL<br>444.8957788679134 Hz for NTSC | The reference pitch of the note A-4, in Hertz, in every key. The defaults are RMT's traditional tuning, not concert pitch 440 Hz: the frequency tables the Patch16 player ships were generated with exactly these values (`RmtCoreTest --tuning` checks that equality). The hand-made tables of the RMT 1.28 era drivers are close to, but not byte-identical with, the generated ones. |
+| Tonic | A- (3) | The key the tables are tuned to: the note that receives the temperament's 0 cents. Stored as a number, C- = 0 counting downward, so A- = 3. In equal temperament every tonic gives the same tables. |
+| Temperament | Equal Temperament (Default) | Equal temperament, one of 21 historical presets (each verified against its source file in the [Scala scale archive](https://www.huygens-fokker.org/microtonality/scales.html)), or a custom temperament entered in musical cents (0-1200 for each semitone above the tonic). |
+
+The two default A4 frequencies are in the exact ratio of the NTSC and PAL
+machine clocks (1789773 / 1773447) and therefore produce bit-identical
+frequency tables: every generated pitch is proportional to the A4
+frequency, and every POKEY divider is computed from the quotient
+clock / pitch, so scaling the A4 frequency by the clock ratio cancels out
+exactly - before any rounding. This holds for every temperament, tonic
+and custom tuning, not only for equal temperament. It is why one player
+binary serves both systems, and why switching a module between PAL and NTSC
+multiplies the A4 frequency by exactly this ratio.
+
+`tuning.ini` writes `A4_FREQUENCY`, `TONIC`, `TEMPERAMENT` and the eleven cents
+`MIN_2ND` ... `MAJ_7TH`. A file of an older version is still read: `TUNING` and
+`BASENOTE` are the old names, a fraction (`MAJ_3RD = 5 / 4`) is converted to
+cents, and a preset that was retired (they were no 12-note temperament with a
+2:1 octave) plays as equal temperament.
+
 ## RMT 1.28 Patch Prince of Persia by VinsCool
 
 This driver version is an older patch based on the original RMT 1.28 Patch 8 by Analmux.

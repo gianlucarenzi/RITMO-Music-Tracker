@@ -7,6 +7,9 @@
 #include "PlatformTypes.h"
 
 #include "C6502.h"
+#include "TuningTypes.h"
+
+#include <cmath>
 
 
 //Table construction structure
@@ -26,6 +29,7 @@ public:
     static constexpr Temperament TUNING_PRESETS = 29;            // Total number of temperaments available
     static constexpr Temperament TUNING_CUSTOM = TUNING_PRESETS; // Custom Temperament using Ratio is assumed otherwise
     static constexpr size_t PRESETS_LENGTH = 20 + 1;             // Length of the largest preset table, used for the 2 dimensional array boundaries
+    static constexpr int A_SEMITONES_ABOVE_C = 9;                // A- is nine semitones above C-
 
     typedef double Pitch;
     typedef int AUDF;
@@ -38,6 +42,14 @@ public:
     Pitch GetPitch(AUDF audf, int coarse_divisor, double divisor, int cycle);
     Pitch GetPOKEYPPitch(int audc, AUDF audf, int audctl, int channel);
 
+    // The anchor GetTruePitch() places the tonic's octave chain by, so that A sounds at the A4 frequency in every key
+    // (RMT 1.36, plan 59 step 2). Valid after InitTuning() computed the custom multipliers.
+    double CalculateTonicFrequency(const TTuningSettings& tuning) const;
+    // The degree (0-11 semitones above the tonic) of equal temperament (0) or a preset, in cents (RMT 1.36, 0e6753e)
+    double GetTemperamentCents(Temperament temperament, int degree) const;
+    // The pitch of a note (semitones counted upward like RMT's notes) in a tuning, from CalculateTonicFrequency()
+    Pitch GetTruePitch(double tuning, Temperament temperament, int tonic, int semitone) const;
+
 private:
     // Multiply by notes per octave to transpose the table
     const TTuning dist_2_bell{ 1, 0, 4, 2 };
@@ -49,8 +61,12 @@ private:
     const TTuning dist_c_unstable{ 3, 0, 8, 2 };
 
     const double temperament_preset[TUNING_PRESETS][PRESETS_LENGTH] = {
-        //No Temperament for the first slot, leave it empty
-        { 0 },
+        // Equal temperament, the powers of the 12th root of 2 (RMT 1.36, plan 59 step 2: CalculateTonicFrequency() and
+        // GetTemperamentCents() read them; GetTruePitch() still computes equal temperament directly)
+        { pow(2.0, 0.0 / NOTES_PER_OCTAVE), pow(2.0, 1.0 / NOTES_PER_OCTAVE), pow(2.0, 2.0 / NOTES_PER_OCTAVE),
+          pow(2.0, 3.0 / NOTES_PER_OCTAVE), pow(2.0, 4.0 / NOTES_PER_OCTAVE), pow(2.0, 5.0 / NOTES_PER_OCTAVE),
+          pow(2.0, 6.0 / NOTES_PER_OCTAVE), pow(2.0, 7.0 / NOTES_PER_OCTAVE), pow(2.0, 8.0 / NOTES_PER_OCTAVE),
+          pow(2.0, 9.0 / NOTES_PER_OCTAVE), pow(2.0, 10.0 / NOTES_PER_OCTAVE), pow(2.0, 11.0 / NOTES_PER_OCTAVE), 2 },
 
         //Thomas Young 1799's Well Temperament no.1
         { 1, 1.055709, 1.119770, 1.187690, 1.253887, 1.334739, 1.407637, 1.496513, 1.583581, 1.675715, 1.781546, 1.878851, 2 },
@@ -140,10 +156,9 @@ private:
     C6502::ClockFrequency m_clockFrequency;
     byte* m_table_memory;
 
-    //Custom tuning ratio is generated in this array, so this is not a constant
-    double CUSTOM[13] = { 0 };
+    // The custom temperament's multipliers, 2^(cents/1200) of the tuning settings, plus the octave (InitTuning())
+    double CUSTOM[NOTES_PER_OCTAVE + 1] = { 0 };
 
-    Pitch GetTruePitch(double tuning, Temperament temperament, int basenote, int semitone);
 
     void GenerateTable(byte* table, int length, int semitone, int timbre, int audctl);
     AUDF CalculateDeltaAUDF(Pitch pitch, AUDF audf, int coarse_divisor, double divisor, int cycle, int timbre);

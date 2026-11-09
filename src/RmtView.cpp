@@ -10,7 +10,6 @@
 #include "Clipboard.h"
 #include <iomanip>
 #include <sstream>
-#include "Fraction.h"
 #include "RmtView.h"
 #include "MainFrm.h"
 #include "OptionsDialog.h"
@@ -734,18 +733,29 @@ void CRmtView::ResetRMTConfig()
     WriteRMTConfig();                           // Write the default configuration file
 }
 
-boolean ReadFraction(const char* name, const char* value, const char* value2, const char* wantedName, CFraction& fraction)
+// A retired preset number (RMT 1.36, plan 59: 5, 14, 24-28, the presets that are no 12-note temperament with a 2:1
+// octave) plays as equal temperament.
+static int SanitizeTemperament(int temperament)
 {
-    if (strcmp(wantedName, name) == 0) {
-        fraction.numerator = atoi(value);
-        fraction.denominator = atoi(value2);
-        if (fraction.denominator == 0) {
-            fraction.numerator = 1;
-            fraction.denominator = 1;
-        }
+    switch (temperament) {
+        case 5: case 14: case 24: case 25: case 26: case 27: case 28: return 0;
+        default: return temperament;
+    }
+}
+
+// A cents value, read directly ("NAME = 386.313714") or converted from the fraction line of an older tuning.ini
+// ("NAME = 5 / 4" becomes 1200*log2(5/4), RMT 1.36 plan 59); the old format's zero denominator meant 1/1, so it
+// becomes 0 cents, as does a numerator that is not positive.
+static bool ReadCents(const char* name, const char* value, const char* value2, const char* wantedName, double& cents)
+{
+    if (strcmp(wantedName, name) != 0) return false;
+    if (value2 == nullptr) {
+        cents = atof(value);
         return true;
-    };
-    return false;
+    }
+    const int numerator = atoi(value), denominator = atoi(value2);
+    cents = (denominator == 0 || numerator <= 0) ? 0 : CENTS_PER_OCTAVE * log2((double)numerator / denominator);
+    return true;
 }
 
 void CRmtView::ReadTuningConfig()
@@ -772,47 +782,37 @@ void CRmtView::ReadTuningConfig()
         tmp[-1] = 0;             // Offset by 1 to compensate the Space
         name = line;             // Name set to the current line, terminated by tmp
         value = tmp + 2;         // Offset by 1 to compensate the Space
-        if (div)                 // The div pointer is used to get the 2nd Ratio value
+        if (div)                 // The div pointer is used to get the 2nd value of an old fraction line
         {
             div[-1] = 0; // Same as above, offset by 1 to compensate the Space(s)
             value2 = div + 2;
         } else
-            value2 = "1"; // No 2nd Ratio value: denominator 1
+            value2 = nullptr; // A cents line has no '/'
 
-        // TUNING
-        if (NAME("TUNING")) {
-            g_Song.GetTuning().basetuning = atof(value);
+        // TUNING (TUNING and BASENOTE are the names before RMT 1.36 plan 62)
+        TTuningSettings& tuning = g_Song.GetTuning();
+        if (NAME("A4_FREQUENCY") || NAME("TUNING")) {
+            tuning.a4Frequency = atof(value);
             continue;
         }
-        if (NAME("BASENOTE")) {
-            g_Song.GetTuning().basenote = atoi(value);
+        if (NAME("TONIC") || NAME("BASENOTE")) {
+            tuning.tonic = atoi(value);
             continue;
         }
         if (NAME("TEMPERAMENT")) {
-            g_Song.GetTuning().temperament = atoi(value);
+            tuning.temperament = SanitizeTemperament(atoi(value));
             continue;
         }
 
-        // RATIOS
-        if (ReadFraction(name, value, value2, "UNISON", g_Song.GetTuningRatios().UNISON)) { continue; }
-        if (ReadFraction(name, value, value2, "MIN_2ND", g_Song.GetTuningRatios().MIN_2ND)) { continue; }
-        if (ReadFraction(name, value, value2, "MAJ_2ND", g_Song.GetTuningRatios().MAJ_2ND)) { continue; }
-        if (ReadFraction(name, value, value2, "MIN_3RD", g_Song.GetTuningRatios().MIN_3RD)) { continue; }
-        if (ReadFraction(name, value, value2, "MAJ_3RD", g_Song.GetTuningRatios().MAJ_3RD)) { continue; }
-        if (ReadFraction(name, value, value2, "PERF_4TH", g_Song.GetTuningRatios().PERF_4TH)) { continue; }
-        if (ReadFraction(name, value, value2, "TRITONE", g_Song.GetTuningRatios().TRITONE)) { continue; }
-        if (ReadFraction(name, value, value2, "PERF_5TH", g_Song.GetTuningRatios().PERF_5TH)) { continue; }
-        if (ReadFraction(name, value, value2, "MIN_6TH", g_Song.GetTuningRatios().MIN_6TH)) { continue; }
-        if (ReadFraction(name, value, value2, "MAJ_6TH", g_Song.GetTuningRatios().MAJ_6TH)) { continue; }
-        if (ReadFraction(name, value, value2, "MIN_7TH", g_Song.GetTuningRatios().MIN_7TH)) { continue; }
-        if (ReadFraction(name, value, value2, "MAJ_7TH", g_Song.GetTuningRatios().MAJ_7TH)) { continue; }
-        if (ReadFraction(name, value, value2, "OCTAVE", g_Song.GetTuningRatios().OCTAVE)) { continue; }
+        // CENTS (the RATIOS of an older tuning.ini are converted)
+        if (NAME("UNISON") || NAME("OCTAVE")) continue; // the tonic's 0 cents and the 2:1 octave are fixed
+        static const char* const CENTS_NAMES[TTuningCents::COUNT] = { nullptr,    "MIN_2ND",  "MAJ_2ND", "MIN_3RD",
+                                                                      "MAJ_3RD",  "PERF_4TH", "TRITONE", "PERF_5TH",
+                                                                      "MIN_6TH",  "MAJ_6TH",  "MIN_7TH", "MAJ_7TH" };
+        for (int i = 1; i < TTuningCents::COUNT; i++) {
+            if (ReadCents(name, value, value2, CENTS_NAMES[i], tuning.cents.values[i])) break;
+        }
     }
-}
-
-void WriteFraction(std::ostream& os, const char* id, const CFraction& fraction)
-{
-    os << id << " = " << fraction.numerator << " / " << fraction.denominator << std::endl;
 }
 
 void CRmtView::WriteTuningConfig()
@@ -828,25 +828,18 @@ void CRmtView::WriteTuningConfig()
 
     os << "\n# TUNING\n"
        << std::endl;
-    os << "TUNING = " << g_Song.GetTuning().basetuning << std::endl;
-    os << "BASENOTE = " << g_Song.GetTuning().basenote << std::endl;
-    os << "TEMPERAMENT = " << g_Song.GetTuning().temperament << std::endl;
+    const TTuningSettings& tuning = g_Song.GetTuning();
+    os << "A4_FREQUENCY = " << tuning.a4Frequency << std::endl;
+    os << "TONIC = " << tuning.tonic << std::endl;
+    os << "TEMPERAMENT = " << tuning.temperament << std::endl;
 
-    os << "\n# RATIOS\n"
+    // the cents of the custom temperament (RMT 1.36, plan 59); the tonic's 0 has no line (plan 62)
+    os << "\n# CENTS\n"
        << std::endl;
-    WriteFraction(os, "UNISON", g_Song.GetTuningRatios().UNISON);
-    WriteFraction(os, "MIN_2ND", g_Song.GetTuningRatios().MIN_2ND);
-    WriteFraction(os, "MAJ_2ND", g_Song.GetTuningRatios().MAJ_2ND);
-    WriteFraction(os, "MIN_3RD", g_Song.GetTuningRatios().MIN_3RD);
-    WriteFraction(os, "MAJ_3RD", g_Song.GetTuningRatios().MAJ_3RD);
-    WriteFraction(os, "PERF_4TH", g_Song.GetTuningRatios().PERF_4TH);
-    WriteFraction(os, "TRITONE", g_Song.GetTuningRatios().TRITONE);
-    WriteFraction(os, "PERF_5TH", g_Song.GetTuningRatios().PERF_5TH);
-    WriteFraction(os, "MIN_6TH", g_Song.GetTuningRatios().MIN_6TH);
-    WriteFraction(os, "MAJ_6TH", g_Song.GetTuningRatios().MAJ_6TH);
-    WriteFraction(os, "MIN_7TH", g_Song.GetTuningRatios().MIN_7TH);
-    WriteFraction(os, "MAJ_7TH", g_Song.GetTuningRatios().MAJ_7TH);
-    WriteFraction(os, "OCTAVE", g_Song.GetTuningRatios().OCTAVE);
+    static const char* const CENTS_NAMES[TTuningCents::COUNT] = { nullptr,   "MIN_2ND",  "MAJ_2ND", "MIN_3RD",
+                                                                  "MAJ_3RD", "PERF_4TH", "TRITONE", "PERF_5TH",
+                                                                  "MIN_6TH", "MAJ_6TH",  "MIN_7TH", "MAJ_7TH" };
+    for (int i = 1; i < TTuningCents::COUNT; i++) os << CENTS_NAMES[i] << " = " << tuning.cents.values[i] << std::endl;
 
     if (!RmtSaveConfigText(TUNING_FILENAME, os.str()))
         MessageBox("Could not create: '" + RmtConfigTextLocation(TUNING_FILENAME) + "'\n\nThe Tuning parameters won't be saved.\n", "RITMO", MB_ICONEXCLAMATION);
@@ -932,7 +925,6 @@ void CRmtView::OnViewTuning()
 {
     TuningDialog dlg;
     dlg.m_tuningSettings = g_Song.GetTuning();
-    dlg.m_tuningRatios = g_Song.GetTuningRatios();
 
     dlg.DoModal();
 }
@@ -1528,7 +1520,7 @@ const char FlaToCha[] = { 0x67, 0x68, 0x69, 109, 0x64, 0x65, 0x66, 107, 0x61, 0x
 void CRmtView::SetNTSC(const bool ntsc)
 {
     // TODO  code... well 3 times..
-    g_Song.GetTuning().basetuning = (ntsc) ? (g_Song.GetTuning().basetuning * CAtari::FREQ_17_NTSC) / CAtari::FREQ_17_PAL : (g_Song.GetTuning().basetuning * CAtari::FREQ_17_PAL) / CAtari::FREQ_17_NTSC;
+    g_Song.GetTuning().a4Frequency = (ntsc) ? (g_Song.GetTuning().a4Frequency * CAtari::FREQ_17_NTSC) / CAtari::FREQ_17_PAL : (g_Song.GetTuning().a4Frequency * CAtari::FREQ_17_PAL) / CAtari::FREQ_17_NTSC;
     g_Song.SetNTSC(ntsc);
 }
 void CRmtView::ToggleNTSC()

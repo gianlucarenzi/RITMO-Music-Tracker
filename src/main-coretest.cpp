@@ -22,10 +22,17 @@
 #include "tracker_obx.h"
 #include "legacy_obx.h"
 #include "emu/PokeySound.h"
+#include "AtariBinaries.h"
+#include "AtariIO.h"
 
+extern CTuning g_Tuning;
+
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 extern CSong g_Song;
 extern CXPokey g_Pokey;
@@ -228,6 +235,85 @@ static int TwoTone(const char* song)
     return twoToneFrames > 0 && differentFrames > 0 ? 0 : 1;
 }
 
+// --tuning: the tuning of RMT 1.36 (plans 59 and 62). The tables of the default tuning are those the Patch16 driver
+// ships, and PAL and NTSC generate the same ones (their A4 frequencies differ by exactly the clock ratio); the note A
+// sounds at the A4 frequency in every key, for equal temperament, a preset and the custom temperament; and in equal
+// temperament the tonic does not transpose: every key generates the tables of A-.
+static int TuningTest()
+{
+    int failed = 0;
+    auto check = [&](bool ok, const char* what) {
+        std::printf("%s %s\n", ok ? "ok  " : "FAIL", what);
+        if (!ok) failed++;
+    };
+    constexpr int TABLES = 0x600; // $B000-$B5FF
+    auto tables = [](bool ntsc, const TTuningSettings& tuning) {
+        g_Song.GetTuning() = tuning;
+        g_Atari.Init(ntsc); // generates the tables with the clock of the region
+        const byte* t = g_Atari.GetMemoryAt(RMT_FRQTABLES);
+        return std::vector<byte>(t, t + TABLES);
+    };
+    TTuningSettings pal, ntsc;
+    pal.Initialize(false);
+    ntsc.Initialize(true);
+    const std::vector<byte> palTables = tables(false, pal);
+    check(palTables == tables(true, ntsc), "PAL and NTSC defaults generate the same tables");
+
+    std::vector<byte> driver(0x10000, 0);
+    byte* bin = nullptr;
+    WORD size = 0;
+    if (CRmtAtariBinaries::GetTrackerDriverBinary(TrackerDriverVersion::PATCH16, bin, size)) {
+        MemoryAddress min, max;
+        CAtariIO::LoadDataAsBinaryFile(bin, size, driver.data(), min, max);
+    }
+    // $B500-$B57F are the two hand-made sawtooth tables: not generated, they come with the driver
+    int differ = 0;
+    for (int i = 0; i < TABLES; i++) {
+        if (i >= 0x500 && i < 0x580) continue;
+        if (palTables[i] != driver[RMT_FRQTABLES + i]) {
+            if (differ++ < 8) std::printf("     $%04X: generated $%02X, driver $%02X\n", RMT_FRQTABLES + i, palTables[i], driver[RMT_FRQTABLES + i]);
+        }
+    }
+    check(differ == 0, "the default tuning generates the table page of the Patch16 driver (but the sawtooth tables)");
+
+    // A at the A4 frequency (semitone 69: A of the octave the tables' formula puts A4 in) in every key
+    TTuningSettings custom = pal;
+    custom.temperament = CTuning::TUNING_CUSTOM;
+    const double centsOfCustom[TTuningCents::COUNT] = { 0, 90, 192, 294, 390, 498, 588, 696, 792, 888, 996, 1092 };
+    for (int i = 0; i < TTuningCents::COUNT; i++) custom.cents.values[i] = centsOfCustom[i];
+    int wrong = 0;
+    for (int temperament : { 0, 4, (int)CTuning::TUNING_CUSTOM }) {
+        for (int tonic = 0; tonic < NOTES_PER_OCTAVE; tonic++) {
+            TTuningSettings t = temperament == CTuning::TUNING_CUSTOM ? custom : pal;
+            t.temperament = temperament;
+            t.tonic = tonic;
+            tables(false, t); // InitTuning() computes the custom multipliers
+            const double a = g_Tuning.GetTruePitch(g_Tuning.CalculateTonicFrequency(t), temperament, tonic, 69);
+            if (std::fabs(a - t.a4Frequency) > 1e-9 * t.a4Frequency) {
+                std::printf("     temperament %d, tonic %d: A at %.9f Hz\n", temperament, tonic, a);
+                wrong++;
+            }
+        }
+    }
+    check(wrong == 0, "A sounds at the A4 frequency in every key (equal, Werckmeister III, custom)");
+
+    wrong = 0;
+    for (int tonic = 0; tonic < NOTES_PER_OCTAVE; tonic++) {
+        TTuningSettings t = pal;
+        t.tonic = tonic;
+        if (tables(false, t) != palTables) {
+            std::printf("     tonic %d: other tables\n", tonic);
+            wrong++;
+        }
+    }
+    check(wrong == 0, "equal temperament generates the same tables in every key");
+
+    g_Song.GetTuning() = pal;
+    g_Atari.Init(false);
+    std::printf("Tuning: %d check(s) wrong\n", failed);
+    return failed ? 1 : 0;
+}
+
 // --midi16: the note input of MIDI channel 16 (the MIDI CH15 mode), which
 // writes AUDF and AUDC straight into the driver's variables for SetPokey.
 // For each distortion and clock (AUDCTL) a program change selects the
@@ -330,12 +416,12 @@ int main(int argc, char** argv)
     // emu/Cpu6502.cpp) and the tuning tables.
     g_Atari.Init();
     g_Song.GetTuning().Initialize(g_Song.IsNTSC());
-    g_Song.GetTuningRatios().Initialize();
 
     if (argc >= 5 && !std::strcmp(argv[1], "--play"))
         return PlaySong(argv[2], std::atoi(argv[3]), argv[4], argc >= 6 ? argv[5] : nullptr);
     if (argc >= 2 && !std::strcmp(argv[1], "--midi16")) return MidiChannel16();
     if (argc >= 3 && !std::strcmp(argv[1], "--twotone")) return TwoTone(argv[2]);
+    if (argc >= 2 && !std::strcmp(argv[1], "--tuning")) return TuningTest();
     if (argc >= 3 && !std::strcmp(argv[1], "--screenshot"))
         return Screenshot(argv[2], 1280, 800, argc >= 4 ? argv[3] : nullptr);
 

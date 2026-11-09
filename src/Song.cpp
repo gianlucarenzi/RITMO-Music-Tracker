@@ -311,7 +311,6 @@ void CSong::ResetTuningVariables()
 {
     // Reset all tuning variables
     m_tuning.Initialize(IsNTSC());
-    m_tuningRatios.Initialize();
 }
 
 

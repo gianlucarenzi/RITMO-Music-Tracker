@@ -110,6 +110,28 @@ else
     echo "FAIL stripped RMT of an SFX-only module: exit code $code"; tail -3 "$WORK/sfx.log"; ls -l "$WORK/sfx" 2>/dev/null; fail=1
 fi
 
+# tuning.ini (RMT 1.36, plans 59 and 62): a script run reads it from RMT_CONFIG_DIR. The tuning of an older file
+# (TUNING, BASENOTE and the ratios as fractions) is read as its conversion (A4_FREQUENCY, TONIC and cents): the same
+# frequency tables, so the same ASM export with frequencies; it differs from the default tuning; a retired preset
+# (5, Tempérament Égal à Quintes Justes) plays as equal temperament
+tuningrun() { # name tuning.ini-text
+    mkdir -p "$WORK/tuning-$1"
+    printf "$2" >"$WORK/tuning-$1/tuning.ini"
+    printf 'set output %s\nopen "%s/test-resources/songs/Delta.rmt"\nexport asm freq.asm type=song notes=freq\n' "$WORK/tuning-$1-out" "$PWD" >"$WORK/tuning-$1.rmtscript"
+    RMT_CONFIG_DIR="$WORK/tuning-$1" "$RMT" "/SCRIPT:$WORK/tuning-$1.rmtscript" >"$WORK/tuning-$1.log" 2>&1
+}
+tuningrun old 'TUNING = 432\nBASENOTE = 0\nTEMPERAMENT = 29\nUNISON = 1 / 1\nMIN_2ND = 16 / 15\nMAJ_2ND = 9 / 8\nMIN_3RD = 6 / 5\nMAJ_3RD = 5 / 4\nPERF_4TH = 4 / 3\nTRITONE = 45 / 32\nPERF_5TH = 3 / 2\nMIN_6TH = 8 / 5\nMAJ_6TH = 5 / 3\nMIN_7TH = 9 / 5\nMAJ_7TH = 15 / 8\nOCTAVE = 2 / 1\n'
+tuningrun new 'A4_FREQUENCY = 432\nTONIC = 0\nTEMPERAMENT = 29\nMIN_2ND = 111.73128526977774\nMAJ_2ND = 203.91000173077484\nMIN_3RD = 315.64128700055255\nMAJ_3RD = 386.3137138648348\nPERF_4TH = 498.0449991346125\nTRITONE = 590.2237155956096\nPERF_5TH = 701.9550008653874\nMIN_6TH = 813.6862861351652\nMAJ_6TH = 884.3587129994474\nMIN_7TH = 1017.5962878659401\nMAJ_7TH = 1088.2687147302222\n'
+tuningrun default 'A4_FREQUENCY = 440.83751645933\nTONIC = 3\nTEMPERAMENT = 0\n'
+tuningrun retired 'A4_FREQUENCY = 440.83751645933\nTONIC = 3\nTEMPERAMENT = 5\n'
+if cmp -s "$WORK/tuning-old-out/freq.asm" "$WORK/tuning-new-out/freq.asm" && [ -s "$WORK/tuning-old-out/freq.asm" ] \
+    && ! cmp -s "$WORK/tuning-new-out/freq.asm" "$WORK/tuning-default-out/freq.asm" \
+    && cmp -s "$WORK/tuning-default-out/freq.asm" "$WORK/tuning-retired-out/freq.asm"; then
+    echo "ok   tuning.ini: the old names and fractions read as A4_FREQUENCY, TONIC and cents; a retired preset is equal"
+else
+    echo "FAIL tuning.ini of the old and the new format"; ls -l "$WORK"/tuning-*-out/ 2>/dev/null; fail=1
+fi
+
 # RMT_CONFIG_DIR: the configuration of that folder is read (an NTSC ritmo.ini makes an NTSC SAP-R) and not written
 mkdir -p "$WORK/configdir"
 printf 'NTSC_SYSTEM = 1\n' >"$WORK/configdir/ritmo.ini"

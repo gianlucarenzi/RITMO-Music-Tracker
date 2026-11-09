@@ -1,11 +1,19 @@
 #include "TuningTypes.h"
 
+#include "Atari.h"
+
+const double TTuningSettings::NTSC_A4_FREQUENCY = TTuningSettings::PAL_A4_FREQUENCY * CAtari::FREQ_17_NTSC / CAtari::FREQ_17_PAL;
+
 void TTuningSettings::Initialize(bool ntsc)
 {
-    *this = { ntsc ? 444.895778867913 : 440.83751645933, 3, 0 };
+    a4Frequency = ntsc ? NTSC_A4_FREQUENCY : PAL_A4_FREQUENCY;
+    tonic = 3;
+    temperament = 0;
+    cents.Initialize();
 }
 
-void TTuningRatios::Initialize()
+// The default is equal temperament: 0, 100, ..., 1100.
+void TTuningCents::Initialize()
 {
-    *this = { { 1, 1 }, { 40, 38 }, { 10, 9 }, { 20, 17 }, { 5, 4 }, { 4, 3 }, { 60, 43 }, { 3, 2 }, { 30, 19 }, { 5, 3 }, { 30, 17 }, { 15, 8 }, { 2, 1 } };
+    for (int i = 0; i < COUNT; i++) values[i] = i * CENTS_PER_OCTAVE / NOTES_PER_OCTAVE;
 }

@@ -154,7 +154,6 @@ int main(int argc, char** argv)
     // The 6502 and the POKEY are the built-in emulations (emu/): there are no libraries to load.
     g_Atari.Init();
     g_Song.GetTuning().Initialize(g_Song.IsNTSC());
-    g_Song.GetTuningRatios().Initialize();
     g_Atari.Init(g_Song.IsNTSC());
 
     g_AtariTrackerDriver = new CAtariTrackerDriver(g_Atari);

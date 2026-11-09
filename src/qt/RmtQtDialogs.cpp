@@ -21,6 +21,8 @@
 #include "IOHelpers.h"
 #include "GuiHelpers.h"
 
+#include <algorithm>
+#include <cmath>
 #include <utility>
 
 #include <QApplication>
@@ -849,7 +851,6 @@ static INT_PTR RunModuleProperties(QWidget* parent, CModulePropertiesDialog* dlg
     QObject::connect(tuning, &QPushButton::clicked, &dialog, [&dialog] {
         TuningDialog tuningDlg; // as CRmtView::OnViewTuning(): it applies its values itself
         tuningDlg.m_tuningSettings = g_Song.GetTuning();
-        tuningDlg.m_tuningRatios = g_Song.GetTuningRatios();
         RunTuning(&dialog, &tuningDlg);
     });
     tuning->setToolTip("The tuning reaches only the RMT 1.34 Patch16 driver: the others play the tables of their player");
@@ -1950,7 +1951,13 @@ static INT_PTR RunEffects(QWidget* parent, CEffectsDlg* dlg)
 }
 
 // IDD_TUNING - TuningDialog: Test now applies the values, Reset puts back the
-// ones the dialog was opened with, which Cancel also does
+// ones the dialog was opened with, which Cancel also does. As in RMT 1.36
+// (plans 59 and 62): the A4 frequency and the tonic, the temperaments in
+// display order, and the twelve cents of the selected temperament - computed
+// and read-only for equal temperament and the presets, the user's own and
+// editable for the custom one (the tonic stays 0). What was typed for the
+// custom temperament is kept while another one is shown.
+static_assert(TuningDialog::TEMPERAMENT_NUMBERS[TuningDialog::TEMPERAMENT_COUNT - 1] == CTuning::TUNING_CUSTOM);
 static INT_PTR RunTuning(QWidget* parent, TuningDialog* dlg)
 {
     QDialog dialog(parent);
@@ -1958,123 +1965,115 @@ static INT_PTR RunTuning(QWidget* parent, TuningDialog* dlg)
     auto* layout = new QVBoxLayout(&dialog);
 
     const TTuningSettings settingsBackup = g_Song.GetTuning();
-    const TTuningRatios ratiosBackup = g_Song.GetTuningRatios();
 
     auto* general = new QGroupBox("General");
     auto* generalLayout = new QGridLayout(general);
-    auto* baseTuning = new QLineEdit;
-    auto* baseNote = new QComboBox;
-    baseNote->addItems({ "C-", "B-", "A#", "A-", "G#", "G-", "F#", "F-", "E-", "D#", "D-", "C#" }); // index = basenote
+    auto* a4Frequency = new QLineEdit;
+    auto* tonic = new QComboBox;
+    tonic->addItems({ "C-", "B-", "A#", "A-", "G#", "G-", "F#", "F-", "E-", "D#", "D-", "C#" }); // index = tonic
     auto* temperament = new QComboBox;
-    temperament->addItems({ "Equal Temperament (Default)",
-                            "Thomas Young 1799's Well Temperament no.1",
-                            "Thomas Young 1799's Well Temperament no.2",
-                            "Thomas Young 1807's Well Temperament",
-                            "Andreas Werckmeister's Temperament III (1681)",
-                            "Tempérament Égal a Quintes Justes",
-                            "d'Alembert and Rousseau Tempérament Ordinaire (1752/1767)",
-                            "Aron - Neidhardt Equal Beating Well Temperament",
-                            "Atom Schisma Scale",
-                            "12-TET Approximation with Minimal Order 17 Beats",
-                            "Paul Bailey's Modern Well Temperament (2002)",
-                            "John Barnes' Temperament (1977) Made After Analysis of Wohltemperierte Klavier",
-                            "Bethisy Tempérament Ordinaire",
-                            "Big Gulp",
-                            "12 Tone Scale by Bohlen Generated from the 4:7 : 10 Triad, Acustica 39/2/1978",
-                            "This Scale May Also be Called the \"Wedding Cake\"",
-                            "Upside Down Wedding Cake (Divorce Cake)",
-                            "12 Tone Pythagorean Scale",
-                            "Robert Schneider, Scale of Log(4) ..Log(16)",
-                            "Zarlino Tempérament Extraordinaire",
-                            "Fokker's 7-Limit 12-Tone Just Scale",
-                            "Bach Temperament, A- = 400hz",
-                            "Vallotti & Young Scale (Vallotti Version), Also Known as Tartini-Vallotti (1754)",
-                            "Vallotti-Young and Werckmeister III, 10 Cents 5-Limit Lesfip Scale",
-                            "Optimally Consonant Major Pentatonic, John deLaubenfels (2001)",
-                            "Ancient Greek Aeolic, Also Tritriaic Scale of the 54:64 : 81 Triad",
-                            "African Bapare Xylophone (Idiophone, Loose Log)",
-                            "African Yaswa Xylophone (Idiophone, Calbas Resonators with Membrane)",
-                            "19-EDO Generated Using Scale Workshop",
-                            "Custom Temperament with RA/TIO" }); // index = temperament (IDD_TUNING DLGINIT)
+    for (const char* name : TuningDialog::TEMPERAMENT_NAMES) temperament->addItem(QString::fromUtf8(name));
     temperament->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
     temperament->setMinimumContentsLength(40);
-    baseTuning->setMaximumWidth(160);
-    generalLayout->addWidget(new QLabel("Base tuning (Hz)"), 0, 0);
-    generalLayout->addWidget(baseTuning, 0, 1);
-    generalLayout->addWidget(new QLabel("Base note"), 0, 2);
-    generalLayout->addWidget(baseNote, 0, 3);
-    generalLayout->addWidget(new QLabel("eg: 440, 440.83751645933, 432, 443.9, 444.895778867913, etc"), 1, 0, 1, 4);
+    a4Frequency->setMaximumWidth(160);
+    generalLayout->addWidget(new QLabel("A4 Frequency (Hz)"), 0, 0);
+    generalLayout->addWidget(a4Frequency, 0, 1);
+    generalLayout->addWidget(new QLabel("Tonic"), 0, 2);
+    generalLayout->addWidget(tonic, 0, 3);
+    generalLayout->addWidget(new QLabel("eg: 440, 440.83751645933, 432, 443.9, 444.8957788679134, etc"), 1, 0, 1, 4);
     generalLayout->addWidget(new QLabel("Temperament"), 2, 0);
     generalLayout->addWidget(temperament, 2, 1, 1, 3);
     layout->addWidget(general);
 
-    // The 13 ratios, numerator / denominator (ES_NUMBER)
-    static const char* intervals[13] = { "Unison", "Minor 2nd", "Major 2nd", "Minor 3rd", "Major 3rd", "Perfect 4th",
-                                         "Tritone", "Perfect 5th", "Minor 6th", "Major 6th", "Minor 7th", "Major 7th", "Octave" };
-    auto ratioList = [](TTuningRatios& r) {
-        return std::array<CFraction*, 13>{ &r.UNISON, &r.MIN_2ND, &r.MAJ_2ND, &r.MIN_3RD, &r.MAJ_3RD, &r.PERF_4TH,
-                                           &r.TRITONE, &r.PERF_5TH, &r.MIN_6TH, &r.MAJ_6TH, &r.MIN_7TH, &r.MAJ_7TH, &r.OCTAVE };
-    };
-    auto* ratios = new QGroupBox("RA/TIO");
-    auto* ratiosLayout = new QGridLayout(ratios);
-    QLineEdit* numerator[13];
-    QLineEdit* denominator[13];
-    for (int i = 0; i < 13; i++) {
-        numerator[i] = new QLineEdit;
-        denominator[i] = new QLineEdit;
-        for (QLineEdit* edit : { numerator[i], denominator[i] }) {
-            edit->setValidator(new QRegularExpressionValidator(QRegularExpression("[0-9]{0,9}"), edit));
-            edit->setMaximumWidth(60);
-        }
-        ratiosLayout->addWidget(new QLabel(intervals[i]), i, 0);
-        ratiosLayout->addWidget(numerator[i], i, 1);
-        ratiosLayout->addWidget(new QLabel("/"), i, 2);
-        ratiosLayout->addWidget(denominator[i], i, 3);
+    // The twelve cents, one per semitone above the tonic (the octave is fixed at 1200, 2:1)
+    static const char* intervals[TTuningCents::COUNT] = { "Tonic",       "Minor 2nd", "Major 2nd",   "Minor 3rd",
+                                                          "Major 3rd",   "Perfect 4th", "Tritone",   "Perfect 5th",
+                                                          "Minor 6th",   "Major 6th", "Minor 7th",   "Major 7th" };
+    auto* centsBox = new QGroupBox("Cents");
+    auto* centsLayout = new QGridLayout(centsBox);
+    QLineEdit* cents[TTuningCents::COUNT];
+    for (int i = 0; i < TTuningCents::COUNT; i++) {
+        cents[i] = new QLineEdit;
+        cents[i]->setMaximumWidth(120);
+        centsLayout->addWidget(new QLabel(intervals[i]), i, 0);
+        centsLayout->addWidget(cents[i], i, 1);
     }
-    ratiosLayout->setColumnStretch(4, 1);
-    layout->addWidget(ratios);
+    centsLayout->setColumnStretch(2, 1);
+    layout->addWidget(centsBox);
 
-    auto show = [&](const TTuningSettings& settings, TTuningRatios r) {
-        baseTuning->setText(QString::number(settings.basetuning, 'g', 15));
-        baseNote->setCurrentIndex(settings.basenote);
-        temperament->setCurrentIndex(settings.temperament);
-        auto list = ratioList(r);
-        for (int i = 0; i < 13; i++) {
-            numerator[i]->setText(QString::number(list[i]->numerator));
-            denominator[i]->setText(QString::number(list[i]->denominator));
-        }
+    // The custom temperament's cents as text, kept while another temperament is shown
+    QString customText[TTuningCents::COUNT];
+    int shownTemperament = -1;
+    // a computed value for display, rounded to 3 decimals: the presets' multipliers carry 6 decimals (their Scala
+    // sources' rounding), about 0.001 cents - more digits would be noise
+    auto formatCents = [](double value) {
+        QString text = QString::number(value, 'f', 3);
+        while (text.endsWith('0')) text.chop(1);
+        if (text.endsWith('.')) text.chop(1);
+        return text;
     };
-    show(dlg->m_tuningSettings, dlg->m_tuningRatios);
+    auto showCents = [&] {
+        const int selected = TuningDialog::TEMPERAMENT_NUMBERS[std::max(0, temperament->currentIndex())];
+        if (selected == shownTemperament) return;
+        if (shownTemperament == CTuning::TUNING_CUSTOM)
+            for (int i = 0; i < TTuningCents::COUNT; i++) customText[i] = cents[i]->text();
+        const bool custom = selected == CTuning::TUNING_CUSTOM;
+        for (int i = 0; i < TTuningCents::COUNT; i++) {
+            cents[i]->setText(custom ? customText[i] : formatCents(g_Tuning.GetTemperamentCents(selected, i)));
+            cents[i]->setEnabled(custom && i > 0);
+        }
+        shownTemperament = selected;
+    };
+    QObject::connect(temperament, QOverload<int>::of(&QComboBox::currentIndexChanged), &dialog, showCents);
 
-    // OnClickedIdtestnow(): the values of the dialog (DDV_MinMaxDouble for the
-    // base tuning) become the tuning in use
+    auto show = [&](const TTuningSettings& settings) {
+        a4Frequency->setText(QString::number(settings.a4Frequency, 'g', 16));
+        tonic->setCurrentIndex(settings.tonic);
+        for (int i = 0; i < TTuningCents::COUNT; i++) customText[i] = QString::number(settings.cents.values[i], 'g', 15);
+        shownTemperament = -1;
+        temperament->blockSignals(true);
+        temperament->setCurrentIndex(TuningDialog::TemperamentIndexOf(settings.temperament));
+        temperament->blockSignals(false);
+        showCents();
+    };
+    show(dlg->m_tuningSettings);
+
+    // OnClickedIdtestnow(): the values of the dialog become the tuning in use. The A4 frequency between 6.875 and
+    // 7040 Hz, each custom cents value between 0 and 1200; an invalid custom value hidden behind another temperament
+    // brings the custom temperament back, so the message can point at its field.
     auto testNow = [&] {
         bool ok = false;
-        double tuning = baseTuning->text().toDouble(&ok);
-        if (!ok || tuning < 6.875 || tuning > 7040) {
+        double frequency = a4Frequency->text().toDouble(&ok);
+        if (!ok || frequency < 6.875 || frequency > 7040) {
             MessageBox(g_hwnd, "Please enter a number between 6.875 and 7040.", "Tuning configuration", MB_ICONEXCLAMATION);
-            baseTuning->setFocus();
+            a4Frequency->setFocus();
             return false;
         }
-        dlg->m_tuningSettings.basetuning = tuning;
-        dlg->m_tuningSettings.basenote = baseNote->currentIndex();
-        dlg->m_tuningSettings.temperament = temperament->currentIndex();
-        auto list = ratioList(dlg->m_tuningRatios);
-        for (int i = 0; i < 13; i++) {
-            list[i]->numerator = IntValue(numerator[i]);
-            list[i]->denominator = IntValue(denominator[i]);
+        if (shownTemperament == CTuning::TUNING_CUSTOM)
+            for (int i = 0; i < TTuningCents::COUNT; i++) customText[i] = cents[i]->text();
+        double values[TTuningCents::COUNT] = { 0 };
+        for (int i = 1; i < TTuningCents::COUNT; i++) {
+            values[i] = customText[i].trimmed().toDouble(&ok);
+            if (!ok || std::isnan(values[i]) || values[i] < 0 || values[i] > CENTS_PER_OCTAVE) {
+                temperament->setCurrentIndex(TuningDialog::TEMPERAMENT_COUNT - 1); // the custom temperament
+                MessageBox(g_hwnd, "Please enter a number of cents between 0 and 1200.", "Tuning configuration", MB_ICONEXCLAMATION);
+                cents[i]->setFocus();
+                return false;
+            }
         }
+        dlg->m_tuningSettings.a4Frequency = frequency;
+        dlg->m_tuningSettings.tonic = tonic->currentIndex();
+        dlg->m_tuningSettings.temperament = TuningDialog::TEMPERAMENT_NUMBERS[temperament->currentIndex()];
+        for (int i = 0; i < TTuningCents::COUNT; i++) dlg->m_tuningSettings.cents.values[i] = values[i];
         g_Song.GetTuning() = dlg->m_tuningSettings;
-        g_Song.GetTuningRatios() = dlg->m_tuningRatios;
         g_Tuning.InitTuning();
         return true;
     };
     // OnClickedIdreset(): the values the dialog was opened with, also shown
     auto reset = [&] {
         g_Song.GetTuning() = settingsBackup;
-        g_Song.GetTuningRatios() = ratiosBackup;
         g_Tuning.InitTuning();
-        show(settingsBackup, ratiosBackup);
+        show(settingsBackup);
     };
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);

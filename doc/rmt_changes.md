@@ -35,6 +35,28 @@ Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
   Makary's module of the issue (`test-resources/songs/issue_30_two_tone_filter`).
 - 2.7: the ASM export frames the feature definitions with `; --------BEGIN--------` and `; --------END--------`
   (RMT 1.36, 2e634ec), the comment style of the player sources they are pasted into, instead of `;*` lines.
+- 2.7: the tuning of RMT 1.36 (plans 48, 59 and 62; 45130ac, 23ecea8, 09b796d, e072b3a, 3e0a727, 0e6753e, 50ff547,
+  75c0acb, d5cef17), ported to the Qt dialog and `tuning.ini` of RITMO:
+  - the base tuning is the A4 Frequency (Hz) in every key: the program derives the tonic's frequency from A4 through
+    the temperament (ivop's algorithm), so a non-A key under a preset reaches concert pitch, and in equal temperament
+    the tonic no longer transposes; for the default tonic A- nothing changes, the tables are byte for byte those of
+    the Patch16 driver;
+  - the base note is the Tonic, and `tuning.ini` writes `A4_FREQUENCY` and `TONIC` instead of `TUNING` and `BASENOTE`
+    (still read), without the always-0 `UNISON` line;
+  - the custom temperament is entered in cents (0-1200 above the tonic) instead of 13 fractions, which cannot express
+    every temperament; the fractions of an older `tuning.ini` are converted (1200*log2), the octave is 2:1;
+  - seven presets are gone (19-EDO, Bohlen 4:7:10, the two African xylophones, Tempérament Égal à Quintes Justes, the
+    major pentatonic, Ancient Greek Aeolic): none is a 12-note temperament with a 2:1 octave; a saved one plays as
+    equal temperament;
+  - the temperaments have proper names (Sparschuh's Bach, Schulter's Zarlino...), equal first, the custom one last,
+    the others alphabetical; the cents fields show the selected temperament (read-only but for the custom one, whose
+    values are kept while another is shown);
+  - the NTSC default A4 frequency is the PAL one scaled by exactly the clock ratio (444.8957788679134 Hz), so PAL and
+    NTSC generate the same tables.
+  `RmtCoreTest --tuning` checks the tables of the defaults, A at the A4 frequency in every key and the equal
+  temperament in every key; `scripts/test-scripting.sh` checks an older `tuning.ini` against its conversion and a
+  retired preset. `rmt/tuning.ini` is written again with the defaults; `doc/rmt_tracker_drivers.md` has a section on
+  the tuning of the Patch16 driver.
 - 2.6: the fixes of RMT 1.36 by Peter Dell (JAC!) (https://github.com/peterdell/RASTER-Music-Tracker, branch dev, up to
   2026-10-15), ported to RITMO: thanks again to JAC!, whose work this fork stands on, and who in turn took four fixes
   from the trail of RITMO into RMT 1.36 (the SAP type B player blocks, the WAV at instrument speed 2-4, the AUDCTL of the

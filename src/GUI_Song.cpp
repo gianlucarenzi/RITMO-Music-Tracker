@@ -596,23 +596,23 @@ void CSong::DrawAnalyzer()
                 } else
                     TextMiniXY("POKEY REGISTERS", ANALYZER3_X, ANALYZER3_Y, TextMiniColor::GRAY);
 
-                double tuning = GetTuning().basetuning; //defined in Tuning.cpp through initialisation using input parameter
-                int basenote = GetTuning().basenote;
-                int reverse_basenote = (24 - basenote) % 12; //since things are wack I had to do this
+                double a4Frequency = GetTuning().a4Frequency; //the A4 reference pitch of the tuning (RMT 1.36, plan 62)
+                int tonic = GetTuning().tonic;
+                int reverse_tonic = (24 - tonic) % 12; //since things are wack I had to do this
                 //int FREQ_17 = (g_ntsc) ? FREQ_17_NTSC : FREQ_17_PAL;	//useful for debugging I guess
                 auto cycles = CAtari::GetFrameCycleCount(IsNTSC());
                 int tracks = g_Song.GetTracks();
                 char t[12] = { 0 };
 
                 TextMiniXY("A- TUNING:       HZ,", ANALYZER3_X, ANALYZER3_Y + 8 * 9, TextMiniColor::GRAY);
-                snprintf(t, 10, "%3.2f", tuning);
+                snprintf(t, 10, "%3.2f", a4Frequency);
                 TextMiniXY(t, ANALYZER3_X + 8 * 11, ANALYZER3_Y + 8 * 9, TextMiniColor::WHITE);
 
-                n[0] = CNotes::GetNote(reverse_basenote)[0];
-                n[1] = CNotes::GetNote(reverse_basenote)[1];
+                n[0] = CNotes::GetNote(reverse_tonic)[0];
+                n[1] = CNotes::GetNote(reverse_tonic)[1];
                 n[2] = 0;
 
-                TextMiniXY(n, ANALYZER3_X, ANALYZER3_Y + 8 * 9, TextMiniColor::GRAY); //overwrite A- to the given basenote
+                TextMiniXY(n, ANALYZER3_X, ANALYZER3_Y + 8 * 9, TextMiniColor::GRAY); //overwrite A- with the given tonic
 
                 TextMiniXY(IsNTSC() ? "NTSC" : "PAL", ANALYZER3_X + 8 * 21, ANALYZER3_Y + 8 * 9, TextMiniColor::BLUE);
 
@@ -699,11 +699,11 @@ void CSong::DrawAnalyzer()
                         char szBuffer[16];
 
                         //most of the lines below could get some improvements...
-                        double centnum = 1200 * log2(PITCH / tuning);
+                        double centnum = CENTS_PER_OCTAVE * log2(PITCH / a4Frequency);
                         int notenum = (int)round(centnum * 0.01) + 60;
-                        int note = ((notenum + 96) - basenote) % 12;
+                        int note = ((notenum + 96) - tonic) % 12;
 
-                        int octave = (((notenum + 96) - basenote) / 12) - 8;
+                        int octave = (((notenum + 96) - tonic) / 12) - 8;
 
                         int cents = (int)round(centnum - (notenum - 60) * 100);
 

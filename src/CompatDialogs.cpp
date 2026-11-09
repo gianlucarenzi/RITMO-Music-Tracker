@@ -270,7 +270,6 @@ void COptionsDialog::OnPaths() {}
 TuningDialog::TuningDialog(CWnd* pParent) : CDialog(TuningDialog::IDD, pParent)
 {
     m_tuningSettings = {};
-    m_tuningRatios = {};
 }
 void TuningDialog::DoDataExchange(CDataExchange*) {}
 BOOL TuningDialog::OnInitDialog() { return TRUE; }
