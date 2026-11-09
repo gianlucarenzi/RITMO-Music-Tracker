@@ -33,6 +33,8 @@ Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
   copies SKCTL of both POKEYs; the WAV export reads the SAP-R convention (AUDC1 bit 4 below `$F0` = SKCTL `$8B` in that
   frame) as the LZSS player does, instead of playing the bit as volume-only. `RmtCoreTest --twotone` checks it with
   Makary's module of the issue (`test-resources/songs/issue_30_two_tone_filter`).
+- 2.7: the ASM export frames the feature definitions with `; --------BEGIN--------` and `; --------END--------`
+  (RMT 1.36, 2e634ec), the comment style of the player sources they are pasted into, instead of `;*` lines.
 - 2.6: the fixes of RMT 1.36 by Peter Dell (JAC!) (https://github.com/peterdell/RASTER-Music-Tracker, branch dev, up to
   2026-10-15), ported to RITMO: thanks again to JAC!, whose work this fork stands on, and who in turn took four fixes
   from the trail of RITMO into RMT 1.36 (the SAP type B player blocks, the WAV at instrument speed 2-4, the AUDCTL of the
