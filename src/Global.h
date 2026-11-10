@@ -32,7 +32,6 @@ extern int g_scalingToKeep; // the interface size of the settings while --scale 
 extern int g_notesperoctave;
 
 
-extern int g_tracks4_8; // TODO Move out
 
 extern HWND g_hwnd;
 extern HWND g_viewhwnd;

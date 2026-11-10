@@ -3,7 +3,7 @@
 #include <fstream>
 
 
-bool CAtariIO::LoadWord(std::ifstream& in, MemoryWord& w)
+bool CAtariIO::LoadWord(std::istream& in, MemoryWord& w)
 {
     char db, hb;
     if (in.eof()) { return false; }
@@ -16,7 +16,7 @@ bool CAtariIO::LoadWord(std::ifstream& in, MemoryWord& w)
     return true;
 }
 
-int CAtariIO::LoadBinaryBlock(std::ifstream& in, byte* memory, MemoryAddress& fromAddr, MemoryAddress& toAddr)
+int CAtariIO::LoadBinaryBlock(std::istream& in, byte* memory, MemoryAddress& fromAddr, MemoryAddress& toAddr)
 {
     if (!LoadWord(in, fromAddr)) {
         return 0;
@@ -99,7 +99,7 @@ int CAtariIO::LoadDataAsBinaryFile(unsigned char* data, MemorySize size, byte* m
 /// <param name="toAddr">End address (last byte of the data)</param>
 /// <param name="withBinaryBlockHeader">True then the FROM,TO header will start with FFFF. Only required on the first block</param>
 /// <returns>Total number of bytes output</returns>
-int CAtariIO::SaveBinaryBlock(std::ofstream& out, const byte* memory, MemoryAddress fromAddr, MemoryAddress toAddr, bool withBinaryBlockHeader)
+int CAtariIO::SaveBinaryBlock(std::ostream& out, const byte* memory, MemoryAddress fromAddr, MemoryAddress toAddr, bool withBinaryBlockHeader)
 {
     //from "fromadr" to "toadr" inclusive
     if (fromAddr > toAddr) return 0;

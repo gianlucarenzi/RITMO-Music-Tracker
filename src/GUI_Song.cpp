@@ -34,7 +34,7 @@ extern CInstruments g_Instruments;
 extern CTrackClipboard g_TrackClipboard;
 
 extern CAtariTrackerDriver* g_AtariTrackerDriver;
-extern int g_tracks4_8; // TODO Move out
+extern int m_channels; // TODO Move out
 
 // TODO
 char g_debugmem[CAtari::MEMORY_SIZE]; //debug display of memory bytes directly, slow and terrible, do not use unless there is a purpose for it
@@ -148,12 +148,12 @@ void CSong::DrawAnalyzer()
 {
     if (!g_view.volumeAnalyzer) return; //the analyser won't be displayed without the setting enabled first
 
-    int MINIMAL_WIDTH_TRACKS = (g_tracks4_8 > 4 && g_active_ti == Part::PART_TRACKS) ? 1420 : 960;
-    int MINIMAL_WIDTH_INSTRUMENTS = (g_tracks4_8 > 4 && g_active_ti == Part::PART_INSTRUMENTS) ? 1220 : 1220;
-    int WINDOW_OFFSET = (g_width < 1320 && g_tracks4_8 > 4 && g_active_ti == Part::PART_TRACKS) ? -250 : 0; //test displacement with the window size
-    int INSTRUMENT_OFFSET = (g_active_ti == Part::PART_INSTRUMENTS && g_tracks4_8 > 4) ? -250 : 0;
-    if (g_tracks4_8 == 4 && g_active_ti == Part::PART_INSTRUMENTS && g_width > MINIMAL_WIDTH_INSTRUMENTS - 220) INSTRUMENT_OFFSET = 260;
-    int SONG_OFFSET = CSongScreenLayout::SONG_X + WINDOW_OFFSET + INSTRUMENT_OFFSET + ((g_tracks4_8 == 4) ? -200 : 310); //displace the SONG block depending on certain parameters
+    int MINIMAL_WIDTH_TRACKS = (m_channels > 4 && g_active_ti == Part::PART_TRACKS) ? 1420 : 960;
+    int MINIMAL_WIDTH_INSTRUMENTS = (m_channels > 4 && g_active_ti == Part::PART_INSTRUMENTS) ? 1220 : 1220;
+    int WINDOW_OFFSET = (g_width < 1320 && m_channels > 4 && g_active_ti == Part::PART_TRACKS) ? -250 : 0; //test displacement with the window size
+    int INSTRUMENT_OFFSET = (g_active_ti == Part::PART_INSTRUMENTS && m_channels > 4) ? -250 : 0;
+    if (IsMono() && g_active_ti == Part::PART_INSTRUMENTS && g_width > MINIMAL_WIDTH_INSTRUMENTS - 220) INSTRUMENT_OFFSET = 260;
+    int SONG_OFFSET = CSongScreenLayout::SONG_X + WINDOW_OFFSET + INSTRUMENT_OFFSET + ((IsMono()) ? -200 : 310); //displace the SONG block depending on certain parameters
 
     BOOL DEBUG_POKEY = 1;                                                  //registers debug display
     BOOL DEBUG_MEMORY = 0;                                                 //memory debug display
@@ -206,7 +206,7 @@ void CSong::DrawAnalyzer()
     int R[8];
     int G[8];
     int yUp = 7;
-    for (int i = 0; i < GetTracks(); i++) {
+    for (int i = 0; i < GetChannels(); i++) {
         col[i] = 102;
         R[i] = 44;
         G[i] = 60;
@@ -223,7 +223,7 @@ void CSong::DrawAnalyzer()
         const auto memory = g_AtariTrackerDriver->GetAtari()->GetConstMemoryAt(0);
 
         // Clear the area where the analyser is to be drawn
-        g_mem_dc->FillSolidRect(ANALYZER_X, ANALYZER_Y - ANALYZER_HP, g_tracks4_8 * 16 * 8 - 34, ANALYZER_H + ANALYZER_HP, CRGBColor::BACKGROUND);
+        g_mem_dc->FillSolidRect(ANALYZER_X, ANALYZER_Y - ANALYZER_HP, m_channels * 16 * 8 - 34, ANALYZER_H + ANALYZER_HP, CRGBColor::BACKGROUND);
 
         // Left/Mono Channel
         // Draw which channels are joined by highpass filters or normal channel join
@@ -287,7 +287,7 @@ void CSong::DrawAnalyzer()
             yUp -= 2;
         } // Two tone mode (join channel 5 + 6)
 
-        for (int channelNr = 0; channelNr < GetTracks(); channelNr++) {
+        for (int channelNr = 0; channelNr < GetChannels(); channelNr++) {
             audf = memory[idx[channelNr]];     // Get the frequency
             audc = memory[idx[channelNr] + 1]; // Get audio control, Bits: 0-3 = volume, 4 = Volume only, 5-7 = Distortion
             int skctl1 = memory[0xd20f];       // Two tone mode Mono
@@ -319,18 +319,18 @@ void CSong::DrawAnalyzer()
         if (g_view.pokeyRegisters) {
             // Draw the AUDCTL (audio control) register value
             NumberMiniXY(memory[0xd208], ANALYZER_X + 23 + 1 * 8 * 16 + 80, ANALYZER_Y - 8);                      // Mono
-            if (g_tracks4_8 > 4) NumberMiniXY(memory[0xd218], ANALYZER_X + 23 + 5 * 8 * 16 + 80, ANALYZER_Y - 8); // Stereo
+            if (m_channels > 4) NumberMiniXY(memory[0xd218], ANALYZER_X + 23 + 5 * 8 * 16 + 80, ANALYZER_Y - 8); // Stereo
 
             // Draw the SKCTL (Two tone control/Serial port control) register value
             NumberMiniXY(memory[0xd20f], ANALYZER_X + 23 + 1 * 8 * 16 + 80, ANALYZER_Y - 0);                      // Mono
-            if (g_tracks4_8 > 4) NumberMiniXY(memory[0xd21f], ANALYZER_X + 23 + 5 * 8 * 16 + 80, ANALYZER_Y - 0); // Stereo
+            if (m_channels > 4) NumberMiniXY(memory[0xd21f], ANALYZER_X + 23 + 5 * 8 * 16 + 80, ANALYZER_Y - 0); // Stereo
         }
     } else if (g_active_ti == Part::PART_INSTRUMENTS) //smaller appearance for instrument edit mode
     {
         // In instrument drawing mode
 
         // Clear the area where the mini volume controls are to be drawn
-        g_mem_dc->FillSolidRect(ANALYZER2_X, ANALYZER2_Y - ANALYZER2_HP, g_tracks4_8 * 3 * 8 - 8, ANALYZER2_H + ANALYZER2_HP, CRGBColor::BACKGROUND);
+        g_mem_dc->FillSolidRect(ANALYZER2_X, ANALYZER2_Y - ANALYZER2_HP, m_channels * 3 * 8 - 8, ANALYZER2_H + ANALYZER2_HP, CRGBColor::BACKGROUND);
 
         const auto memory = g_AtariTrackerDriver->GetAtari()->GetConstMemoryAt(0);
 
@@ -396,7 +396,7 @@ void CSong::DrawAnalyzer()
             yUp -= 2;
         } // Two tone mode (join channel 5 + 6)
 
-        for (int channelNr = 0; channelNr < g_tracks4_8; channelNr++) {
+        for (int channelNr = 0; channelNr < m_channels; channelNr++) {
             audc = memory[idx[channelNr] + 1]; // Get the frequency
             int skctl1 = memory[0xd20f];       // Two tone mode Mono
             int skctl2 = memory[0xd21f];       // Two tone mode Stereo
@@ -443,7 +443,7 @@ void CSong::DrawAnalyzer()
         g_mem_dc->FillSolidRect(ANALYZER3_X, ANALYZER3_Y, 680, 192, CRGBColor::BACKGROUND);
 
         const auto memory = g_AtariTrackerDriver->GetAtari()->GetConstMemoryAt(0);
-        for (int i = 0; i < g_tracks4_8; i++) {
+        for (int i = 0; i < m_channels; i++) {
             BOOL IS_RIGHT_POKEY = (i >= 4) ? 1 : 0;
 
             audctl = memory[idx2[IS_RIGHT_POKEY]];
@@ -601,7 +601,7 @@ void CSong::DrawAnalyzer()
                 int reverse_tonic = (24 - tonic) % 12; //since things are wack I had to do this
                 //int FREQ_17 = (g_ntsc) ? FREQ_17_NTSC : FREQ_17_PAL;	//useful for debugging I guess
                 auto cycles = CAtari::GetFrameCycleCount(IsNTSC());
-                int tracks = g_Song.GetTracks();
+                int tracks = g_Song.GetChannels();
                 char t[12] = { 0 };
 
                 TextMiniXY("A- TUNING:       HZ,", ANALYZER3_X, ANALYZER3_Y + 8 * 9, TextMiniColor::GRAY);
@@ -842,7 +842,7 @@ void CSong::DrawSong()
 
             // For each track that is part of the song draw its number
             szBuffer[2] = 0;
-            for (j = 0, k = 32; j < g_tracks4_8; j++, k += 24) {
+            for (j = 0, k = 32; j < m_channels; j++, k += 24) {
                 if ((t = m_song[line][j]) >= 0) {
                     szBuffer[0] = CharH4(t);
                     szBuffer[1] = CharL4(t);
@@ -901,7 +901,7 @@ void CSong::DrawSong()
         TextXY(szBuffer, k, CSongScreenLayout::SONG_Y, color);
     }
     szBuffer[0] = 'R';
-    for (i = 4; i < GetTracks(); i++, k += 24) {
+    for (i = 4; i < GetChannels(); i++, k += 24) {
         szBuffer[1] = i + 49 - 4; //character 1-4
         if (GetChannelOnOff(i)) {
             if (m_trackactivecol == i)
@@ -1035,7 +1035,7 @@ void CSong::DrawTracks()
         if (oob) color = TextColor::DARK_GRAY;
         TextXY(s, CSongScreenLayout::TRACKS_X, y, color);
 
-        for (int j = 0; j < g_tracks4_8; j++, x += 16 * 8) {
+        for (int j = 0; j < m_channels; j++, x += 16 * 8) {
             //track in the current line of the song
             sl = songactiveline + oob;
             if (sl < 0 || sl > 255) {
@@ -1064,7 +1064,7 @@ void CSong::DrawTracks()
     x = CSongScreenLayout::TRACKS_X + 5 * 8;
     y = (CSongScreenLayout::TRACKS_Y + 3 * 16) + smooth_y;
 
-    for (i = 0; i < g_tracks4_8; i++, x += 16 * 8) {
+    for (i = 0; i < m_channels; i++, x += 16 * 8) {
         s[8] = tnames[i * 2];
         s[9] = tnames[i * 2 + 1];
 
@@ -1089,7 +1089,7 @@ void CSong::DrawTracks()
     g_mem_dc->LineTo(x, y + 19);
 
     //a line delimiting the boundary between left/right-- there is a bug with some tracks but the entire function needs to be rewritten anyway...
-    if (g_tracks4_8 > 4) {
+    if (m_channels > 4) {
         y = (CSongScreenLayout::TRACKS_Y + 3 * 16);
         int line_end = y + g_tracklines * 16;
 
@@ -1831,7 +1831,7 @@ BOOL CSong::InstrKey(int vk, int shift, int control)
                 i = ai->editEnvelopeY;
                 if (i > 0) {
                     i--;
-                    if (i == 0 && g_tracks4_8 <= 4) i = 7; //mono mode
+                    if (i == 0 && m_channels <= 4) i = 7; //mono mode
                 } else
                     i = 7;
                 ai->editEnvelopeY = i;
@@ -1854,7 +1854,7 @@ BOOL CSong::InstrKey(int vk, int shift, int control)
                 if (i < 7)
                     i++;
                 else
-                    i = (g_tracks4_8 > 4) ? 0 : 1;
+                    i = (m_channels > 4) ? 0 : 1;
                 ai->editEnvelopeY = i;
                 return 1;
 
@@ -2238,7 +2238,7 @@ BOOL CSong::ProveKey(int vk, int shift, int control)
         if (i >= 0 && i < CNotes::NOTESNUM) //only within limits
         {
             SetPlayPressedTonesTNIV(m_trackactivecol, i, m_activeinstr, m_volume);
-            if ((control || g_prove == EditMode::JAM_STEREO_MODE) && g_tracks4_8 > 4) {
+            if ((control || g_prove == EditMode::JAM_STEREO_MODE) && m_channels > 4) {
                 //with control or in prove2 => stereo test
                 SetPlayPressedTonesTNIV((m_trackactivecol + 4) & 0x07, i, m_activeinstr, m_volume);
             }
@@ -2412,7 +2412,7 @@ BOOL CSong::ProveKey(int vk, int shift, int control)
             {
                 int i, j, la = 0;
                 for (j = 0; j < SONGLEN; j++) {
-                    for (i = 0; i < g_tracks4_8; i++)
+                    for (i = 0; i < m_channels; i++)
                         if (m_song[j][i] >= 0) {
                             la = j;
                             break;
@@ -2429,7 +2429,7 @@ BOOL CSong::ProveKey(int vk, int shift, int control)
                 if ((BOOL)control != (BOOL)g_keyboard_swapenter) //control+Enter => plays a whole line (all tracks)
                 {
                     //for all track columns except the active track column
-                    for (i = 0; i < g_tracks4_8; i++) {
+                    for (i = 0; i < m_channels; i++) {
                         if (i != m_trackactivecol) {
                             TrackGetLoopingNoteInstrVol(m_song[m_songactiveline][i], note, instr, vol);
                             if (note >= 0)                                    //is there a note?
@@ -2934,7 +2934,7 @@ TrackKeyOk:
                 if (!shift && (BOOL)control != (BOOL)g_keyboard_swapenter) //control+Enter => plays a whole line (all tracks)
                 {
                     //for all track columns except the active track column
-                    for (i = 0; i < g_tracks4_8; i++) {
+                    for (i = 0; i < m_channels; i++) {
                         if (i != m_trackactivecol) {
                             TrackGetLoopingNoteInstrVol(m_song[m_songactiveline][i], note, instr, vol);
                             if (note >= 0)                                    //is there a note?
@@ -3096,7 +3096,7 @@ BOOL CSong::TrackCursorGoto(CPoint point)
     //if (y >= 0 && y < g_Tracks.m_maxtracklen)
     if (y >= 0 && y < GetSmallestMaxtracklen(m_songactiveline)) //variable pattern size, to prevent clicking "out of bounds" with the new tracks display
     {
-        if (xch >= 0 && xch < g_tracks4_8) m_trackactivecol = xch;
+        if (xch >= 0 && xch < m_channels) m_trackactivecol = xch;
         if (m_play && m_followplay) //prevents moving at all during play+follow
             goto notracklinechange;
         else
@@ -3244,7 +3244,7 @@ BOOL CSong::SongKey(int vk, int shift, int control)
         case VK_END: {
             int i, j, la = 0;
             for (j = 0; j < SONGLEN; j++) {
-                for (i = 0; i < g_tracks4_8; i++)
+                for (i = 0; i < m_channels; i++)
                     if (m_song[j][i] >= 0) {
                         la = j;
                         break;
@@ -3304,7 +3304,7 @@ BOOL CSong::SongCursorGoto(CPoint point)
     xch = ((point.x + 4) / (3 * 8));
     y = (point.y + 0) / 16 - 2 + m_songactiveline;
     if (y >= 0 && y < SONGLEN) {
-        if (xch >= 0 && xch < g_tracks4_8) m_trackactivecol = xch;
+        if (xch >= 0 && xch < m_channels) m_trackactivecol = xch;
         if (y != m_songactiveline) {
             g_activepart = Part::PART_SONG;
             if (m_play && m_followplay) {

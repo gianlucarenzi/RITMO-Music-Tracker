@@ -1,5 +1,8 @@
 #include "PlatformTypes.h"
 #include "Song.h"
+#include "Global.h"
+#include "RmtModuleCodec.h"
+#include "RmtModuleFile.h"
 #include "AtariIO.h"
 #include "exportdlgs.h"
 
@@ -69,28 +72,17 @@ bool CSong::ExportAsStrippedRMT(CSong& song, std::ofstream& ou, TExportDescripti
 /// </summary>
 bool CSong::ExportAsStrippedRMTApply(CSong& song, std::ofstream& ou, int targetAddrOfModule, BOOL sfxSupport)
 {
-    TExportDescription exportTempDescription;
-    memset(&exportTempDescription, 0, sizeof(TExportDescription));
-    exportTempDescription.targetAddrOfModule = targetAddrOfModule;
-
-    exportTempDescription.firstByteAfterModule =
-        song.MakeModule(
-            exportTempDescription.mem,
-            exportTempDescription.targetAddrOfModule,
-            // SFX support keeps all non-empty instruments (sound effects
-            // trigger instruments directly, without any track referencing
-            // them); without it, unused instruments are stripped. The two
-            // iotypes were swapped here since 1.34, so an SFX-only module
-            // (instruments, no tracks) exported to a 30-byte husk (issue #5).
-            sfxSupport ? SongIOType::RMT : SongIOType::RMTSTRIPPED,
-            exportTempDescription.instrumentSavedFlags,
-            exportTempDescription.trackSavedFlags);
-    if (exportTempDescription.firstByteAfterModule < 0) {
+    // SFX support keeps all non-empty instruments (sound effects trigger instruments directly, without any track
+    // referencing them); without it, unused instruments are stripped. The two iotypes were swapped here since 1.34,
+    // so an SFX-only module (instruments, no tracks) exported to a 30-byte husk (issue #5). Since RMT 1.36 (plan 60
+    // M6) the stripped module of the song, written by CRmtModuleFile.
+    try {
+        CRmtModule module = CRmtModuleCodec::FromSong(song, sfxSupport ? SongIOType::RMT : SongIOType::RMTSTRIPPED);
+        CRmtModule::Bytes bytes = CRmtModuleFile::Stripped(module, targetAddrOfModule).Write();
+        ou.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+        return true; // Indicate that data was saved
+    } catch (const CRmtModule::FormatException& e) {
+        MessageBox(g_hwnd, CString("The song cannot be coded to the RMT module format.\n\n") + e.what(), "Internal format problem.", MB_ICONERROR);
         return false; // if the module could not be created
     }
-
-    // And save the RMT module block (the end address is inclusive)
-    CAtariIO::SaveBinaryBlock(ou, exportTempDescription.mem, exportTempDescription.targetAddrOfModule, exportTempDescription.firstByteAfterModule - 1, TRUE);
-
-    return true; // Indicate that data was saved
 }

@@ -166,7 +166,7 @@ int CConvertTracks::MakeOrFindTrackShiftLR(int from, int shift, BYTE lr)
 
 int CSong::ImportTMC(std::ifstream& in)
 {
-    auto originalg_tracks4_8 = GetTracks();
+    auto originalChannels = GetChannels();
 
     //delete the current song
     g_Tracks.SetMaxTrackLength(64); // track length is 64
@@ -793,7 +793,7 @@ int CSong::ImportTMC(std::ifstream& in)
     if (m_songgo[line - 1] < 0) m_songgo[line + 1] = line; //no, so it adds an endless loop to the end
 
     if (!stereomodul) //mono module
-        SetTracks(4);
+        SetChannels(4);
 
     //FINAL DIALOGUE AFTER IMPORT
     CImportTmcFinishedDlg imfdlg;
@@ -818,7 +818,7 @@ int CSong::ImportTMC(std::ifstream& in)
 
     if (imfdlg.DoModal() != IDOK) {
         //did not give Ok, so it deletes
-        ClearSong(originalg_tracks4_8); //returns the original value
+        ClearSong(originalChannels); //returns the original value
         MessageBox(g_hwnd, "Module import aborted.", "Import...", MB_ICONINFORMATION);
     }
 
@@ -859,7 +859,7 @@ int AtariVolume(int volume0_64)
 int CSong::ImportMOD(std::ifstream& in)
 {
     //deletes the current song
-    int originalg_tracks4_8 = GetTracks(); //keeps the original value for Abort
+    int originalChannels = GetChannels(); //keeps the original value for Abort
     g_Tracks.SetMaxTrackLength(64);        //track length 64
     ClearSong(8);                          //prepares 8 channels, clear existing data
 
@@ -994,7 +994,7 @@ int CSong::ImportMOD(std::ifstream& in)
     BOOL x_truncateunusedparts = importdlg.m_check7;
     [[maybe_unused]] BOOL x_fourier = importdlg.m_check8; // Fourier code below is disabled
 
-    SetTracks(rmttype); //produce RMT4 or RMT8
+    SetChannels(rmttype); //produce RMT4 or RMT8
 
     //song name
     for (j = 0; j < 20 && (a = mem[j]); j++) m_songname[j] = a;
@@ -1705,7 +1705,7 @@ int CSong::ImportMOD(std::ifstream& in)
 
     if (imfdlg.DoModal() != IDOK) {
         //did not give Ok, so it deletes
-        ClearSong(originalg_tracks4_8); //returns the original value
+        ClearSong(originalChannels); //returns the original value
         MessageBox(g_hwnd, "Module import aborted.", "Import...", MB_ICONINFORMATION);
     }
 

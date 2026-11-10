@@ -4,6 +4,8 @@
 #include "General.h"
 
 #include "Global.h"
+#include "Song.h"
+extern CSong g_Song;
 
 // ----------------------------------------------------------------------------
 // Channel On/Off helper functions
@@ -50,7 +52,7 @@ void SetChannelSolo(int ch)
     } else {
         // Target channel is ON
         // If any other channel is on then turn them all off except for the target channel
-        for (int i = 0; i < g_tracks4_8; i++) {
+        for (int i = 0; i < g_Song.GetChannels(); i++) {
             if (i != ch && GetChannelOnOff(i)) goto Channel_SOLO;
         }
         // All other channels are off, turn them all on

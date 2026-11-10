@@ -121,6 +121,9 @@ else()
         PokeyController.cpp
         PokeyRenderer.cpp
         PokeyStream.cpp
+        RmtModule.cpp
+        RmtModuleCodec.cpp
+        RmtModuleFile.cpp
         RuntimeException.cpp
         Script.cpp
         ScriptMessages.cpp
@@ -263,10 +266,11 @@ set(RMT_HEADERS
 endif()
 
 # Platform-specific preprocessor definitions
+# (STEREO, from Raster's project, is gone: no source tests it, and it expanded CSong::Channels::STEREO - RMT 1.36,
+# plan 61 M4)
 set(RMT_DEFINES
     NO_CONSOL_SOUND
     NO_VOL_ONLY
-    STEREO
 )
 
 if(WIN32)
@@ -581,6 +585,9 @@ if(RMT_CORE_TEST)
         PokeyController.cpp
         PokeyRenderer.cpp
         PokeyStream.cpp
+        RmtModule.cpp
+        RmtModuleCodec.cpp
+        RmtModuleFile.cpp
         RuntimeException.cpp
         Script.cpp
         ScriptMessages.cpp

@@ -21,14 +21,23 @@ class CPokeyController;
 class CSong {
 public:
     friend CASMFileExporter; // JAC! TODO Remove
+    friend class CRmtModuleCodec; // the module conversions read and write the song lines and speeds (RMT 1.36, plan 60)
 
     CSong();
     ~CSong();
 
     CString GetName() const;
-    int GetTracks() const;
-    bool IsStereo() const;
-    void SetTracks(const int tracksNum);
+    // The channel count of the song (RMT 1.36, plan 61): 4 (RMT4, mono) or 8 (RMT8, stereo). It was the global
+    // g_tracks4_8; the module header stores it, it is read on load and written on save.
+    struct Channels {
+        static constexpr int MONO = 4;
+        static constexpr int STEREO = 8;
+    };
+    int GetChannels() const { return m_channels; }
+    bool IsMono() const { return m_channels == Channels::MONO; }
+    bool IsStereo() const { return m_channels == Channels::STEREO; }
+    // Only MONO and STEREO (std::invalid_argument otherwise); a change re-initialises the sound (the POKEY pair)
+    void SetChannels(const int channels);
     BOOL IsNTSC() const;
     void SetNTSC(const BOOL ntsc);
     // The tracker driver the song plays with (as in RMT 1.36, plan 41): the default of the Module Properties, or
@@ -391,6 +400,7 @@ private:
     char m_songname[SONG_NAME_MAX_LEN + 1];
     BOOL m_ntsc;
     TrackerDriverVersion m_trackerDriverVersion = PATCH16;
+    int m_channels = Channels::STEREO; // as the global g_tracks4_8 started
     TTuningSettings m_tuning{};
     int m_songnamecur;
 

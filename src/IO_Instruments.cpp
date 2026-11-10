@@ -10,6 +10,8 @@
 #include "Global.h"
 
 #include "GuiHelpers.h"
+#include "Song.h"
+extern CSong g_Song;
 
 
 int CInstruments::SaveAll(std::ofstream& ou, InstrumentIOType iotype)
@@ -308,7 +310,7 @@ BYTE CInstruments::InstrToAta(int instr, unsigned char* ata, int max)
     for (i = 0; i <= par[PAR_TBL_LENGTH]; i++) ata[INSTRPAR + i] = ai->noteTable[i];
 
     //envelope is behind the table
-    BOOL stereo = (g_tracks4_8 > 4);
+    BOOL stereo = (g_Song.GetChannels() > 4);
     int len = par[PAR_ENV_LENGTH];
     for (i = 0, j = tablelast + 1; i <= len; i++, j += 3) {
         int* env = (int*)&ai->envelope[i];
@@ -374,7 +376,7 @@ BOOL CInstruments::AtaV0ToInstr(unsigned char* ata, int instr)
     par[PAR_VIBRATO] = ata[14] & 0x03;
     par[PAR_FREQ_SHIFT] = ata[15];
     //
-    BOOL stereo = (g_tracks4_8 > 4);
+    BOOL stereo = (g_Song.GetChannels() > 4);
     for (i = 0, j = 16; i <= len; i++, j += 3) {
         int* env = ai->envelope[i];
         env[ENV_VOLUMER] = (stereo) ? (ata[j] >> 4) : (ata[j] & 0x0f); //if mono, then VOLUME R = VOLUME L
@@ -441,7 +443,7 @@ BOOL CInstruments::AtaToInstr(unsigned char* mem, int instrumentNr)
     for (int i = 0; i <= par[PAR_TBL_LENGTH]; i++) ai->noteTable[i] = mem[12 + i];
 
     // Envelope
-    BOOL stereo = (g_tracks4_8 > 4);
+    BOOL stereo = (g_Song.GetChannels() > 4);
     int ptrEnvelopeEntry = mem[0] + 1; // location in Atari memory where envelope data is parsed from
 
     for (int i = 0; i <= par[PAR_ENV_LENGTH]; i++, ptrEnvelopeEntry += 3) {

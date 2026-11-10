@@ -1319,7 +1319,7 @@ protected:
     {
         QPainter painter(this);
         painter.setPen(QPen(palette().color(QPalette::WindowText), 1));
-        for (int i = 0; i < g_tracks4_8; i++) {
+        for (int i = 0; i < g_Song.GetChannels(); i++) {
             int z = m_order[i];
             if (z < 0) continue;
             QRect s = m_from[z]->geometry(), d = m_to[i]->geometry();
@@ -1403,7 +1403,7 @@ static INT_PTR RunSongTracksOrder(QWidget* parent, CSongTracksOrderDlg* dlg)
     setOrder([](int i) { return i; }); // OnInitDialog(): OnDefault()
 
     // Mono songs: no right channels
-    if (g_tracks4_8 <= 4) {
+    if (g_Song.GetChannels() <= 4) {
         for (int i = 4; i < 8; i++) {
             area->m_from[i]->setEnabled(false);
             area->m_to[i]->setEnabled(false);
@@ -1435,7 +1435,7 @@ static int RunChannelsSelection(QWidget* parent)
         auto* boxLayout = new QHBoxLayout(box);
         for (int i = side * 4; i < side * 4 + 4; i++) {
             checks[i] = new QCheckBox(names[i]);
-            checks[i]->setEnabled(i < 4 || g_tracks4_8 > 4);
+            checks[i]->setEnabled(i < 4 || g_Song.GetChannels() > 4);
             boxLayout->addWidget(checks[i]);
         }
         row->addWidget(box);
@@ -1631,7 +1631,7 @@ static INT_PTR RunInstrumentChange(QWidget* parent, CInstrumentChangeDlg* dlg)
                 dlg->m_onlychannels = channels;
                 QStringList names;
                 static const char* cnames[8] = { "L1", "L2", "L3", "L4", "R1", "R2", "R3", "R4" };
-                for (int i = 0; i < g_tracks4_8; i++)
+                for (int i = 0; i < g_Song.GetChannels(); i++)
                     if (channels & (1 << i)) names << cnames[i];
                 check5->setText("Only in " + names.join(','));
             } else

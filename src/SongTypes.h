@@ -1,5 +1,6 @@
 #pragma once
 
+#include "PlatformTypes.h"
 #include "InstrumentTypes.h"
 #include "TracksTypes.h"
 #include "TrackTypes.h"

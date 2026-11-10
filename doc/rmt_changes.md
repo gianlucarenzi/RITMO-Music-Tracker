@@ -70,6 +70,18 @@ Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
   RITMO PLAYER (`asm/rmtplay`) read the new names and come out identical. `src/tracker_obx.h` is generated again
   (`RMTPLAYR_FRQTAB_HI_TAB`, `RMTPLAYR_DISTORTION_TAB`, `RMT_SET_POKEY`...). The xasm compatibility check and the
   vendored xasm of upstream are not ported: RITMO assembles with ca65.
+- 2.7: the channel count is a property of the song (RMT 1.36, plan 61 M4, cc43351): the global `g_tracks4_8` is gone,
+  `CSong` keeps it with `GetChannels()`, `IsMono()`, `IsStereo()` and `SetChannels()` (4 or 8 only). The `STEREO`
+  definition of Raster's project is gone (no source tested it). Found on the way: an `.rmw` file wrote its channel
+  count into the program unchecked; a count other than 4 or 8 is now refused with a message.
+- 2.7: the RMT module is a container (RMT 1.36, plan 60, 65e177e): `CRmtModule` (the header, instruments, tracks and
+  song lines of format version 1, parsed and checked), `CRmtModuleFile` (the binary segments, with the names segment
+  or stripped) and `CRmtModuleCodec` (song <-> module). `MakeModule()` and `DecodeModule()` are wrappers over it, the
+  RMT and stripped RMT exports write through `CRmtModuleFile`, the relocatable ASM export reads the parsed module.
+  All 514 modules of the repository save and export byte for byte as before (RMT, TXT, RMW, stripped RMT with and
+  without SFX, ASM with frequencies, relocatable ASM). As in RMT 1.36, a module of format version 0 (the pre-release
+  layout) is no longer read, and a song whose speeds lie outside the header's range is not saved.
+  `doc/rmt_format.md` is the one of RMT 1.36, which describes what the container checks.
 - 2.6: the fixes of RMT 1.36 by Peter Dell (JAC!) (https://github.com/peterdell/RASTER-Music-Tracker, branch dev, up to
   2026-10-15), ported to RITMO: thanks again to JAC!, whose work this fork stands on, and who in turn took four fixes
   from the trail of RITMO into RMT 1.36 (the SAP type B player blocks, the WAV at instrument speed 2-4, the AUDCTL of the

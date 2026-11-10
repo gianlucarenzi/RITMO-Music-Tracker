@@ -12,7 +12,8 @@
 #include "GuiHelpers.h"
 
 extern CAtariTrackerDriver* g_AtariTrackerDriver;
-extern int g_tracks4_8; // TODO Move out
+#include "Song.h"
+extern CSong g_Song;
 
 
 /// <summary>
@@ -68,7 +69,7 @@ void CInstruments::DrawInstrument(int instrNr)
     }
 
     // For 8 channels draw the "VOLUME R:" header and volume markers
-    if (g_tracks4_8 > 4) {
+    if (g_Song.GetChannels() > 4) {
         TextXY(shenv[0].name, shenv[0].xpos, shenv[0].ypos, TextColor::WHITE); //"VOLUME R:"
         TextDownXY("\x0e\x0e\x0e\x0e", INSTRS_ENV_X + 11 * 8 - 1, INSTRS_ENV_Y - 2 * 16, TextColor::GRAY);
         g_mem_dc->MoveTo(INSTRS_ENV_X + 12 * 8 - 1, INSTRS_ENV_Y + 2 * 16 - 1);
@@ -421,7 +422,7 @@ BOOL CInstruments::GetGUIArea(int instrNr, int zone, CRect& rect)
 
         case INSTR_GUI_ZONE_ENVELOPE_RIGHT_ENVELOPE:
             //right channel volume curve (upper)
-            if (g_tracks4_8 <= 4) { return 0; }
+            if (g_Song.GetChannels() <= 4) { return 0; }
             rect.SetRect(INSTRS_ENV_X + 12 * 8, INSTRS_ENV_Y - 2 * 16 + 4, INSTRS_ENV_X + 12 * 8 + len * 8, INSTRS_ENV_Y - 2 * 16 + 4 + 4 * 16);
             return 1;
 
@@ -432,7 +433,7 @@ BOOL CInstruments::GetGUIArea(int instrNr, int zone, CRect& rect)
 
         case INSTR_GUI_ZONE_ENVELOPE_RIGHT_VOL_NUMS:
             //envelope area of volume numbers for right channel
-            if (g_tracks4_8 <= 4) { return 0; }
+            if (g_Song.GetChannels() <= 4) { return 0; }
             rect.SetRect(INSTRS_ENV_X + 12 * 8, INSTRS_ENV_Y - 2 * 16 + 0 + 4 * 16, INSTRS_ENV_X + 12 * 8 + len * 8, INSTRS_ENV_Y - 2 * 16 + 0 + 4 * 16 + 16);
             return 1;
 
@@ -486,7 +487,7 @@ void CInstruments::DrawEnv(int e, int it)
     // Volume column
     if (volL) g_mem_dc->FillSolidRect(x, INSTRS_ENV_Y + 3 * 16 + 4 + 4 * (15 - volL), 8, volL * 4, fillColor);
 
-    if (g_tracks4_8 > 4 && volR) g_mem_dc->FillSolidRect(x, INSTRS_ENV_Y - 2 * 16 + 4 + 4 * (15 - volR), 8, volR * 4, fillColor);
+    if (g_Song.GetChannels() > 4 && volR) g_mem_dc->FillSolidRect(x, INSTRS_ENV_Y - 2 * 16 + 4 + 4 * (15 - volR), 8, volR * 4, fillColor);
 
     for (int j = 0; j < 8; j++) {
         if ((a = shenv[j].ch) != 0) {
@@ -504,7 +505,7 @@ void CInstruments::DrawEnv(int e, int it)
         }
 
         if (j == 0) {
-            if (g_tracks4_8 > 4) TextXY(s, x, INSTRS_ENV_Y + 2 * 16, color); // Volume R is out of the box
+            if (g_Song.GetChannels() > 4) TextXY(s, x, INSTRS_ENV_Y + 2 * 16, color); // Volume R is out of the box
         } else
             TextXY(s, x, INSTRS_ENV_Y + 7 * 16 + j * 16, color);
     }

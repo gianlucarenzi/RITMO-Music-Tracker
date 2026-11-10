@@ -7,7 +7,8 @@
 #include "Global.h"
 
 extern CAtariTrackerDriver* g_AtariTrackerDriver;
-extern int g_tracks4_8; // TODO Move out
+#include "Song.h"
+extern CSong g_Song;
 
 /// <summary>
 /// Define information about each instrument parameter (not envelope table)
@@ -239,7 +240,7 @@ void CInstruments::SetEnvelopeVolume(int instr, BOOL right, int px, int newVolum
     if (px < 0 || px >= ti->parameters[PAR_ENV_LENGTH] + 1) return;
     if (newVolume < 0 || newVolume > 15) return;
 
-    int ep = (right && g_tracks4_8 > 4) ? ENV_VOLUMER : ENV_VOLUMEL;
+    int ep = (right && g_Song.GetChannels() > 4) ? ENV_VOLUMER : ENV_VOLUMEL;
     ti->envelope[px][ep] = newVolume;
 
     // Recalc some info about the updated instrument

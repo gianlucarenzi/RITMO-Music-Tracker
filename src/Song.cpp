@@ -1,3 +1,7 @@
+#include <stdexcept>
+#include "Memory.h"
+#include "RmtModuleCodec.h"
+#include <string>
 #include "PlatformTypes.h"
 #include <fstream>
 
@@ -32,7 +36,7 @@ extern CXPokey g_Pokey;
 extern CString g_PrefixForAllAsmLabels;
 // These two should be song attributes instead
 
-extern int g_tracks4_8;
+extern int m_channels;
 
 CSongTimer g_SongTimer;
 
@@ -63,20 +67,12 @@ CString CSong::GetName() const
     return result;
 }
 
-int CSong::GetTracks() const
+void CSong::SetChannels(const int channels)
 {
-    return g_tracks4_8;
-}
-
-bool CSong::IsStereo() const
-{
-    return (GetTracks() > 4);
-}
-
-void CSong::SetTracks(const int tracksNum)
-{
-    if (tracksNum != g_tracks4_8) {
-        g_tracks4_8 = tracksNum;
+    if (channels != Channels::MONO && channels != Channels::STEREO)
+        throw std::invalid_argument("the channel count of a song is 4 or 8, not " + std::to_string(channels));
+    if (channels != m_channels) {
+        m_channels = channels;
         ReInitSound();
     }
 }
@@ -147,8 +143,8 @@ void CSong::ClearSong(int numOfTracks)
 {
     Stop();
 
-    //g_tracks4_8 = numOfTracks;			// Track for 4/8 channels
-    SetTracks(numOfTracks);
+    //m_channels = numOfTracks;			// Track for 4/8 channels
+    SetChannels(numOfTracks);
     g_rmtroutine = TRUE; // RMT routine execution enabled
     g_prove = 0;
     g_respectvolume = 0;
@@ -259,7 +255,7 @@ int CSong::GetSubsongParts(CString& resultstr) const
                     apos = n;
                 else {
                     if (!ok) { //has not found any tracks in this subsong yet
-                        for (j = 0; j < g_tracks4_8; j++) {
+                        for (j = 0; j < m_channels; j++) {
                             if (m_song[apos][j] >= 0) { //if then found, this will be the beginning of the subsong
                                 s.Format("%02X ", apos);
                                 resultstr += s;
@@ -288,7 +284,7 @@ void CSong::MarkTF_USED(BYTE* arrayTRACKSNUM) const
     //all tracks used in the song
     for (int i = 0; i < SONGLEN; i++) {
         if (m_songgo[i] < 0) {
-            for (int channelNr = 0; channelNr < g_tracks4_8; channelNr++) {
+            for (int channelNr = 0; channelNr < m_channels; channelNr++) {
                 int tr = m_song[i][channelNr];
                 if (tr >= 0 && tr < TRACKSNUM) {
                     arrayTRACKSNUM[tr] = TF_USED;
@@ -326,152 +322,22 @@ void CSong::ResetTuningVariables()
 /// <returns></returns>
 int CSong::MakeModule(unsigned char* mem, int addr, SongIOType iotype, BYTE* instrumentSavedFlags, BYTE* trackSavedFlags)
 {
-    int i, j;
-    TTrack* tr;
-
-    // Returns maxadr (points to the first free address after the module) and sets the instrsaved and tracksaved fields
-
-    // Clear the instrument and tracks used flags
+    // Since RMT 1.36 (plan 60 M6) a wrapper over the module container: CRmtModuleCodec::FromSong() decides what is
+    // saved (SongIOType::RMT every non-empty track and instrument, any other type only the used ones) and
+    // CRmtModule::Write() lays it out. -1 if the song does not make a module: a track too event-dense to encode, a
+    // speed outside the header's range, or a module that does not fit at addr.
     memset(instrumentSavedFlags, 0, INSTRSNUM);
     memset(trackSavedFlags, 0, TRACKSNUM);
-
-    // Write out the RMT header (part 1)
-    // 0: RMT4 or RMT8
-    // 4: Track length
-    // 5: Song speed
-    // 6: Instrument speed
-    // 7: RMT version (1 for now)
-    memcpy(mem + addr, "RMT", 3);
-    mem[addr + 3] = g_tracks4_8 + '0'; // 4 or 8
-    mem[addr + 4] = g_Tracks.GetMaxTrackLength() & 0xff;
-    mem[addr + 5] = m_mainSpeed & 0xff;
-    mem[addr + 6] = m_instrumentSpeed;    // 1-4 player calls per frame
-    mem[addr + 7] = RMTFormatVersion::V1; // RMT format version number
-
-    // Note:
-    // When saving in RMT format ALL non-empty tracks and non-empty instruments will be stored
-    // In other formats only the USED tracks and USED instruments will be stored
-
-    MarkTF_USED(trackSavedFlags); // Mark all tracks as used
-    if (iotype == SongIOType::RMT) {
-        MarkTF_NOEMPTY(trackSavedFlags); // In addition to the used ones, all non-empty tracks are added to the RMT, all non-empty tracks
+    try {
+        CRmtModule module = CRmtModuleCodec::FromSong(*this, iotype);
+        int endOfModule = module.Write(mem, CMemory::SIZE, addr);
+        for (const auto& entry : module.GetInstruments()) instrumentSavedFlags[entry.first] = 1;
+        for (const auto& entry : module.GetTracks()) trackSavedFlags[entry.first] = 1;
+        return endOfModule; // the address of the first byte past the last one used
+    } catch (const CRmtModule::FormatException& e) {
+        MessageBox(g_hwnd, CString("The song cannot be coded to the RMT module format.\n\n") + e.what(), "Internal format problem.", MB_ICONERROR);
+        return -1;
     }
-
-    // Mark all used instruments in the tracks that will be saved
-    for (i = 0; i < TRACKSNUM; i++) {
-        if (trackSavedFlags[i] > 0) {
-            tr = g_Tracks.GetTrack(i);
-            for (j = 0; j < tr->len; j++) {
-                if (g_Tracks.IsValidInstrument(tr->instr[j])) instrumentSavedFlags[tr->instr[j]] = IF_USED;
-            }
-        }
-    }
-
-    if (iotype == SongIOType::RMT) {
-        // In addition to the instruments used in the tracks that are in the song, all non-empty instruments are stored in the RMT
-        for (i = 0; i < INSTRSNUM; i++) {
-            if (g_Instruments.CalculateNotEmpty(i)) instrumentSavedFlags[i] |= IF_NOEMPTY;
-        }
-    }
-
-    //---
-    // Find how many tracks and instruments to save
-    int numTracks = 0;
-    for (i = TRACKSNUM - 1; i >= 0; i--) {
-        if (trackSavedFlags[i] > 0) {
-            numTracks = i + 1;
-            break;
-        }
-    }
-
-    int numInstruments = 0;
-    for (i = INSTRSNUM - 1; i >= 0; i--) {
-        if (instrumentSavedFlags[i] > 0) {
-            numInstruments = i + 1;
-            break;
-        }
-    }
-
-    // Calculate the offsets for instruments, tracks (lo & hi) and song lines
-    // RMT header is 16 bytes, so instrument ptrs start there
-    // Each instrument ptr is 2 bytes, and the track pointers are 2 bytes
-    // but split into low and high storage areas
-    int ptrInstruments = addr + 16;
-    int ptrTracksLoBytes = ptrInstruments + numInstruments * 2;
-    int ptrTracksHiBytes = ptrTracksLoBytes + numTracks;
-    int ptrInstrumentData = ptrTracksHiBytes + numTracks; // behind the track byte table
-
-    // Saves instrument data and writes their beginnings to the table
-    for (i = 0; i < numInstruments; i++) {
-        if (instrumentSavedFlags[i]) {
-            // Create instrument data
-            int thisInstrumentLength = g_Instruments.InstrToAta(i, mem + ptrInstrumentData, ATARI_MAX_INSTR_LENGTH);
-
-            // Save where the instrument data is to be found
-            mem[ptrInstruments + i * 2] = ptrInstrumentData & 0xff;   // lo byte
-            mem[ptrInstruments + i * 2 + 1] = ptrInstrumentData >> 8; // hi byte
-
-            // Move where the next instruments data is to be saved
-            ptrInstrumentData += thisInstrumentLength;
-        } else {
-            // Oi, nothing to save here, just emit 0
-            // This happens if there are unused instruments between the used ones.
-            // Best to rearrange the instruments to be one continous block
-            mem[ptrInstruments + i * 2] = mem[ptrInstruments + i * 2 + 1] = 0;
-        }
-    }
-
-    // Just after of the instrument data we start with the track data
-    int ptrTrackData = ptrInstrumentData;
-
-    // Saves track data and write their beginnings to the table
-    for (i = 0; i < numTracks; i++) {
-        if (trackSavedFlags[i]) {
-            // Create the track data
-            int thisTrackLength = g_Tracks.TrackToAta(i, mem + ptrTrackData, ATARI_MAX_TRACK_LENGTH);
-
-            // Check that the track data is valid
-            if (thisTrackLength < 1) {
-                // Track cannot be saved to RMT
-                CString msg;
-                msg.Format("Fatal error in track %02X.\n\nThis track contains too many events (notes and speed commands),\nthat's why it can't be coded to RMT internal code format.", i);
-                MessageBox(g_hwnd, msg, "Internal format problem.", MB_ICONERROR);
-                return -1;
-            }
-
-            // Save where the track data is to be found
-            mem[ptrTracksLoBytes + i] = ptrTrackData & 0xff; // lo byte
-            mem[ptrTracksHiBytes + i] = ptrTrackData >> 8;   // hi byte
-
-            // Move where the next track's data is to be saved
-            ptrTrackData += thisTrackLength;
-        } else {
-            // Oi, nothing to save here, just emit 0
-            mem[ptrTracksLoBytes + i] = mem[ptrTracksHiBytes + i] = 0;
-        }
-    }
-
-    // Just after the track data we store the song lines
-    int ptrSongData = ptrTrackData;
-
-    int thisSongLength = SongToAta(mem + ptrSongData, 0x10000 - ptrSongData, ptrSongData);
-
-    int endOfModule = ptrSongData + thisSongLength;
-
-    // Writes computed pointers to the header
-    mem[addr + 8] = ptrInstruments & 0xff; // lo byte pointer to instrument table
-    mem[addr + 9] = ptrInstruments >> 8;   // hi byte
-    //
-    mem[addr + 10] = ptrTracksLoBytes & 0xff; // lo byte pointer to low bytes of track data table
-    mem[addr + 11] = ptrTracksLoBytes >> 8;   // hi byte
-    mem[addr + 12] = ptrTracksHiBytes & 0xff; // lo byte pointer to high bytes of track data table
-    mem[addr + 13] = ptrTracksHiBytes >> 8;   // hi byte
-    //
-    mem[addr + 14] = ptrSongData & 0xff; // lo byte pointer to song data (arrangements of tracks)
-    mem[addr + 15] = ptrSongData >> 8;   // hi byte
-
-    // Return the address of the first byte past the last one used
-    return endOfModule;
 }
 
 /// <summary>
@@ -485,110 +351,20 @@ int CSong::MakeModule(unsigned char* mem, int addr, SongIOType iotype, BYTE* ins
 /// <returns>0-If the module could not be loaded, version nr otherwise</returns>
 int CSong::DecodeModule(unsigned char* mem, int fromAddr, int endAddr, BYTE* instrumentLoadedFlags, BYTE* trackLoadedFlags)
 {
-    int addr = fromAddr;
-
+    // Since RMT 1.36 (plan 60 M6) a wrapper over the module container - CRmtModule::Parse(), then
+    // CRmtModuleCodec::ToSong() - so a module the container rejects, format version 0 included, leaves the song as it
+    // was. Returns the format version, 0 on failure.
     memset(instrumentLoadedFlags, 0, INSTRSNUM);
     memset(trackLoadedFlags, 0, TRACKSNUM);
-
-    unsigned char data;
-    int i, j;
-
-    BOOL loadState;
-
-    // Check that the header starts with "RMT"
-    if (strncmp((char*)(mem + addr), "RMT", 3) != 0) return 0; //there is no RMT
-
-    // 4th byte: # of channels (4 or 8)
-    data = mem[addr + 3];
-    if (data != '4' && data != '8') return 0; //it is not RMT4 or RMT8
-    SetTracks(data & 0x0F);                   // Store how many channels this module uses
-
-    // 5th byte: track length
-    data = mem[addr + 4];
-    g_Tracks.SetMaxTrackLength((data > 0) ? data : 256); //0 => 256
-
-    // 6th byte: song speed
-    data = mem[addr + 5];
-    m_mainSpeed = data;
-    if (data < 1) return 0; // there can be no zero speed
-
-    // 7th byte: Instrument speed
-    data = mem[addr + 6];
-    if (data < 1 || data > 8) return 0; // Instrument speed is less than 1 or greater than 8 (note: should be max 4, but allows up to 8 and will only display a warning)
-    m_instrumentSpeed = data;
-
-    // 8th byte: RMT format version nr.
-    int version = mem[addr + 7];
-    // TODO: Make "case" and support V2
-    if (version > RMTFormatVersion::V1) {
-        // the byte version is above the currently supported one
+    try {
+        CRmtModule module = CRmtModule::Parse(mem, fromAddr, endAddr);
+        CRmtModuleCodec::ToSong(module, *this);
+        for (const auto& entry : module.GetInstruments()) instrumentLoadedFlags[entry.first] = 1;
+        for (const auto& entry : module.GetTracks()) trackLoadedFlags[entry.first] = 1;
+        return module.GetFormatVersion();
+    } catch (const CRmtModule::FormatException&) {
         return 0;
     }
-
-    // Now g_Tracks.m_maxTrackLength is set to the value in the RMT header,
-    // so re-initialize the tracks to set all tracks to this new length
-    g_Tracks.InitTracks();
-
-    // Get various pointers
-    int ptrInstruments = mem[addr + 8] + (mem[addr + 9] << 8);  // Get ptr to the instuments
-    int ptrTracksLow = mem[addr + 10] + (mem[addr + 11] << 8);  // Get ptr to tracks table low
-    int ptrTracksHigh = mem[addr + 12] + (mem[addr + 13] << 8); // Get ptr to tracks table high
-    int ptrSong = mem[addr + 14] + (mem[addr + 15] << 8);       // Get ptr to track list (the song)
-
-    // Calculate how long each of the sections are
-    int numInstruments = (ptrTracksLow - ptrInstruments) / 2;
-    int numTracks = (ptrTracksHigh - ptrTracksLow);
-    int lengthSong = endAddr - ptrSong;
-
-    // Decoding of individual instruments
-    for (int instrumentNr = 0; instrumentNr < numInstruments; instrumentNr++) {
-        // Get the ptr to an instruments configuration data
-        int ptrOneInstrument = mem[ptrInstruments + instrumentNr * 2] + (mem[ptrInstruments + instrumentNr * 2 + 1] << 8);
-
-        // Skip over empty instruments
-        if (ptrOneInstrument == 0) continue; // Empty instruments have a NULL ptr
-
-        // Depending on the file version load the instrument data into g_Instruments
-        if (version == 0)
-            loadState = g_Instruments.AtaV0ToInstr(mem + ptrOneInstrument, instrumentNr);
-        else
-            loadState = g_Instruments.AtaToInstr(mem + ptrOneInstrument, instrumentNr);
-
-        g_Instruments.Update(instrumentNr); //writes to Atari ram
-
-        if (!loadState) return 0; // some problem with the instrument => END
-
-        // Mark the instrument as loaded
-        instrumentLoadedFlags[instrumentNr] = 1;
-    }
-
-    // Track data ptrs are split over two tables.  Low and high bytes, each indexed by the track number
-    // Decoding individual tracks
-    for (i = 0; i < numTracks; i++) {
-        int trackNr = i;
-        int ptrTrack = mem[ptrTracksLow + i] + (mem[ptrTracksHigh + i] << 8);
-        if (ptrTrack == 0) continue; // Omitted tracks have pointer of 0
-
-        // Identify the end of the track by the starting address of the next track,
-        // and at the end by the starting address of the song data that follows the data of the last track
-        int ptrTrackEnd = 0;
-        for (j = i; j < numTracks; j++) {
-            ptrTrackEnd = (j + 1 == numTracks) ? ptrSong : mem[ptrTracksLow + j + 1] + (mem[ptrTracksHigh + j + 1] << 8);
-            if (ptrTrackEnd != 0) break;
-            i++; //continue from the next and skip the omitted one
-        }
-
-        int trackLength = ptrTrackEnd - ptrTrack;
-        if (!g_Tracks.AtaToTrack(mem + ptrTrack, trackLength, trackNr)) return 0; //some problem with the track => END
-
-        // Mark the track as loaded
-        trackLoadedFlags[trackNr] = 1;
-    }
-
-    // Decoded song
-    if (!AtaToSong(mem + ptrSong, lengthSong, ptrSong)) return 0; //some problem with the song => END
-
-    return version;
 }
 
 //---
@@ -756,7 +532,7 @@ BOOL CSong::TrackLeft(BOOL column)
         m_trackactivecur = 3; //previous speed column
     track_leftcolumn:
         m_trackactivecol--;
-        if (m_trackactivecol < 0) m_trackactivecol = g_tracks4_8 - 1;
+        if (m_trackactivecol < 0) m_trackactivecol = m_channels - 1;
     }
     return 1;
 }
@@ -771,7 +547,7 @@ BOOL CSong::TrackRight(BOOL column)
         m_trackactivecur = 0;
     track_rightcolumn:
         m_trackactivecol++;
-        if (m_trackactivecol >= g_tracks4_8) m_trackactivecol = 0;
+        if (m_trackactivecol >= m_channels) m_trackactivecol = 0;
     }
     return 1;
 }
@@ -1152,12 +928,12 @@ BOOL CSong::SongInsertLine(int line)
     g_Undo.ChangeSong(line, m_trackactivecol, UETYPE_SONGDATA, 0);
     int j, go;
     for (int i = SONGLEN - 2; i >= line; i--) {
-        for (j = 0; j < g_tracks4_8; j++) m_song[i + 1][j] = m_song[i][j];
+        for (j = 0; j < m_channels; j++) m_song[i + 1][j] = m_song[i][j];
         go = m_songgo[i];
         if (go > 0 && go >= line) go++;
         m_songgo[i + 1] = go;
     }
-    for (j = 0; j < g_tracks4_8; j++) m_song[line][j] = -1;
+    for (j = 0; j < m_channels; j++) m_song[line][j] = -1;
     m_songgo[line] = -1;
     for (int i = 0; i < line; i++) {
         if (m_songgo[i] >= line) m_songgo[i]++;
@@ -1174,7 +950,7 @@ BOOL CSong::SongDeleteLine(int line)
     g_Undo.ChangeSong(line, m_trackactivecol, UETYPE_SONGDATA, 0);
     int j, go;
     for (int i = line; i < SONGLEN - 1; i++) {
-        for (j = 0; j < g_tracks4_8; j++) m_song[i][j] = m_song[i + 1][j];
+        for (j = 0; j < m_channels; j++) m_song[i][j] = m_song[i + 1][j];
         go = m_songgo[i + 1];
         if (go > 0 && go > line) go--;
         m_songgo[i] = go;
@@ -1182,7 +958,7 @@ BOOL CSong::SongDeleteLine(int line)
     for (int i = 0; i < line; i++) {
         if (m_songgo[i] > line) m_songgo[i]--;
     }
-    for (j = 0; j < g_tracks4_8; j++) m_song[SONGLEN - 1][j] = -1;
+    for (j = 0; j < m_channels; j++) m_song[SONGLEN - 1][j] = -1;
     m_songgo[SONGLEN - 1] = -1;
     if (IsBookmark() && m_bookmark.songline >= line) {
         m_bookmark.songline--;
@@ -1240,7 +1016,7 @@ BOOL CSong::SongInsertCopyOrCloneOfSongLines(int& line)
             g_Undo.Separator(-1);                          //associates the previous insert lines to the next change
             g_Undo.ChangeTrack(0, 0, UETYPE_TRACKSALL, 1); //with separator
 
-            for (j = 0; j < g_tracks4_8; j++) {
+            for (j = 0; j < m_channels; j++) {
                 k = m_song[sou][j];  //original track
                 d = -1;              //resulting track (initial initialization)
                 if (k < 0) continue; //is there --
@@ -1266,7 +1042,7 @@ BOOL CSong::SongInsertCopyOrCloneOfSongLines(int& line)
         } else {
             //copies
             m_songgo[des] = m_songgo[sou];
-            for (j = 0; j < g_tracks4_8; j++) m_song[des][j] = m_song[sou][j];
+            for (j = 0; j < m_channels; j++) m_song[des][j] = m_song[sou][j];
         }
     }
 
@@ -1289,7 +1065,7 @@ BOOL CSong::SongPrepareNewLine(int& line, int sourceline, BOOL alsoemptycolumns)
     MarkTF_NOEMPTY(tracks);
 
     int count = 0;
-    for (i = 0; i < g_tracks4_8; i++) {
+    for (i = 0; i < m_channels; i++) {
         if (!alsoemptycolumns && sourceline >= 0 && m_song[sourceline][i] < 0) continue;
 
         k = FindNearTrackBySongLineAndColumn(sourceline, i, tracks);
@@ -1300,7 +1076,7 @@ BOOL CSong::SongPrepareNewLine(int& line, int sourceline, BOOL alsoemptycolumns)
         }
     }
 
-    if (count < g_tracks4_8) {
+    if (count < m_channels) {
         if (count == 0)
             MessageBox(g_hwnd, "There isn't any empty unused track in song.", "Error", MB_ICONERROR);
         else
@@ -1770,7 +1546,7 @@ void CSong::InstrChange(int instr)
             for (j = 0; j < SONGLEN; j++) {
                 if (IsSongGo(j)) continue;
 
-                for (i = 0; i < g_tracks4_8; i++) {
+                for (i = 0; i < m_channels; i++) {
                     t = m_song[j][i];
 
                     if (!g_Tracks.IsValidTrack(t)) continue;
@@ -1890,7 +1666,7 @@ void CSong::InstrChange(int instr)
             for (j = 0; j < SONGLEN; j++) {
                 if (IsSongGo(j)) continue;
 
-                for (i = 0; i < g_tracks4_8; i++) {
+                for (i = 0; i < m_channels; i++) {
                     t = m_song[j][i];
 
                     if (!g_Tracks.IsValidTrack(t)) continue;
@@ -1935,7 +1711,7 @@ void CSong::TrackInfo(int track)
         if (m_songgo[sline] >= 0) continue; //goto line is ignored
 
         BOOL thisline = 0;
-        for (ch = 0; ch < g_tracks4_8; ch++) {
+        for (ch = 0; ch < m_channels; ch++) {
             int n = m_song[sline][ch];
             if (n == track) {
                 trackusedincolumn[ch]++;
@@ -1949,7 +1725,7 @@ void CSong::TrackInfo(int track)
 
     CString s, s2;
     s.Format("Track: %02X\nUsing in song:\n", track);
-    for (ch = 0; ch < g_tracks4_8; ch++) {
+    for (ch = 0; ch < m_channels; ch++) {
         i = trackusedincolumn[ch];
         s2.Format("%s: %i   ", cnames[ch], i);
         s += s2;
@@ -1963,7 +1739,7 @@ void CSong::TrackInfo(int track)
 
 void CSong::SongCopyLine()
 {
-    for (int i = 0; i < g_tracks4_8; i++) m_songlineclipboard[i] = m_song[m_songactiveline][i];
+    for (int i = 0; i < m_channels; i++) m_songlineclipboard[i] = m_song[m_songactiveline][i];
     m_songgoclipboard = m_songgo[m_songactiveline];
 }
 
@@ -1971,14 +1747,14 @@ void CSong::SongPasteLine()
 {
     if (m_songgoclipboard < -1) return;
     g_Undo.ChangeSong(m_songactiveline, m_trackactivecol, UETYPE_SONGDATA);
-    for (int i = 0; i < g_tracks4_8; i++) m_song[m_songactiveline][i] = m_songlineclipboard[i];
+    for (int i = 0; i < m_channels; i++) m_song[m_songactiveline][i] = m_songlineclipboard[i];
     m_songgo[m_songactiveline] = m_songgoclipboard;
 }
 
 void CSong::SongClearLine()
 {
     g_Undo.ChangeSong(m_songactiveline, m_trackactivecol, UETYPE_SONGDATA);
-    for (int i = 0; i < g_tracks4_8; i++) m_song[m_songactiveline][i] = -1;
+    for (int i = 0; i < m_channels; i++) m_song[m_songactiveline][i] = -1;
     m_songgo[m_songactiveline] = -1;
 }
 
@@ -2007,7 +1783,7 @@ void CSong::TracksOrderChange()
         m_TracksOrderChange_songlineto = t;
 
         int c = 0;
-        for (i = 0; i < g_tracks4_8; i++)
+        for (i = 0; i < m_channels; i++)
             if (dlg.m_tracksorder[i] < 0) c++;
         if (c > 0) {
             CString s;
@@ -2016,11 +1792,11 @@ void CSong::TracksOrderChange()
         }
 
         for (i = m_TracksOrderChange_songlinefrom; i <= m_TracksOrderChange_songlineto; i++) {
-            for (j = 0; j < g_tracks4_8; j++) {
+            for (j = 0; j < m_channels; j++) {
                 m_buff[j] = m_song[i][j];
                 m_song[i][j] = -1;
             }
-            for (j = 0; j < g_tracks4_8; j++) {
+            for (j = 0; j < m_channels; j++) {
                 int z = dlg.m_tracksorder[j];
                 if (z >= 0)
                     m_song[i][j] = m_buff[z];
@@ -2059,13 +1835,13 @@ void CSong::Songswitch4_8(int tracks4_8)
             m_trackactivecol = 3;
             m_trackactivecur = 0;
         }
-        SetTracks(4);
+        SetChannels(4);
         for (i = 0; i < SONGLEN; i++) {
             for (j = 4; j < 8; j++) m_song[i][j] = -1;
         }
     } else {
         if (tracks4_8 == 8) {
-            SetTracks(8);
+            SetChannels(8);
         }
     }
 
@@ -2080,7 +1856,7 @@ int CSong::GetEffectiveMaxtracklen()
         if (m_songgo[so] >= 0) continue; //go to line is ignored
         int min = g_Tracks.GetMaxTrackLength();
         int p = 0;
-        for (i = 0; i < g_tracks4_8; i++) {
+        for (i = 0; i < m_channels; i++) {
             int t = m_song[so][i];
             int m = g_Tracks.GetLength(t);
             if (m < 0) continue;
@@ -2103,7 +1879,7 @@ int CSong::GetSmallestMaxtracklen(int songline)
 
     if (m_songgo[so] >= 0) return 0; //go to line is ignored
 
-    for (int i = 0; i < g_tracks4_8; i++) {
+    for (int i = 0; i < m_channels; i++) {
         int t = m_song[so][i];
         int m = g_Tracks.GetLength(t);
         if (m < 0) continue;
@@ -2197,7 +1973,7 @@ void CSong::SongClearUnusedTracksAndParts(int& clearedtracks, int& truncatedtrac
 
         int nejkratsi = g_Tracks.GetMaxTrackLength();
 
-        for (ch = 0; ch < g_tracks4_8; ch++) {
+        for (ch = 0; ch < m_channels; ch++) {
             int n = m_song[sline][ch];
 
             if (!g_Tracks.IsValidTrack(n)) continue; // Invalid track is ignored
@@ -2211,7 +1987,7 @@ void CSong::SongClearUnusedTracksAndParts(int& clearedtracks, int& truncatedtrac
         }
 
         // "nejkratsi" is the shortest track in this song line
-        for (ch = 0; ch < g_tracks4_8; ch++) {
+        for (ch = 0; ch < m_channels; ch++) {
             int n = m_song[sline][ch];
 
             if (!g_Tracks.IsValidTrack(n)) continue; // Invalid track is ignored
@@ -2291,7 +2067,7 @@ int CSong::SongClearDuplicatedTracks()
 
     //analyse the song and make changes to the deleted tracks
     for (int sline = 0; sline < SONGLEN; sline++) {
-        for (ch = 0; ch < g_tracks4_8; ch++) {
+        for (ch = 0; ch < m_channels; ch++) {
             int n = m_song[sline][ch];
             if (n < 0 || n >= TRACKSNUM) continue; //--
             if (trackto[n] >= 0) m_song[sline][ch] = trackto[n];
@@ -2311,7 +2087,7 @@ int CSong::SongClearUnusedTracks()
     for (int sline = 0; sline < SONGLEN; sline++) {
         if (m_songgo[sline] >= 0) continue; //goto line is ignored
 
-        for (ch = 0; ch < g_tracks4_8; ch++) {
+        for (ch = 0; ch < m_channels; ch++) {
             int n = m_song[sline][ch];
             if (n < 0 || n >= TRACKSNUM) continue; //--
             trackused[n] = 1;
@@ -2344,7 +2120,7 @@ void CSong::RenumberAllTracks(int type) //1..after columns, 2..after lines
         //horizontally along the lines
         for (sline = 0; sline < SONGLEN; sline++) {
             if (m_songgo[sline] >= 0) continue; //goto line is ignored
-            for (i = 0; i < g_tracks4_8; i++) {
+            for (i = 0; i < m_channels; i++) {
                 int n = m_song[sline][i];
                 if (n < 0 || n >= TRACKSNUM) continue; //--
                 if (movetrackfrom[n] < 0) {
@@ -2356,7 +2132,7 @@ void CSong::RenumberAllTracks(int type) //1..after columns, 2..after lines
         }
     } else if (type == 1) {
         //vertically in columns
-        for (i = 0; i < g_tracks4_8; i++) {
+        for (i = 0; i < m_channels; i++) {
             for (sline = 0; sline < SONGLEN; sline++) {
                 if (m_songgo[sline] >= 0) continue; //goto line is ignored
                 int n = m_song[sline][i];
@@ -2383,7 +2159,7 @@ void CSong::RenumberAllTracks(int type) //1..after columns, 2..after lines
     //precisely numbered in the song
     for (sline = 0; sline < SONGLEN; sline++) {
         //if (m_songgo[sline]>=0) continue;	//goto line is not omitted here (the numbers mentioned below it will also change)
-        for (i = 0; i < g_tracks4_8; i++) {
+        for (i = 0; i < m_channels; i++) {
             int n = m_song[sline][i];
             if (n < 0 || n >= TRACKSNUM) continue; //--
             m_song[sline][i] = movetrackfrom[n];
@@ -2737,7 +2513,7 @@ BOOL CSong::PlayBeat()
     int note[SONGTRACKS], instr[SONGTRACKS], vol[SONGTRACKS];
     TTrack* tr;
 
-    for (t = 0; t < g_tracks4_8; t++) //done here to make it behave the same as in the routine
+    for (t = 0; t < m_channels; t++) //done here to make it behave the same as in the routine
     {
         note[t] = -1;
         instr[t] = -1;
@@ -2747,7 +2523,7 @@ BOOL CSong::PlayBeat()
 TrackLine:
     speed = m_speed;
 
-    for (t = 0; t < g_tracks4_8; t++) {
+    for (t = 0; t < m_channels; t++) {
         tt = SongGetTrack(m_songplayline, t);
         tr = g_Tracks.GetTrack(tt);
         if (!tr) continue; // Invalid track pointer
@@ -2782,7 +2558,7 @@ TrackLine:
     m_speeda = speed;
 
     //active note, instrument and volume settings
-    for (t = 0; t < g_tracks4_8; t++) {
+    for (t = 0; t < m_channels; t++) {
         int n = note[t];
         int i = instr[t];
         int v = vol[t];
