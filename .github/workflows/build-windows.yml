@@ -41,7 +41,12 @@ jobs:
             qt6-base:p
             qt6-tools:p
             portaudio:p
-            rtmidi:p
+
+      # RtMidi left the MSYS2 package database in November 2026 (pacman no longer finds rtmidi:p), but its
+      # package files stay on the mirror: install the last one by its URL, the RtMidi 6.0.0 the earlier releases had
+      - name: Install RtMidi
+        shell: msys2 {0}
+        run: pacman -U --noconfirm https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-rtmidi-6.0.0-4-any.pkg.tar.zst
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
