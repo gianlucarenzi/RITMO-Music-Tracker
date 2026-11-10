@@ -42,8 +42,8 @@ jobs:
         # before the checkout: without git it downloads the sources with no
         # history, and the version comes from the nearest git tag
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git ca-certificates
+          apt-get -o Acquire::Retries=5 update
+          DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=5 install -y --no-install-recommends git ca-certificates
 
       - name: Checkout code
         uses: actions/checkout@v7

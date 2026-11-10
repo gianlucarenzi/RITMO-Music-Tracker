@@ -181,7 +181,12 @@ jobs:
           mkdir -p dmg
           cp -R dist/Ritmo.app dmg/
           ln -s /Applications dmg/Applications
-          hdiutil create -volname "RITMO" -srcfolder dmg -ov -format UDZO "Ritmo-macOS-$ARCH-$(scripts/package-version.sh).dmg"
+          # hdiutil fails now and then with "Resource busy" on the runners: try again
+          for try in 1 2 3 4 5; do
+              hdiutil create -volname "RITMO" -srcfolder dmg -ov -format UDZO "Ritmo-macOS-$ARCH-$(scripts/package-version.sh).dmg" && break
+              [ $try -lt 5 ] || exit 1
+              sleep 10
+          done
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
