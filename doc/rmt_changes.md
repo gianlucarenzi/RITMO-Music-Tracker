@@ -82,6 +82,12 @@ Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
   without SFX, ASM with frequencies, relocatable ASM). As in RMT 1.36, a module of format version 0 (the pre-release
   layout) is no longer read, and a song whose speeds lie outside the header's range is not saved.
   `doc/rmt_format.md` is the one of RMT 1.36, which describes what the container checks.
+- 2.7: RMT issue #8 ("unstable speed when using speed changes command in patterns", open upstream without a module)
+  does not reproduce in RITMO: `RmtCoreTest --swing` plays two modules made for it
+  (`test-resources/songs/issue_8_speed_changes`: speed 3/7 alternating on every line; two channels setting different
+  speeds on the same line, at instrument speed 2) with the tracker and with the Patch16 player as an exported XEX
+  calls it, and every line lasts exactly the frames of its speed in both (the last channel's speed wins). The test
+  workflow runs it.
 - 2.6: the fixes of RMT 1.36 by Peter Dell (JAC!) (https://github.com/peterdell/RASTER-Music-Tracker, branch dev, up to
   2026-10-15), ported to RITMO: thanks again to JAC!, whose work this fork stands on, and who in turn took four fixes
   from the trail of RITMO into RMT 1.36 (the SAP type B player blocks, the WAV at instrument speed 2-4, the AUDCTL of the

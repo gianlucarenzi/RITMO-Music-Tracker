@@ -314,6 +314,97 @@ static int TuningTest()
     return failed ? 1 : 0;
 }
 
+// --swing: the speed command on every track line (RMT issue #8, "unstable speed when using speed changes in patterns",
+// reported without a module). The song is played twice for 50 track lines: by the tracker (CSong::PlayVBI() counts
+// the frames of a line and plays the notes through the driver) and by the Patch16 player on its own (the module made
+// by MakeModule() at $4000, rmt_init and then rmt_play instrument speed times each frame, as an exported XEX does). The frames of each line,
+// from the change of the track line to the next one, must be the speed written on that line, in both, line by line.
+static int Swing(const char* song)
+{
+    g_Atari.Init(g_Song.IsNTSC());
+    g_AtariTrackerDriver = new CAtariTrackerDriver(g_Atari);
+    g_AtariTrackerDriver->LoadRMTRoutines(TrackerDriverVersion::PATCH16);
+    g_AtariTrackerDriver->Init();
+    g_Song.ClearSong(8);
+    if (!g_Song.FileOpen(song, FALSE)) {
+        std::fprintf(stderr, "cannot open %s\n", song);
+        return 1;
+    }
+    constexpr int LINES = 50;
+    // the speed a line sets: the last channel of song line 0 with a speed on it, as CSong::PlayBeat() decides (the
+    // song repeats its first line; its tracks have the same length), else the speed before
+    auto expected = [&](int line) {
+        static int speed = 0;
+        for (int t = 0; t < g_Song.GetChannels(); t++) {
+            TTrack* track = g_Tracks.GetTrack(g_Song.SongGetTrack(0, t));
+            if (track && track->len > 0 && track->speed[line % track->len] > 0) speed = track->speed[line % track->len];
+        }
+        return speed;
+    };
+
+    // the tracker
+    std::vector<int> tracker;
+    g_Pokey.InitSound(g_Song.IsNTSC(), g_Song.IsStereo());
+    g_Song.Play(PLAY_SONG, FALSE, 0);
+    g_Song.StopTimer();
+    int last = g_Song.GetPlayLine(), frames = 0;
+    for (int f = 0; f < 2000 && (int)tracker.size() < LINES; f++) {
+        g_Song.TimerRoutine();
+        frames++;
+        if (g_Song.GetPlayLine() != last) {
+            tracker.push_back(frames);
+            frames = 0;
+            last = g_Song.GetPlayLine();
+        }
+    }
+    g_Song.Stop();
+
+    // the player: the module at $4000, rmt_init (A = song line 0, X/Y = the module), then rmt_play each frame
+    BYTE instrumentFlags[INSTRSNUM], trackFlags[TRACKSNUM];
+    if (g_Song.MakeModule(g_Atari.GetMemoryAt(0), 0x4000, SongIOType::RMT, instrumentFlags, trackFlags) < 0) return 1;
+    g_AtariTrackerDriver->LoadRMTRoutines(TrackerDriverVersion::PATCH16);
+    WORD adr = RMT_INIT;
+    BYTE a = 0, x = 0x00, y = 0x40;
+    auto cycles = g_Atari.GetFrameCycleCount();
+    g_Atari.JSR(adr, a, x, y, cycles);
+    // rmt_init returns the instrument speed: an exported XEX (asm/rmtplay/rmtxex.s, play_tick) calls rmt_play that
+    // many times per frame, back to back, and the player advances the track once every that many calls
+    const int instrumentSpeed = a < 1 ? 1 : a > 4 ? 4 : a;
+    std::vector<int> player;
+    int beat = g_Atari.GetByteAt(RMTPLAYR_V_ABEAT);
+    frames = 0;
+    for (int f = 0; f < 2000 && (int)player.size() < LINES; f++) {
+        for (int call = 0; call < instrumentSpeed; call++) {
+            adr = RMT_PLAY;
+            a = x = y = 0;
+            cycles = g_Atari.GetFrameCycleCount() / instrumentSpeed;
+            g_Atari.JSR(adr, a, x, y, cycles);
+        }
+        frames++;
+        if (g_Atari.GetByteAt(RMTPLAYR_V_ABEAT) != beat) {
+            player.push_back(frames);
+            frames = 0;
+            beat = g_Atari.GetByteAt(RMTPLAYR_V_ABEAT);
+        }
+    }
+
+    // line 0 starts with the play (the tracker plays it on its first frame, the player after rmt_init): its
+    // length is compared from line 1 on, the frames of line n are the speed of line n
+    int wrong = 0;
+    std::vector<int> want(LINES);
+    for (int line = 0; line < LINES; line++) want[line] = expected(line);
+    std::printf("line  speed  tracker  player\n");
+    for (int line = 1; line < LINES - 1; line++) {
+        const int t = line < (int)tracker.size() ? tracker[line] : -1;
+        const int p = line < (int)player.size() ? player[line] : -1;
+        const bool ok = t == want[line] && p == want[line];
+        if (!ok) wrong++;
+        if (line <= 8 || !ok) std::printf("%4d  %5d  %7d  %6d%s\n", line, want[line], t, p, ok ? "" : "   <-");
+    }
+    std::printf("Swing: %d of %d lines with other frames than their speed\n", wrong, LINES - 2);
+    return wrong ? 1 : 0;
+}
+
 // --midi16: the note input of MIDI channel 16 (the MIDI CH15 mode), which
 // writes AUDF and AUDC straight into the driver's variables for rmt_set_pokey.
 // For each distortion and clock (AUDCTL) a program change selects the
@@ -422,6 +513,7 @@ int main(int argc, char** argv)
     if (argc >= 2 && !std::strcmp(argv[1], "--midi16")) return MidiChannel16();
     if (argc >= 3 && !std::strcmp(argv[1], "--twotone")) return TwoTone(argv[2]);
     if (argc >= 2 && !std::strcmp(argv[1], "--tuning")) return TuningTest();
+    if (argc >= 3 && !std::strcmp(argv[1], "--swing")) return Swing(argv[2]);
     if (argc >= 3 && !std::strcmp(argv[1], "--screenshot"))
         return Screenshot(argv[2], 1280, 800, argc >= 4 ? argv[3] : nullptr);
 

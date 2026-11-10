@@ -5,7 +5,7 @@ name: Test RITMO on Linux
 # item and toolbar button is triggered and has a handler) and the scripting tests
 # (scripts/test-scripting.sh: the reference scripts run twice and compared, the
 # exit codes, the structure of the SAP type B files). The engine without Qt
-# (RmtCoreTest) checks the note input of MIDI channel 16, that the Two-Tone filter (SKCTL) is heard and the tuning tables. The drivers and their C headers are assembled again
+# (RmtCoreTest) checks the note input of MIDI channel 16, that the Two-Tone filter (SKCTL) is heard, the tuning tables and the speed changes on every line. The drivers and their C headers are assembled again
 # from the 6502 sources with ca65 (asm/ca65) and must be those of rmt/resources/drivers and src/.
 
 on:
@@ -43,13 +43,15 @@ jobs:
       - name: Scripting tests
         run: scripts/test-scripting.sh build-qt/out/ritmo
 
-      - name: Engine tests (MIDI channel 16, Two-Tone filter, tuning)
+      - name: Engine tests (MIDI channel 16, Two-Tone filter, tuning, speed changes)
         run: |
           cmake -B build-core -DCMAKE_BUILD_TYPE=Release -DRMT_BUILD_CORE_ONLY=ON -DRMT_CORE_TEST=ON
           cmake --build build-core -j"$(nproc)" --target RmtCoreTest
           build-core/out/RmtCoreTest --midi16
           build-core/out/RmtCoreTest --twotone test-resources/songs/issue_30_two_tone_filter/Makary_Two_Tone_Filter.rmt
           build-core/out/RmtCoreTest --tuning
+          build-core/out/RmtCoreTest --swing test-resources/songs/issue_8_speed_changes/swing.rmt
+          build-core/out/RmtCoreTest --swing test-resources/songs/issue_8_speed_changes/swing_two_channels.rmt
 
       - name: The drivers and their C headers from the 6502 sources
         run: make -C asm/ca65 check
