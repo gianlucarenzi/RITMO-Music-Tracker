@@ -81,11 +81,21 @@ the temperament you choose, and the tracker plays with them.
 \dialog{dialog-tuning}{The \menu{Tuning} dialog.}{10cm}
 
 \begin{description}[style=nextline,leftmargin=1.2cm]
-  \item[Base tuning (Hz) and Base note] The frequency of a reference note, by default \texttt{A-} at 440.8375\ldots\,Hz. It can be any
-        number: \texttt{432}, \texttt{443.9}\ldots
-  \item[Temperament] \emph{Equal Temperament} (the default) or another. The \emph{Ratio} table lists the interval of each step over the unison
-        as a fraction.
-  \item[Reset] puts the default values back; \menu{Test now} tries the tuning.
+  \item[A4 Frequency (Hz)] The pitch of the note \texttt{A-4}, in every key: by default 440.8375\ldots\,Hz (PAL) or 444.8957\ldots\,Hz
+        (NTSC), the tuning RMT has always had, which the tables of the Patch16 player were made with. It can be any number between
+        6.875 and 7040: \texttt{440}, \texttt{432}, \texttt{443.9}\ldots
+  \item[Tonic] The key the tables are tuned to, by default \texttt{A-}: the note that gets the temperament's 0 cents. The program
+        derives its frequency from the A4 frequency through the temperament, so \texttt{A} always sounds at the A4 frequency; in equal
+        temperament every tonic gives the same notes.
+  \item[Temperament] \emph{Equal Temperament} (the default), one of 21 historical temperaments (in alphabetical order), or the
+        \emph{Custom Temperament in Cents}.
+  \item[Cents] The twelve notes of the octave as cents above the tonic (100 cents are an equal-tempered semitone, the octave is 1200).
+        They show the temperament chosen; only those of the custom temperament can be typed, between 0 and 1200 (the tonic stays 0),
+        and they are kept while another temperament is shown.
+  \item[Reset] puts back the values the dialog was opened with; \menu{Test now} tries the tuning.
 \end{description}
+
+A \texttt{tuning.ini} of an earlier version is still read: its ratios become cents, and a temperament that is no longer in the list
+(the seven that are no 12-note temperament with a 2:1 octave) plays as equal temperament.
 
 The tuning is saved with the configuration and is also the one a script uses when it exports a song (chapter~\ref{ch:scripting}).
