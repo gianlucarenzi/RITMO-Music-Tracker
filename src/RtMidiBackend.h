@@ -14,9 +14,15 @@
 #include <string>
 #include <vector>
 
-// Forward declarations (real types defined in RtMidi.h which is only included in .cpp)
+#ifdef RTMIDI_AVAILABLE
+// The real types: RtMidi 6.1 declares RtMidiIn/RtMidiOut in the namespace rt::midi and brings them out with
+// using-declarations, so a forward declaration here would be a second, different class (ambiguous with 6.1)
+#include <RtMidi.h>
+#else
+// Forward declarations (the backend is not built without RtMidi)
 class RtMidiOut;
 class RtMidiIn;
+#endif
 
 /**
  * @brief RtMidi backend implementation
