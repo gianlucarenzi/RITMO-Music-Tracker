@@ -64,6 +64,14 @@ jobs:
           git archive --format=zip --prefix=Ritmo-Songs-and-Instruments-$V/ \
             -o build-appimage/Ritmo-Songs-and-Instruments-$V.zip HEAD:rmt songs instruments SONGS-AND-INSTRUMENTS.txt
 
+      # The user manual of the tagged commit (doc/manual/ritmo-manual.pdf, built by doc/manual/build.sh and committed),
+      # with the version in its name like the packages, in every release, the release candidates too (RITMO issue #4)
+      - name: The user manual
+        if: matrix.arch == 'x86_64'
+        run: |
+          V=$(scripts/package-version.sh)
+          cp doc/manual/ritmo-manual.pdf build-appimage/Ritmo-User-Manual-$V.pdf
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
@@ -72,6 +80,7 @@ jobs:
             build-appimage/Ritmo-*-${{ matrix.arch }}.AppImage
             build-appimage/Ritmo-*-${{ matrix.arch }}.AppImage.zsync
             build-appimage/Ritmo-Songs-and-Instruments-*.zip
+            build-appimage/Ritmo-User-Manual-*.pdf
             build-appimage/ritmo-linux.png
 
       - name: Create release and upload asset
@@ -82,4 +91,5 @@ jobs:
             build-appimage/Ritmo-*-${{ matrix.arch }}.AppImage
             build-appimage/Ritmo-*-${{ matrix.arch }}.AppImage.zsync
             build-appimage/Ritmo-Songs-and-Instruments-*.zip
+            build-appimage/Ritmo-User-Manual-*.pdf
           prerelease: ${{ contains(github.ref_name, '-rc') }}   # v2.0-rcN of scripts/push.sh

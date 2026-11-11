@@ -493,7 +493,7 @@ The four build workflows attach their packages to the release of the tag (`v<ver
 
 | Workflow | Files |
 |----------|-------|
-| `build-linux.yml` | `Ritmo-<version>-x86_64.AppImage`, `Ritmo-<version>-aarch64.AppImage` (with their `.zsync`), and `Ritmo-Songs-and-Instruments-<version>.zip` |
+| `build-linux.yml` | `Ritmo-<version>-x86_64.AppImage`, `Ritmo-<version>-aarch64.AppImage` (with their `.zsync`), `Ritmo-Songs-and-Instruments-<version>.zip` and `Ritmo-User-Manual-<version>.pdf` |
 | `build-linux-ports.yml` | for riscv64, ppc64 and ppc64le: the AppImage (with its `.zsync`), the `.deb` and the `.tar.gz` |
 | `build-windows.yml` | `Ritmo-Windows-x64-Setup-<version>.exe`, `Ritmo-Windows-x64-<version>.zip` |
 | `build-macos.yml` | `Ritmo-macOS-arm64-<version>.dmg`, `Ritmo-macOS-x86_64-<version>.dmg` |
@@ -504,8 +504,9 @@ files of `rmt/songs`, `rmt/instruments` and `rmt/SONGS-AND-INSTRUMENTS.txt` (whi
 `Ritmo-Songs-and-Instruments-<version>/`. It is the same for every system and exactly the files of the tagged commit;
 a song or instrument added to `rmt/` is in the next release by itself.
 
-The user manual is not built by the CI: for a final release upload `doc/manual/ritmo-manual.pdf` of the tagged
-commit as `Ritmo-User-Manual-<version>.pdf` (`gh release upload v<version> Ritmo-User-Manual-<version>.pdf`).
+`Ritmo-User-Manual-<version>.pdf` is `doc/manual/ritmo-manual.pdf` of the tagged commit, with the version in its name
+like the packages, in every release from 2.8-rc3 (release candidates too; before, it was uploaded by hand for the final
+releases only). The CI does not build the manual: run `doc/manual/build.sh` and commit the PDF before the tag.
 
 After a release, update `RMT_BASE_VERSION` in `CMakeLists.txt` to the next
 development target (e.g. `"2.2"`) so subsequent RC tags follow the new series.

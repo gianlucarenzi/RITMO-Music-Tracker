@@ -12,7 +12,8 @@ make SONG=path/to/stereo.rmt STEREO=1   # an 8-track song, on two POKEYs
 ```
 
 It needs cc65 and RITMO, which exports the song (`RITMO=path/to/ritmo` if it is not `build-qt/out/ritmo` of this
-repository).
+repository). RITMO does not need to be built: a downloaded package works, for example
+`make RITMO=~/Downloads/Ritmo-2.8-rc3-x86_64.AppImage`.
 
 ## The three parts
 

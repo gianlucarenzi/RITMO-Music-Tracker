@@ -18,6 +18,9 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.8: every release, the release candidates too, carries the user manual as `Ritmo-User-Manual-<version>.pdf`, the
+  version in its name like the packages (RITMO issue #4): the Linux workflow copies `doc/manual/ritmo-manual.pdf` of
+  the tagged commit; before, it was uploaded by hand for the final releases only.
 - 2.8: an export that takes more than a moment (SAP-R, LZSS, SAP, XEX with the LZSS player, WAV; seconds on a slow
   computer) covers the window with 50 % grey and a spinner in the style of Android, until the file is written: before,
   RITMO only looked frozen. The export runs on the GUI thread, so the long loops (the song recorded into the POKEY
