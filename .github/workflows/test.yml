@@ -56,6 +56,9 @@ jobs:
       - name: The drivers and their C headers from the 6502 sources
         run: make -C asm/ca65 check
 
+      - name: The example of the RMT player in a C program (cc65)
+        run: make -C asm/cc65-example RITMO=$PWD/build-qt/out/ritmo
+
       - name: Keep the outputs of a failed run
         if: failure()
         uses: actions/upload-artifact@v7

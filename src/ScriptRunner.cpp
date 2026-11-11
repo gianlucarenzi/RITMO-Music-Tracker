@@ -190,7 +190,11 @@ int ParseChoice(const TScriptCommand& c, const std::string& name, const std::str
 
 AssemblerFormat ParseAssemblerFormat(const TScriptCommand& c, const std::string& value)
 {
-    return ParseChoice(c, "asmformat", value, { "xasm", "atasm" }) == 1 ? XASM : ATASM;
+    switch (ParseChoice(c, "asmformat", value, { "xasm", "atasm", "ca65" })) {
+        case 1: return XASM;
+        case 2: return ATASM;
+        default: return CA65;
+    }
 }
 
 // An option value as a text with \n (the XEX screen text has up to 5 lines).

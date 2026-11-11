@@ -38,3 +38,4 @@ Makefile
 *.swp
 *.swo
 *~
+asm/cc65-example/build/

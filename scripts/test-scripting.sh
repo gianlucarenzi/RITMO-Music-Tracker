@@ -132,6 +132,24 @@ else
     echo "FAIL tuning.ini of the old and the new format"; ls -l "$WORK"/tuning-*-out/ 2>/dev/null; fail=1
 fi
 
+# the relocatable ASM in the ca65 format (RITMO issue #5): assembled by ca65 and linked at $4000 it is the stripped
+# module at $4000, byte for byte (skipped without cc65)
+if command -v ca65 >/dev/null && command -v ld65 >/dev/null; then
+    printf 'set output %s\nopen "%s/test-resources/songs/Delta.rmt"\nexport stripped-rmt ref.rmt address=$4000 sfx=yes\nexport rmtplayer-asm song.asm relocate=none asmformat=ca65 sfx=yes\n' \
+        "$WORK/ca65" "$PWD" >"$WORK/ca65.rmtscript"
+    printf 'MEMORY { RAM: start = $4000, size = $C000, file = %%O; }\nSEGMENTS { CODE: load = RAM, type = ro; }\n' >"$WORK/ca65.cfg"
+    "$RMT" "/SCRIPT:$WORK/ca65.rmtscript" >"$WORK/ca65.log" 2>&1; code=$?
+    if [ $code -eq 0 ] && ca65 "$WORK/ca65/song.asm" -o "$WORK/ca65/song.o" >>"$WORK/ca65.log" 2>&1 \
+        && ld65 -C "$WORK/ca65.cfg" "$WORK/ca65/song.o" -o "$WORK/ca65/song.bin" >>"$WORK/ca65.log" 2>&1 \
+        && tail -c +7 "$WORK/ca65/ref.rmt" | cmp -s - "$WORK/ca65/song.bin"; then
+        echo "ok   relocatable ASM for ca65: assembled, it is the stripped module byte for byte"
+    else
+        echo "FAIL relocatable ASM for ca65: exit code $code"; tail -5 "$WORK/ca65.log"; fail=1
+    fi
+else
+    echo "skip relocatable ASM for ca65: no cc65"
+fi
+
 # RMT_CONFIG_DIR: the configuration of that folder is read (an NTSC ritmo.ini makes an NTSC SAP-R) and not written
 mkdir -p "$WORK/configdir"
 printf 'NTSC_SYSTEM = 1\n' >"$WORK/configdir/ritmo.ini"

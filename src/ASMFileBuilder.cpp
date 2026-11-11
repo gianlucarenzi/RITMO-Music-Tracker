@@ -17,7 +17,7 @@ int CASMFileBuilder::BuildInstrumentData(
     CString str;
     if (strInstrumentsLabel.IsEmpty() == false) {
         // Make the instruments relocatable
-        str.Format(assemblerFormat == ATASM ? "* = %s\n" : "org %s\n", (LPCTSTR)strInstrumentsLabel);
+        str.Format(assemblerFormat == ATASM ? "* = %s\n" : assemblerFormat == CA65 ? ".org ::%s\n" : "org %s\n", (LPCTSTR)strInstrumentsLabel);
         strCode += str;
     }
 
@@ -57,7 +57,7 @@ int CASMFileBuilder::BuildTracksData(
 
     if (strTracksLabel.IsEmpty() == false) {
         // Make the track data relocatable
-        str.Format(assemblerFormat == ATASM ? "\n* = %s\n" : "\norg %s\n", (LPCTSTR)strTracksLabel);
+        str.Format(assemblerFormat == ATASM ? "\n* = %s\n" : assemblerFormat == CA65 ? "\n.org ::%s\n" : "\norg %s\n", (LPCTSTR)strTracksLabel);
     }
     strCode += str;
     for (int i = from, l = 0; i < to; i++, l++) {
@@ -98,7 +98,7 @@ int CASMFileBuilder::BuildSongData(
     int sizeSongLines = 0;
     CString str;
     if (strSongLinesLabel.IsEmpty() == false) {
-        str.Format(assemblerFormat == ATASM ? "\n* = %s\n" : "\norg %s\n", (LPCTSTR)strSongLinesLabel);
+        str.Format(assemblerFormat == ATASM ? "\n* = %s\n" : assemblerFormat == CA65 ? "\n.org ::%s\n" : "\norg %s\n", (LPCTSTR)strSongLinesLabel);
     }
     strCode += str;
 
@@ -112,12 +112,12 @@ int CASMFileBuilder::BuildSongData(
             jmp = (0xFFFF & (jmp | (buf[i] << 8))) - start;
             if (0 == ((jmp - offsetSong) % numTracks) && jmp >= offsetSong && jmp < len) {
                 int lnum = (jmp - offsetSong) / numTracks;
-                str.Format(assemblerFormat == ATASM ? ",<?line_%02x,>?line_%02x" : ",l(__line_%02x),h(__line_%02x)", lnum, lnum);
+                str.Format(assemblerFormat != XASM ? ",<?Line_%02x,>?Line_%02x" : ",l(__Line_%02x),h(__Line_%02x)", lnum, lnum); // ?Line_, as defined: ca65 tells the case apart
                 strCode += str;
             } else {
                 str.Format("; ERROR malformed file(song jump bad $ % 04x[% x:% x])\n", jmp, offsetSong, len);
                 strCode += str;
-                str.Format(assemblerFormat == ATASM ? ",<($%x+?SongData),>($%x+?SongData)" : ",l($%x+__SongData),h($%x+__SongData)", jmp, jmp);
+                str.Format(assemblerFormat != XASM ? ",<($%x+?SongData),>($%x+?SongData)" : ",l($%x+__SongData),h($%x+__SongData)", jmp, jmp);
                 strCode += str;
             }
             jmp = 0;

@@ -413,8 +413,8 @@ BOOL CASMFileExporter::BuildRelocatableAsm(
     // Assembler type setup
     [[maybe_unused]] BOOL hasDotLocal = 0;
     const char* _byte = "dta";
-    if (assemblerFormat == ATASM) {
-        hasDotLocal = 1;
+    if (assemblerFormat != XASM) { // ATASM and CA65: .byte, .word, <, >
+        hasDotLocal = assemblerFormat == ATASM;
         _byte = ".byte";
     }
 
@@ -425,7 +425,7 @@ BOOL CASMFileExporter::BuildRelocatableAsm(
     }
 
     strCode.Format("; Cut and paste the data from the line '; --------BEGIN--------'  to the line '; --------END--------'\n; into rmt_feat%s\n",
-                   assemblerFormat == ATASM ? ".asm" : "./65");
+                   assemblerFormat == ATASM ? ".asm" : assemblerFormat == CA65 ? ".s" : ".a65");
 
     CString str;
     ComposeRMTFEATstring(song, str, "", exportDesc->instrumentSavedFlags, exportDesc->trackSavedFlags, sfx, gvf, nos, assemblerFormat);
@@ -468,7 +468,7 @@ BOOL CASMFileExporter::BuildRelocatableAsm(
         strAsmStartLabel);
     strCode += str;
 
-    if (assemblerFormat == ATASM) {
+    if (assemblerFormat != XASM) {
         str.Format("    {{byte}} \"RMT%c\"\n", channelDigit);
     } else {
         str.Format("    dta c'RMT%c'\n", channelDigit);
@@ -486,7 +486,7 @@ BOOL CASMFileExporter::BuildRelocatableAsm(
                buf[CRmtModule::Offset::FORMAT_VERSION]);
     strCode += str;
     strCode += "; ptrs to tables\n";
-    if (assemblerFormat == ATASM) {
+    if (assemblerFormat != XASM) {
         // Atasm
         str.Format(
             "?ptrInstrumentTbl\n    .word ?InstrumentsTable       ; start + $%04x\n"
@@ -514,14 +514,14 @@ BOOL CASMFileExporter::BuildRelocatableAsm(
         auto offset = layout.instruments.find(number);
         if (offset != layout.instruments.end()) {
             instr_pos[offset->second] = number + 1;
-            str.Format(assemblerFormat == ATASM ? "?Instrument_%d" : "a(?Instrument_%d)", number);
+            str.Format(assemblerFormat != XASM ? "?Instrument_%d" : "a(?Instrument_%d)", number);
         } else {
-            str = (assemblerFormat == ATASM ? "  $0000" : " a($0000)");
+            str = (assemblerFormat != XASM ? "  $0000" : " a($0000)");
         }
 
         sizeIntro += 2; // 2 bytes per used instrument
 
-        strCode += (assemblerFormat == ATASM ? "\n    .word " : "\n    dta ");
+        strCode += (assemblerFormat != XASM ? "\n    .word " : "\n    dta ");
         strCode += str;
         str.Format("\t\t; %s", g_Instruments.GetName(number));
         strCode += str;
@@ -533,13 +533,13 @@ BOOL CASMFileExporter::BuildRelocatableAsm(
     for (int number = 0; number < layout.TrackEntries(); number++) {
         auto offset = layout.tracks.find(number);
         if (number % 8 == 0) {
-            strCode += (assemblerFormat == ATASM ? "\n    .byte " : "\n    dta ");
+            strCode += (assemblerFormat != XASM ? "\n    .byte " : "\n    dta ");
         } else {
             strCode += ",";
         }
         if (offset != layout.tracks.end()) {
             track_pos[offset->second] = number + 1;
-            str.Format(assemblerFormat == ATASM ? "<?Track_%02x" : "l(__Track_%02x)", number);
+            str.Format(assemblerFormat != XASM ? "<?Track_%02x" : "l(__Track_%02x)", number);
             strCode += str;
         } else {
             strCode += "$00";
@@ -550,12 +550,12 @@ BOOL CASMFileExporter::BuildRelocatableAsm(
     strCode += "\n?TracksTblHi";
     for (int number = 0; number < layout.TrackEntries(); number++) {
         if (number % 8 == 0) {
-            strCode += (assemblerFormat == ATASM ? "\n    .byte " : "\n    dta ");
+            strCode += (assemblerFormat != XASM ? "\n    .byte " : "\n    dta ");
         } else {
             strCode += ",";
         }
         if (layout.tracks.count(number) != 0) {
-            str.Format(assemblerFormat == ATASM ? ">?Track_%02x" : "h(__Track_%02x)", number);
+            str.Format(assemblerFormat != XASM ? ">?Track_%02x" : "h(__Track_%02x)", number);
             strCode += str;
         } else {
             strCode += "$00";
@@ -612,6 +612,30 @@ BOOL CASMFileExporter::BuildRelocatableAsm(
 
     if (assemblerFormat == XASM) {
         strCode.Replace(".local", "");
+    } else if (assemblerFormat == CA65) {
+        // ca65 has no .local: the module is a .proc named by the start label, so its labels (__Track_00...) are local
+        // to it and two modules can share a program; the start label is exported for the C or assembler code
+        CString label = "\n" + strAsmStartLabel + "\n__start\n";
+        strCode.Replace(".local" + label, "\n.export " + strAsmStartLabel + "\n.proc " + strAsmStartLabel + "\n__start\n");
+        strCode += "\n.endproc\n";
+        // ca65 wants a colon after a label (the others take a name at the start of a line as one): every line that
+        // starts with one of the module's labels gets it
+        CString withColons;
+        int pos = 0;
+        while (pos < strCode.GetLength()) {
+            int end = strCode.Find('\n', pos);
+            if (end < 0) end = strCode.GetLength();
+            CString line = strCode.Mid(pos, end - pos);
+            if (line.Left(2) == "__") {
+                int nameEnd = 0;
+                while (nameEnd < line.GetLength() && (isalnum((unsigned char)line[nameEnd]) || line[nameEnd] == '_')) nameEnd++;
+                line = line.Left(nameEnd) + ":" + line.Mid(nameEnd);
+            }
+            withColons += line;
+            if (end < strCode.GetLength()) withColons += "\n";
+            pos = end + 1;
+        }
+        strCode = withColons;
     }
 
     if (bWantSizeInfoOnly) {
@@ -661,7 +685,7 @@ void CASMFileExporter::ComposeRMTFEATstring(
     // Depending on the assembler format: equ or =
     //char* equal = "equ";
     const char* equal = "equ";
-    if (assemblerFormat == ATASM)
+    if (assemblerFormat != XASM) // ATASM and CA65
         equal = "=";
 
 #define DEST(var, str)                                                    \

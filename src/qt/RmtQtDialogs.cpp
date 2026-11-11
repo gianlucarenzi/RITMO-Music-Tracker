@@ -360,9 +360,9 @@ static QPlainTextEdit* AsmTextBox()
 static QComboBox* AsmFormatCombo(AssemblerFormat& format)
 {
     auto* combo = new QComboBox;
-    combo->addItems({ "Atasm", "Xasm" }); // index = AssemblerFormat
+    combo->addItems({ "Atasm", "Xasm", "CA65 (cc65)" }); // index = AssemblerFormat
     if (format < ATASM) format = ATASM;
-    if (format > XASM) format = XASM;
+    if (format > CA65) format = CA65;
     combo->setCurrentIndex(format);
     return combo;
 }
