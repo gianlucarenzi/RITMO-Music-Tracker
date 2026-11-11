@@ -26,7 +26,8 @@ Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
   second made the exports up to 78 % slower, this one costs a few tenths of a second (Stereo WAV 17.3 s before,
   17.1 s with it; Delta XEX 3.2 s, 3.5 s). It appears after 150 ms of work (quick exports show nothing, the
   dialogs of the exports are not covered); the files are the same byte for byte. `RMT_QT_BUSY=off` turns it off,
-  `RMT_QT_BUSY_LOG` measures it (BUILD.md).
+  `RMT_QT_BUSY_LOG` measures it (BUILD.md). The manual (figure 12.3, made by `doc/manual/make-screenshots.sh`) and
+  the README show it.
 - 2.8: the ppc64 build runs on ubuntu-24.04: ubuntu-latest is Ubuntu 26.04 since November 2026, which has no
   qemu-user-static.
 - 2.8: "Relocatable ASM for RMTPlayer" has a third assembler format, CA65 (the assembler of cc65; script `asmformat=ca65`,

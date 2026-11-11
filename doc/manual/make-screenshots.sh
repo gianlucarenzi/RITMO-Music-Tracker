@@ -69,6 +69,16 @@ shot window-playing "$STEREO" 6000 RMT_AUDIO_DUMP="$WORK/play.wav" RMT_QT_COMMAN
 shot window-explorer "$SONG" 2500 RMT_QT_COMMANDS="$(id ID_EDIT_ACTIVATE_POKEY_EXPLORER_MODE)"
 shot window-analyzer "$SONG" 5000 RMT_AUDIO_DUMP="$WORK/play2.wav" RMT_QT_COMMANDS="$(id ID_PLAY1)"
 
+# the busy indicator of an export (2.8): the window while the XEX of the song is made, its dialog confirmed; the
+# indicator saved when it appears and half a second later (busy-2.png, the spinner in motion), which is kept
+if want window-export-busy; then
+    export_as=$(id ID_FILE_EXPORT_AS) # id reads src/resource.h: before the cd
+    (cd "$WORK" && env RMT_QT_GRAB="$WORK/window.png" RMT_QT_GRAB_MS=15000 RMT_QT_COMMANDS="$export_as" \
+        RMT_QT_FILEDIALOG="$EXPORTS/busy.xex@6" RMT_QT_DIALOG="$WORK/xex.png" RMT_QT_BUSY_GRAB="$WORK/busy.png" \
+        "$RMT" "$REPO/$SONG") >/dev/null 2>&1 || true
+    if [ -f "$WORK/busy-2.png" ]; then cp "$WORK/busy-2.png" "$OUT/window-export-busy.png"; fi
+fi
+
 # the menus
 shot window-menus "$SONG" 1500 RMT_QT_MENU_GRAB="$OUT/menu"
 

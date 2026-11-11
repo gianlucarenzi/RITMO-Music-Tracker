@@ -78,6 +78,11 @@ by GitHub Actions:
   <img src="doc/screenshots/ritmo-macos-arm64.png" alt="RITMO on macOS (Apple Silicon)" width="52%">
 </p>
 
+From 2.8 an export that takes more than a moment (SAP-R, LZSS, SAP, XEX, WAV) covers the window with grey and turns a
+spinner until the file is written:
+
+![An export at work](doc/screenshots/ritmo-export-busy.png)
+
 More pictures of the windows, the menus and the dialogs are in the [manual](doc/manual/ritmo-manual.pdf).
 
 

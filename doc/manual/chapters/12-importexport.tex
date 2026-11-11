@@ -28,7 +28,11 @@ formats then show a dialog of options. Every format is written from the data of 
 
 The formats that play the song to make the file (SAP-R, LZSS, SAP, XEX with the LZSS player, WAV) can take a few seconds, more on a
 slow computer, and \RITMO{} cannot be used meanwhile: when the work takes longer than a moment, the whole window is covered with grey
-and a spinner turns in the middle, until the file is written.
+and a spinner turns in the middle, until the file is written (figure~\ref{fig:window-export-busy}). It appears only when the work lasts
+longer than 150 milliseconds, so the quick formats and the dialogs of the options never show it, and it disappears by itself at the
+end: the window is then as it was.
+
+\shot{window-export-busy}{An export at work: the window covered with grey, the spinner turning in the middle.}{0.98}
 
 \begin{center}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{4.2cm}p{9.6cm}@{}}
