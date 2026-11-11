@@ -55,6 +55,15 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           WORK=$GITHUB_WORKSPACE/build-appimage scripts/build-appimage.sh
 
+      # The example songs and instruments, which no package carries (RITMO issue #4): one ZIP for every system, made
+      # once (with the x86_64 build) by git from the tracked files of rmt/
+      - name: The songs and instruments
+        if: matrix.arch == 'x86_64'
+        run: |
+          V=$(scripts/package-version.sh)
+          git archive --format=zip --prefix=Ritmo-Songs-and-Instruments-$V/ \
+            -o build-appimage/Ritmo-Songs-and-Instruments-$V.zip HEAD:rmt songs instruments SONGS-AND-INSTRUMENTS.txt
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
@@ -62,6 +71,7 @@ jobs:
           path: |
             build-appimage/Ritmo-*-${{ matrix.arch }}.AppImage
             build-appimage/Ritmo-*-${{ matrix.arch }}.AppImage.zsync
+            build-appimage/Ritmo-Songs-and-Instruments-*.zip
             build-appimage/ritmo-linux.png
 
       - name: Create release and upload asset
@@ -71,4 +81,5 @@ jobs:
           files: |
             build-appimage/Ritmo-*-${{ matrix.arch }}.AppImage
             build-appimage/Ritmo-*-${{ matrix.arch }}.AppImage.zsync
+            build-appimage/Ritmo-Songs-and-Instruments-*.zip
           prerelease: ${{ contains(github.ref_name, '-rc') }}   # v2.0-rcN of scripts/push.sh

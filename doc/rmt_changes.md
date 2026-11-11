@@ -18,6 +18,20 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.8: "Relocatable ASM for RMTPlayer" has a third assembler format, CA65 (the assembler of cc65; script `asmformat=ca65`,
+  RITMO issue #5): the syntax of Atasm, the module as a `.proc` named by the start label (exported; its labels are
+  local to it), colons after the labels, `.org ::label` for the relocated parts and `FEAT_... = n` for `rmt_feat.s`.
+  Every module of the repository exported this way and assembled by ca65 is the stripped module byte for byte, and
+  `scripts/test-scripting.sh` checks it. Found on the way: the "go to" lines referred to `__line_` while the labels
+  are `__Line_` (Atasm, Xasm and MADS ignore the case, ca65 does not), and the hint of the Xasm export named
+  `rmt_feat./65` instead of `rmt_feat.a65`.
+- 2.8: `asm/cc65-example`: a song played by the RMT player in a C program built with cc65 - the module exported as
+  CA65 source, the Patch16 player of `asm/ca65` at `$3100`, a small wrapper (`rmt_init()`, the player on the deferred
+  VBI) and the memory layout; its `README.md` is the guide, and the manual has a section on it. Tried in atari800 (the
+  POKEY registers of the song, mono and stereo); the test workflow builds it.
+- 2.8: every release has `Ritmo-Songs-and-Instruments-<version>.zip`, the example songs and instruments of `rmt/`,
+  which no package of the program carries (RITMO issue #4). The manual says where they are (it said "the
+  instruments folder of the program"), and two POKEYs have eight voices, not sixteen.
 - 2.7: the work of Peter Dell (JAC!) on RMT 1.36 after 2026-10-15 (https://github.com/peterdell/RASTER-Music-Tracker,
   branch dev, up to 2026-10-29, d5cef17), ported to RITMO: thanks again to JAC! Each of the entries below that says
   "RMT 1.36" names the plan or the commit it comes from; what concerns only the Java port is not ported.

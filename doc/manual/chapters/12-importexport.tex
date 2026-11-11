@@ -114,6 +114,35 @@ The module is written as byte definitions with labels (the one of the start of t
 instruments, the tracks and the song lines, which can be placed in different places of memory). The text box shows the size of each
 part and the order of the modules.
 
+The \emph{Assembler format} is \emph{Atasm}, \emph{Xasm} (also MADS) or \emph{CA65 (cc65)}, the assembler of the cc65 suite.
+In the CA65 format the module is one \texttt{.proc} named by the start label, which is exported: its own labels do not collide
+with those of the program or of another song, and the linker places it. The parts placed at labels of your own begin with
+\texttt{.org ::}\emph{label}: define those labels as constants (\texttt{ca65 -D RMT\_SONG\_LINES=\$7000}). The feature section at the
+top (the \texttt{FEAT\_} lines, to make the player smaller) is written as \texttt{FEAT\_\ldots{} = 1} for \texttt{rmt\_feat.s}.
+
+\subsection{The RMT player in a C program (cc65)}\label{sec:cc65}
+
+A song can play in a program written in C with cc65. The folder \texttt{asm/cc65-example} of the repository is a complete
+example, with its \texttt{README.md}: \texttt{make} builds an XEX that plays a song and shows the frames played. It has three
+parts:
+
+\begin{description}[style=nextline,leftmargin=1.2cm]
+  \item[The player] the Patch16 RMT player of \texttt{asm/ca65}, assembled by ca65 at \texttt{\$3100} with its frequency tables at
+        \texttt{\$3A00} and its variables from \texttt{\$2D40} (zero page \texttt{\$CB-\$DD}). It is not relocatable: it is assembled
+        on its own and appended to the XEX of the program, so DOS loads it before the program runs.
+  \item[The module] the song, exported as \emph{Relocatable ASM for RMTPlayer} in the CA65 format, without relocation. With the start
+        label \texttt{\_rmt\_module} it is \texttt{extern const unsigned char rmt\_module[];} in C.
+  \item[The program] the C code and a small wrapper (\texttt{rmt.s}, \texttt{rmt.h}): \texttt{rmt\_init(rmt\_module)} starts the song,
+        \texttt{rmt\_vbi\_on()} puts the player on the deferred VBI (it calls it as many times per frame as the instrument speed),
+        \texttt{rmt\_vbi\_off()} stops it. It is linked from \texttt{\$4000} with \texttt{atari-rmt.cfg}, the \texttt{atari.cfg} of cc65
+        changed to leave the player its memory.
+\end{description}
+
+The player has to match the tracker driver of the song: Patch16 for the default driver of \RITMO{}, the RMT 1.28 player
+(\texttt{asm/ca65/Legacy/rmt\_xex.s}) for a song made with \emph{RMT 1.28 Unpatched}. An 8-track song needs the player for two
+POKEYs (\texttt{make STEREO=1}). RITMO PLAYER, the program of the XEX export with the RMT player (\texttt{asm/rmtplay}), is a bigger
+example of the same kind.
+
 \subsection{WAV}
 
 The WAV export has no options: it plays the song with the built-in emulation and writes the sound.

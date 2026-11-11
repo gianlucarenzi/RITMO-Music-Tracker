@@ -110,6 +110,10 @@ different from the Windows version you know?
 | macOS 12 or later, Intel | [`Ritmo-macOS-x86_64-2.7.dmg`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.7/Ritmo-macOS-x86_64-2.7.dmg) | as above (also runs on Apple Silicon through Rosetta 2) |
 | Manual | [`Ritmo-User-Manual-2.7.pdf`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.7/Ritmo-User-Manual-2.7.pdf) | the user manual (it is also [in the repository](doc/manual/ritmo-manual.pdf)) |
 
+The example songs and instruments are not in the packages of the program: from 2.8 every release also has
+`Ritmo-Songs-and-Instruments-<version>.zip` with them (the `songs` and `instruments` of [`rmt/`](rmt/) in the
+repository, where they can also be downloaded). Unpack it anywhere: RITMO's file dialogs remember the last folder.
+
 The names of the packages carry the version, so that several versions can be
 kept side by side (`2.7-rc3` and so on for the test builds); the AppImages have
 no `Linux` in their name and update themselves with AppImageUpdate. The release
@@ -261,6 +265,7 @@ RITMO builds with Qt only: the MFC (Windows-only) code of RMT was removed.
 Technical Documentation
 - Current [RMT Tracker documentation](https://github.com/peterdell/RASTER-Music-Tracker/blob/dev/doc/rmt_tracker.md) and discussion
 - Current [RMT Module File Format documentation](https://github.com/peterdell/RASTER-Music-Tracker/blob/dev/doc/rmt_format.md) and discussion
+- [The RMT player in a C program (cc65)](asm/cc65-example/README.md): a song exported as ca65 source, the player and a C program that plays it, a complete example (from 2.8)
 
 
 ### Main features
