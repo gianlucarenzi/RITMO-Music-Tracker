@@ -1,3 +1,4 @@
+#include "BusyIndicator.h"
 #include "PlatformTypes.h"
 #include "GuiHelpers.h"
 #include "Song.h"
@@ -58,6 +59,8 @@ void CSong::DumpSongToPokeyStream(CPokeyStream& pokeyStream, PlayMode playMode, 
                 // Transfer from memory to POKEY buffer
                 pokeyStream.Record();
             }
+
+            BusyTick(); // the busy indicator of the window keeps moving
 
             // The number of frames dumped so far, a few times per second
             DWORD now = GetTickCount();

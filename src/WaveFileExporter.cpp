@@ -1,6 +1,7 @@
 #include "PlatformTypes.h"
 #include "WaveFileExporter.h"
 #include "WaveFile.h"
+#include "BusyIndicator.h"
 #include "GuiHelpers.h"
 #include "LZSSFile.h"
 #include "AtariTrackerDriver.h"
@@ -85,6 +86,7 @@ bool CWaveFileExporter::ExportWAV(CSongExport& songExport, std::ofstream& ou, CX
 
         // Write the buffer to WAV file
         wavefile.WriteWave(buffer, length);
+        BusyTick(); // the busy indicator of the window keeps moving
 
         // Update the PokeyStream offset for the next frame
         frames++;

@@ -11,6 +11,7 @@
  * C++ port for Raster Music Tracker by VinsCool, 2022
  */
 
+#include "BusyIndicator.h"
 #include "lzss_sap.h"
 
 CCompressLzss::CCompressLzss()
@@ -167,6 +168,8 @@ void CCompressLzss::lzop_backfill(struct lzop* lz, int last_literal)
     // Go backwards in file storing best parsing
     for (int pos = lz->size - 2; pos >= 0; pos--)
     {
+        if ((pos & 1023) == 0) BusyTick(); // RITMO: the busy indicator of the window keeps moving
+
         // Get best match at this position
         int mp = 0;
         int ml = match(lz->data, pos, lz->size, &mp);

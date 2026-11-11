@@ -17,6 +17,7 @@ class CExportSection {
 public:
     explicit CExportSection(CSong& song);
     ~CExportSection();
+    static bool IsActive() { return s_depth > 0; }
 
 private:
     static int s_depth;

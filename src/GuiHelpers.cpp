@@ -8,6 +8,7 @@
 #include "Global.h"
 
 #include "RuntimeException.h"
+#include "BusyIndicator.h"
 
 CStatusBar* g_statusBar = nullptr;
 
@@ -69,8 +70,14 @@ CExportSection::CExportSection(CSong& song)
         s_oldCursor = SetCursor(LoadCursor(0, IDC_WAIT));
         EnableWindow(g_hwnd, FALSE);
         m_song.StopTimer();
+        if (g_rmtHost) g_rmtHost->BusyBegin();
     }
     s_depth++;
+}
+
+void BusyTick()
+{
+    if (CExportSection::IsActive() && g_rmtHost) g_rmtHost->BusyTick();
 }
 
 CExportSection::~CExportSection()
@@ -80,6 +87,7 @@ CExportSection::~CExportSection()
     }
     s_depth--;
     if (s_depth == 0) {
+        if (g_rmtHost) g_rmtHost->BusyEnd();
         m_song.RestartTimer(m_song.IsNTSC() ? 17 : 20); // ChangeTimer() would do nothing after StopTimer()
         SetStatusBarText("");
         EnableWindow(g_hwnd, TRUE);

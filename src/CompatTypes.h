@@ -845,6 +845,11 @@ struct IRmtHost {
     // (IDD_* of resource.h), reads and writes the dialog's data members and
     // returns IDOK / IDCANCEL; dialogs it does not know are cancelled.
     virtual INT_PTR DoModal(CDialog* dlg) = 0;
+    // A long piece of work, an export (CExportSection, BusyTick() of BusyIndicator.h): the frontend may cover the
+    // window with a busy indicator and keep it moving. A host without one does nothing.
+    virtual void BusyBegin() {}
+    virtual void BusyTick() {}
+    virtual void BusyEnd() {}
 };
 extern IRmtHost* g_rmtHost;
 

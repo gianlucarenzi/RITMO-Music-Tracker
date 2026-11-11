@@ -18,6 +18,10 @@
 #include "RmtQtKeys.h"
 #include "RmtQtDialogs.h"
 
+#include <QElapsedTimer>
+#include <QPen>
+#include <algorithm>
+#include <cmath>
 #include <QAction>
 #include <QCloseEvent>
 #include <QComboBox>
@@ -25,6 +29,7 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDir>
+#include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QGuiApplication>
@@ -141,6 +146,74 @@ public:
     }
     void SetRadio(BOOL on) override { SetCheck(on); }
     void SetText(LPCTSTR text) override { CCmdUI::SetText(text); }
+};
+
+// ---------------------------------------------------------------------------
+// The busy indicator of an export (IRmtHost::BusyBegin/Tick/End, BusyIndicator.h): the whole window covered by a
+// 50 % grey, with an indeterminate spinner in the middle in the style of Android (an arc that turns, growing and
+// shrinking). The export runs on this thread, so the event loop does not: BusyTick() repaints only this widget
+// (repaint(), at once), which keeps the spinner moving without letting the view or its timers run meanwhile.
+// ---------------------------------------------------------------------------
+
+class BusyOverlay : public QWidget {
+public:
+    explicit BusyOverlay(QWidget* parent) : QWidget(parent)
+    {
+        // opaque: it draws the window's own picture, darkened once, so a frame of the spinner repaints only the
+        // spinner's square and nothing below it (the view, the menus) - a repaint of the whole window 30 times a
+        // second cost the exports up to 80 % more time
+        setAttribute(Qt::WA_OpaquePaintEvent);
+        m_clock.start();
+    }
+
+    // The window as it is (it does not change during an export), behind 50 % grey: once, when the cover appears
+    void TakeBackground(QWidget* window)
+    {
+        m_background = window->grab();
+        QPainter p(&m_background);
+        p.fillRect(QRect(QPoint(0, 0), m_background.size() / m_background.devicePixelRatio()), QColor(128, 128, 128, 128));
+    }
+
+    // The square the spinner turns in (with its pen), the only part a frame repaints
+    QRect SpinnerRect() const
+    {
+        const int size = SpinnerSize();
+        const int margin = size / 8 + 2;
+        return QRect(width() / 2 - size / 2 - margin, height() / 2 - size / 2 - margin, size + 2 * margin, size + 2 * margin);
+    }
+
+protected:
+    int SpinnerSize() const { return std::clamp(std::min(width(), height()) / 8, 32, 128); }
+
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter p(this);
+        p.drawPixmap(0, 0, m_background); // clipped by Qt to the part being repainted
+        p.setRenderHint(QPainter::Antialiasing);
+
+        const int size = SpinnerSize();
+        const qreal pen = size / 9.0;
+        const QRectF arc(width() / 2.0 - size / 2.0, height() / 2.0 - size / 2.0, size, size);
+
+        // The arc of Android's indeterminate progress: it turns once in 2 s; every 1.333 s its head runs ahead
+        // (growing it from 10 to 270 degrees), then its tail catches up, and the next cycle starts 260 degrees on.
+        const qint64 t = m_clock.elapsed();
+        const double rotation = (t % 2000) * 360.0 / 2000.0;
+        const qint64 cycle = t / 1333;
+        const double phase = (t % 1333) / 1333.0;
+        auto ease = [](double x) { return 0.5 - 0.5 * std::cos(M_PI * x); };
+        const double head = phase < 0.5 ? ease(phase * 2) * 260 : 260;
+        const double tail = phase < 0.5 ? 0 : ease((phase - 0.5) * 2) * 260;
+        const double start = rotation + tail + (cycle * 260) % 360;
+        const double span = 10 + head - tail;
+
+        p.setPen(QPen(QColor(255, 255, 255), pen, Qt::SolidLine, Qt::RoundCap));
+        p.drawArc(arc, (int)(-start * 16), (int)(-span * 16)); // clockwise, from 3 o'clock
+    }
+
+private:
+    QElapsedTimer m_clock;
+    QPixmap m_background;
 };
 
 // ---------------------------------------------------------------------------
@@ -1033,7 +1106,79 @@ public:
     {
         INT_PTR result = RmtQtRunDialog(m_win, dlg);
         m_widget->setFocus();
+        if (m_busyActive) m_busyWork.start(); // the work of an export begins when its dialog closes
         return result;
+    }
+
+    // The busy indicator of an export: it appears when the work has lasted 150 ms (a quick export, or the time spent
+    // in its dialog before the work starts, shows nothing), then moves at about 30 frames a second
+    // RMT_QT_BUSY=off: no indicator (the window as before 2.8, only the wait cursor). RMT_QT_BUSY_LOG=file appends
+    // one line per export: the work in ms (from the end of its dialog, if it has one), how long the indicator was
+    // visible and how many frames of the spinner were drawn.
+    BusyOverlay* m_busy = nullptr;
+    QElapsedTimer m_busyClock, m_busyFrame, m_busyWork, m_busyShown;
+    bool m_busyActive = false;
+    int m_busyFrames = 0;
+
+    void BusyBegin() override
+    {
+        m_busyActive = true;
+        m_busyClock.invalidate(); // starts at the first tick: the export's own dialogs come before it
+        m_busyShown.invalidate();
+        m_busyWork.start();
+        m_busyFrames = 0;
+    }
+
+    void BusyTick() override
+    {
+        if (!m_busyActive || !m_win->isVisible()) return;
+        if (qEnvironmentVariable("RMT_QT_BUSY") == "off") return;
+        if (!m_busyClock.isValid()) m_busyClock.start();
+        if (!m_busy || !m_busy->isVisible()) {
+            if (m_busyClock.elapsed() < 150) return;
+            if (!m_busy) m_busy = new BusyOverlay(m_win);
+            m_busy->TakeBackground(m_win); // the window before the cover is on it
+            m_busy->setGeometry(m_win->rect());
+            m_busy->raise();
+            m_busy->show();
+            m_busy->repaint();
+            m_busyFrame.start();
+            m_busyShown.start();
+            m_busyFrames = 1;
+            // test hook: RMT_QT_BUSY_GRAB=file.png saves the window with the indicator when it appears (and file-2.png
+            // half a second later)
+            const QString grab = qEnvironmentVariable("RMT_QT_BUSY_GRAB");
+            if (!grab.isEmpty()) m_win->grab().save(grab);
+            return;
+        }
+        if (m_busyFrame.elapsed() < 33) return;
+        m_busyFrame.restart();
+        m_busy->repaint(m_busy->SpinnerRect()); // only the spinner's square
+        m_busyFrames++;
+        // the test hook saves the indicator once more after 500 ms (file-2.png): the spinner in motion
+        static bool second = false;
+        const QString grab = qEnvironmentVariable("RMT_QT_BUSY_GRAB");
+        if (!grab.isEmpty() && !second && m_busyClock.elapsed() >= 650) {
+            second = true;
+            QFileInfo fi(grab);
+            m_win->grab().save(fi.path() + "/" + fi.completeBaseName() + "-2." + fi.suffix());
+        }
+    }
+
+    void BusyEnd() override
+    {
+        m_busyActive = false;
+        if (m_busy) m_busy->hide();
+        const QString log = qEnvironmentVariable("RMT_QT_BUSY_LOG");
+        if (!log.isEmpty()) {
+            QFile f(log);
+            if (f.open(QIODevice::Append | QIODevice::Text))
+                f.write(QString("work_ms=%1 shown_ms=%2 frames=%3\n")
+                            .arg(m_busyWork.elapsed())
+                            .arg(m_busyShown.isValid() ? m_busyShown.elapsed() : 0)
+                            .arg(m_busyFrames)
+                            .toUtf8());
+        }
     }
 };
 

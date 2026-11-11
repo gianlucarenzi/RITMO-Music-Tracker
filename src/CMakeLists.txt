@@ -207,6 +207,7 @@ set(RMT_HEADERS
     General.h
     Global.h
     GuiHelpers.h
+    BusyIndicator.h
     InstrumentTypes.h
     Instruments.h
     IOHelpers.h

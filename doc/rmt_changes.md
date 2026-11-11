@@ -18,6 +18,17 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.8: an export that takes more than a moment (SAP-R, LZSS, SAP, XEX with the LZSS player, WAV; seconds on a slow
+  computer) covers the window with 50 % grey and a spinner in the style of Android, until the file is written: before,
+  RITMO only looked frozen. The export runs on the GUI thread, so the long loops (the song recorded into the POKEY
+  stream, the LZSS compression, the WAV rendering) call `BusyTick()`; the cover is the window's own picture, darkened
+  once, and a frame repaints only the spinner's square: a first version that repainted the whole window 30 times a
+  second made the exports up to 78 % slower, this one costs a few tenths of a second (Stereo WAV 17.3 s before,
+  17.1 s with it; Delta XEX 3.2 s, 3.5 s). It appears after 150 ms of work (quick exports show nothing, the
+  dialogs of the exports are not covered); the files are the same byte for byte. `RMT_QT_BUSY=off` turns it off,
+  `RMT_QT_BUSY_LOG` measures it (BUILD.md).
+- 2.8: the ppc64 build runs on ubuntu-24.04: ubuntu-latest is Ubuntu 26.04 since November 2026, which has no
+  qemu-user-static.
 - 2.8: "Relocatable ASM for RMTPlayer" has a third assembler format, CA65 (the assembler of cc65; script `asmformat=ca65`,
   RITMO issue #5): the syntax of Atasm, the module as a `.proc` named by the start label (exported; its labels are
   local to it), colons after the labels, `.org ::label` for the relocated parts and `FEAT_... = n` for `rmt_feat.s`.

@@ -216,6 +216,18 @@ QT_QPA_PLATFORM=offscreen RMT_QT_GRAB=shot.png RMT_QT_GRAB_MS=5000 \
     RMT_QT_DIALOG=import.png ./build-qt/out/ritmo      # import.png, import-2.png
 ```
 
+The busy indicator of the exports (the window covered with grey, a spinner in the middle, from 150 ms of work):
+`RMT_QT_BUSY=off` turns it off (the window as before 2.8, only the wait cursor); `RMT_QT_BUSY_LOG=busy.log`
+appends one line per export (`work_ms`: the work, from the end of the export's dialog; `shown_ms`: how long the
+indicator was visible; `frames`: the frames of the spinner); `RMT_QT_BUSY_GRAB=busy.png` saves the window when the
+indicator appears, and `busy-2.png` half a second later. An XEX export of a song, its dialog confirmed:
+
+```bash
+QT_QPA_PLATFORM=offscreen RMT_QT_GRAB=shot.png RMT_QT_GRAB_MS=12000 RMT_QT_COMMANDS=32773 \
+    RMT_QT_FILEDIALOG=/tmp/song.xex@6 RMT_QT_DIALOG=xex.png RMT_QT_BUSY_LOG=busy.log RMT_QT_BUSY_GRAB=busy.png \
+    ./build-qt/out/ritmo test-resources/songs/Delta.rmt
+```
+
 `RMT_QT_FONT="DejaVu Sans,12.75"` fixes the font of the menus and of the
 dialogs (as `QFont::fromString` reads it; the fixed-pitch text boxes take its
 size): offscreen Qt takes the font of the desktop, or its own small default,
