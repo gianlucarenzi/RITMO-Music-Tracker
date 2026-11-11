@@ -38,7 +38,8 @@ jobs:
             debian_arch: ppc64el      # the name of Debian, in the .tar.gz and the .deb
             platform: linux/ppc64le
             image: debian:trixie
-    runs-on: ubuntu-latest
+    # ppc64 installs qemu-user-static, which Ubuntu 26.04 (ubuntu-latest since November 2026) no longer has
+    runs-on: ${{ matrix.ports && 'ubuntu-24.04' || 'ubuntu-latest' }}
     timeout-minutes: 300
 
     steps:
