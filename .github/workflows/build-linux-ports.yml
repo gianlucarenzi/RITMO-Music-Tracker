@@ -38,8 +38,7 @@ jobs:
             debian_arch: ppc64el      # the name of Debian, in the .tar.gz and the .deb
             platform: linux/ppc64le
             image: debian:trixie
-    # ppc64 installs qemu-user-static, which Ubuntu 26.04 (ubuntu-latest since November 2026) no longer has
-    runs-on: ${{ matrix.ports && 'ubuntu-24.04' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 300
 
     steps:
@@ -60,9 +59,14 @@ jobs:
         if: matrix.ports
         run: |
           sudo apt-get update
-          # qemu-user-static of Ubuntu, not setup-qemu-action: the binfmt image of
-          # that one has no big endian ppc64
-          sudo apt-get -o Acquire::Retries=5 install -y --no-install-recommends debootstrap qemu-user-static
+          # the QEMU user emulation of Ubuntu, not setup-qemu-action: the binfmt image of
+          # that one has no big endian ppc64. Up to Ubuntu 25.04 it is qemu-user-static;
+          # from 25.10 (ubuntu-latest is 26.04 since November 2026) qemu-user, whose
+          # emulators are static, and qemu-user-binfmt, which registers them
+          sudo apt-get -o Acquire::Retries=5 install -y --no-install-recommends debootstrap qemu-user-static \
+            || sudo apt-get -o Acquire::Retries=5 install -y --no-install-recommends debootstrap qemu-user qemu-user-binfmt
+          # debootstrap's second stage runs ppc64 programs in a chroot: the binfmt entry needs the F flag
+          cat /proc/sys/fs/binfmt_misc/qemu-ppc64
           # the keyring of Ubuntu is older than the key that signs sid today
           KEYRING=debian-ports-archive-keyring_2026.02.04_all.deb
           curl -fsSLO https://deb.debian.org/debian/pool/main/d/debian-ports-archive-keyring/$KEYRING
