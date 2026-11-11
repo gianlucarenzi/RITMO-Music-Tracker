@@ -27,14 +27,19 @@ Linux ppc64: PowerPC 64 bit big endian (Debian ports, \emph{sid}) & \texttt{Ritm
   as riscv64 \\
 Linux ppc64le: PowerPC 64 bit little endian, POWER8 and newer (Debian 13 and newer) & \texttt{Ritmo-}\emph{version}\texttt{-\allowbreak ppc64le.AppImage}, \texttt{ritmo\_}\emph{version}\texttt{\_ppc64el.deb}, \texttt{Ritmo-Linux-\allowbreak ppc64el-}\emph{version}\texttt{.tar.gz} &
   as riscv64 (from 2.6) \\
+All the systems & \texttt{Ritmo-Songs-and-\allowbreak Instruments-}\emph{version}\texttt{.zip} &
+  the example songs (\texttt{.rmt}) and instruments (\texttt{.rti}), from 2.8: unpack it anywhere (see below) \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Every release also has \texttt{Ritmo-Songs-and-Instruments-}\emph{version}\texttt{.zip}: the example songs (\texttt{.rmt})
-and instruments (\texttt{.rti}), which the packages of the program do not carry (\texttt{songs} and \texttt{instruments} of the
-\texttt{rmt} folder of the repository). Unpack it anywhere, for example in your home or Documents folder: the file dialogs
-of \RITMO{} remember the last folder.
+\begin{note}
+\textbf{The songs and instruments are a download of their own.} None of the packages of the program carries them, so the program has
+no folder of songs or instruments to look in. Every release from 2.8 has them in \texttt{Ritmo-Songs-and-Instruments-}\emph{version}\texttt{.zip},
+the same for every system: the \texttt{songs} and \texttt{instruments} of the \texttt{rmt} folder of the repository, with a short
+\texttt{SONGS-AND-INSTRUMENTS.txt}. Unpack it where you keep your music, for example in your home or Documents folder: the file
+dialogs of \RITMO{} remember the last folder.
+\end{note}
 
 \RITMO{} can also be built from the source with CMake and Qt (appendix~\ref{app:building}).
 

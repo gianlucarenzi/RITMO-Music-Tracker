@@ -487,6 +487,26 @@ not write title or notes. Then:
 
 The script refuses to run when the notes file is missing or not committed.
 
+### What a release contains
+
+The four build workflows attach their packages to the release of the tag (`v<version>` or `v<version>-rcN`):
+
+| Workflow | Files |
+|----------|-------|
+| `build-linux.yml` | `Ritmo-<version>-x86_64.AppImage`, `Ritmo-<version>-aarch64.AppImage` (with their `.zsync`), and `Ritmo-Songs-and-Instruments-<version>.zip` |
+| `build-linux-ports.yml` | for riscv64, ppc64 and ppc64le: the AppImage (with its `.zsync`), the `.deb` and the `.tar.gz` |
+| `build-windows.yml` | `Ritmo-Windows-x64-Setup-<version>.exe`, `Ritmo-Windows-x64-<version>.zip` |
+| `build-macos.yml` | `Ritmo-macOS-arm64-<version>.dmg`, `Ritmo-macOS-x86_64-<version>.dmg` |
+
+`Ritmo-Songs-and-Instruments-<version>.zip` holds the example songs and instruments, which no package of the
+program carries (RITMO issue #4): `git archive` makes it, in the x86_64 job of `build-linux.yml`, from the tracked
+files of `rmt/songs`, `rmt/instruments` and `rmt/SONGS-AND-INSTRUMENTS.txt` (which says what it is), under one folder
+`Ritmo-Songs-and-Instruments-<version>/`. It is the same for every system and exactly the files of the tagged commit;
+a song or instrument added to `rmt/` is in the next release by itself.
+
+The user manual is not built by the CI: for a final release upload `doc/manual/ritmo-manual.pdf` of the tagged
+commit as `Ritmo-User-Manual-<version>.pdf` (`gh release upload v<version> Ritmo-User-Manual-<version>.pdf`).
+
 After a release, update `RMT_BASE_VERSION` in `CMakeLists.txt` to the next
 development target (e.g. `"2.2"`) so subsequent RC tags follow the new series.
 The last release is `v2.7`; `RMT_BASE_VERSION` is `"2.8"`, the version in development.

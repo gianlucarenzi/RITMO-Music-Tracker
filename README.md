@@ -114,10 +114,15 @@ different from the Windows version you know?
 | macOS 12 or later, Apple Silicon | [`Ritmo-macOS-arm64-2.7.dmg`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.7/Ritmo-macOS-arm64-2.7.dmg) | drag `Ritmo.app` to Applications; the first time open it with right click, then Open (not notarized) |
 | macOS 12 or later, Intel | [`Ritmo-macOS-x86_64-2.7.dmg`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.7/Ritmo-macOS-x86_64-2.7.dmg) | as above (also runs on Apple Silicon through Rosetta 2) |
 | Manual | [`Ritmo-User-Manual-2.7.pdf`](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.7/Ritmo-User-Manual-2.7.pdf) | the user manual (it is also [in the repository](doc/manual/ritmo-manual.pdf)) |
+| Songs and instruments, all systems | `Ritmo-Songs-and-Instruments-<version>.zip`, from 2.8 (now in [2.8-rc2](https://github.com/gianlucarenzi/RITMO-Music-Tracker/releases/download/v2.8-rc2/Ritmo-Songs-and-Instruments-2.8-rc2.zip)) | the example songs (`.rmt`) and instruments (`.rti`): unpack it anywhere, then File > Load a song or Instrument > Load instrument from file |
 
-The example songs and instruments are not in the packages of the program: from 2.8 every release also has
-`Ritmo-Songs-and-Instruments-<version>.zip` with them (the `songs` and `instruments` of [`rmt/`](rmt/) in the
-repository, where they can also be downloaded). Unpack it anywhere: RITMO's file dialogs remember the last folder.
+**The songs and instruments are a download of their own.** None of the packages of the program carries them
+(not the AppImage, the `.deb`, the `.tar.gz`, the Windows installer and ZIP or the macOS images), so the program
+has no "songs" or "instruments" folder to look in. Every release from 2.8 has them in
+`Ritmo-Songs-and-Instruments-<version>.zip`: the same for every system, made from [`rmt/songs`](rmt/songs) and
+[`rmt/instruments`](rmt/instruments) of the repository (which can also be downloaded from there), with a short
+`SONGS-AND-INSTRUMENTS.txt`. Unpack it where you keep your music, for example in your home or Documents folder:
+RITMO's file dialogs remember the last folder.
 
 The names of the packages carry the version, so that several versions can be
 kept side by side (`2.7-rc3` and so on for the test builds); the AppImages have
