@@ -510,8 +510,8 @@ releases only). The CI does not build the manual: run `doc/manual/build.sh` and 
 
 After a release, update `RMT_BASE_VERSION` in `CMakeLists.txt` to the next
 development target (e.g. `"2.2"`) so subsequent RC tags follow the new series.
-The last release is `v2.7`; `RMT_BASE_VERSION` is `"2.8"`, the version in development.
-A commit without a tag reports exactly that, `2.8`; a tagged one reports its tag.
+The last release is `v2.8`; `RMT_BASE_VERSION` is `"2.9"`, the version in development.
+A commit without a tag reports exactly that, `2.9`; a tagged one reports its tag.
 
 ---
 
