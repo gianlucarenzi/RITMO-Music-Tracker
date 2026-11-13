@@ -71,7 +71,32 @@ rmt_vbi_off();                                // the VBI back, the POKEY silent
 ```
 
 Every frame the VBI calls the player as many times as the instrument speed, back to back, as the XEX export of
-RITMO does; `rmt_frames` counts the frames. A song for the other region (an NTSC song on a PAL machine) plays at
+RITMO does; `rmt_frames` counts the frames.
+
+## Fading out
+
+The player of the example is assembled with `FEAT_GLOBALVOLUMEFADE=1` (7 bytes more): a byte of the player is
+subtracted from the volume of every channel, in the high nibble. C sees it as `rmt_global_volume_fade`:
+
+```c
+rmt_global_volume_fade = 0x00;   // full volume
+rmt_global_volume_fade = 0x80;   // 8 steps lower
+rmt_global_volume_fade = 0xF0;   // silent
+```
+
+`main.c` fades the song out this way when a key is pressed, one step every 4 frames. The byte is part of the
+player's code (the operand of a `SBC`, `RMTGLOBALVOLUMEFADE` in `rmtplayr.s`), so its address is known only when
+the player is assembled: the Makefile asks `obx.sh` for both symbols (`OBX_SYMBOLS="RASTERMUSICTRACKER
+RMTGLOBALVOLUMEFADE"`) and writes one line of `player.inc` for each of them, by name:
+
+```
+RMT_PLAYER = $3100
+RMT_GLOBALVOLUMEFADE = $3209
+```
+
+`rmt.s` exports `RMT_GLOBALVOLUMEFADE` as `_rmt_global_volume_fade` when `player.inc` has it. Without the feature
+the player has no such byte: leave `RMTGLOBALVOLUMEFADE` out of `OBX_SYMBOLS` too (`obx.sh` would not find it) and
+do not use the variable (the linker reports it as unresolved). A song for the other region (an NTSC song on a PAL machine) plays at
 the speed of the machine: RITMO PLAYER (`asm/rmtplay/rmtxex.s`) shows how to add or drop a tick every few frames.
 
 ## The memory

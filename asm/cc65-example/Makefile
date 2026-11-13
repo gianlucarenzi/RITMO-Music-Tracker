@@ -26,12 +26,15 @@ $(BUILD)/song.s: $(SONG) | $(BUILD)
 	XDG_CONFIG_HOME=$(abspath $(BUILD))/config "$(RITMO)" "/SCRIPT:$(abspath $(BUILD))/song.rmtscript"
 	mv $(BUILD)/song.asm $@
 
-# The Patch16 player at $3100 (FEAT_IS_SIMPLEP), its frequency tables at $3A00; player.inc has its address
+# The Patch16 player at $3100 (FEAT_IS_SIMPLEP), its frequency tables at $3A00, with the global volume fade;
+# player.inc has its address (RMT_PLAYER) and that of the fade byte (RMT_GLOBALVOLUMEFADE), one line per symbol
 $(BUILD)/player.obx: $(wildcard ../ca65/Patch-16/*.s) | $(BUILD)
-	OBX_SYMBOLS=RASTERMUSICTRACKER $(OBX) $@ ../ca65/Patch-16/rmtplayr.s \
+	OBX_SYMBOLS="RASTERMUSICTRACKER RMTGLOBALVOLUMEFADE" $(OBX) $@ ../ca65/Patch-16/rmtplayr.s \
 		-D FEAT_IS_TRACKER=0 -D FEAT_IS_SIMPLEP=1 -D EXPORTXEX=0 -D EXPORTSAP=0 -D TABLES=\$$3A00 \
-		-D STEREOMODE=$(STEREO) >$(BUILD)/player.sym
-	awk '$$1 == "OBX_SYMBOL" { print "RMT_PLAYER = $$" $$3 }' $(BUILD)/player.sym >$(BUILD)/player.inc
+		-D STEREOMODE=$(STEREO) -D FEAT_GLOBALVOLUMEFADE=1 >$(BUILD)/player.sym
+	awk '$$1 == "OBX_SYMBOL" && $$2 == "RASTERMUSICTRACKER"  { print "RMT_PLAYER = $$" $$3 } \
+	     $$1 == "OBX_SYMBOL" && $$2 == "RMTGLOBALVOLUMEFADE" { print "RMT_GLOBALVOLUMEFADE = $$" $$3 }' \
+		$(BUILD)/player.sym >$(BUILD)/player.inc
 
 # The program with the module, then the player: one XEX (the player loads before the program runs)
 $(BUILD)/example.xex: main.c rmt.s rmt.h atari-rmt.cfg $(BUILD)/song.s $(BUILD)/player.obx

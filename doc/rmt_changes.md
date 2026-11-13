@@ -18,6 +18,11 @@ Changes in RMT 2.00 (Planned)
 - Always export in all formats (RMT, stripped RMT, XEX, LZSS, VU-Player...), which were set to "active" in the song settings, with one key stroke without further user input at that point. Because the LZSS compression needs to be done only once in this case, saving in all formats comes at practically no cost. Exported files will be placed in a folder named ".exports" and will be named in the format "-VU-Player_V1.xex".
 
 Technical (Linux/POSIX Qt frontend, Qt5 until 2.0, Qt6 from 2.1):
+- 2.9: `asm/cc65-example` fades the song out: its player has `FEAT_GLOBALVOLUMEFADE=1`, `player.inc` has
+  `RMT_GLOBALVOLUMEFADE` next to `RMT_PLAYER`, and `rmt.s` exports it to C as `rmt_global_volume_fade` (`rmt.h`);
+  `main.c` fades out on a key, one step every 4 frames. The `awk` of the Makefile wrote every `OBX_SYMBOL` line of
+  `player.sym` as `RMT_PLAYER`, so a second symbol gave a wrong `player.inc`: each symbol has its own line now, by
+  name. Found by Bill Kendrick using the example in Firefighter's splash screen.
 - 2.8: every release, the release candidates too, carries the user manual as `Ritmo-User-Manual-<version>.pdf`, the
   version in its name like the packages (RITMO issue #4): the Linux workflow copies `doc/manual/ritmo-manual.pdf` of
   the tagged commit; before, it was uploaded by hand for the final releases only.
